@@ -96,8 +96,16 @@ function renderCities(cities) {
 
   const bounds = [];
   cities.forEach((city) => {
-    const marker = L.marker([city.latitude, city.longitude]).addTo(markersLayer);
+    const labelIcon = L.divIcon({
+      className: "city-label",
+      html: escapeHtml(city.name),
+      iconSize: null,
+      iconAnchor: [0, 0],
+    });
+    const marker = L.marker([city.latitude, city.longitude], { icon: labelIcon })
+      .addTo(markersLayer);
     marker.bindPopup(cityInfoHtml(city));
+    marker.on("click", () => showCityDetail(city));
     bounds.push([city.latitude, city.longitude]);
 
     const li = document.createElement("li");
