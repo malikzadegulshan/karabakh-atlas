@@ -1,11 +1,41 @@
-# Karabakh Atlas — Backend
+# Karabakh Atlas
 
-Backend API for a map website that lets users explore Karabakh and its
-cities. It exposes a RESTful JSON API that a separate frontend (any map
-library — Leaflet, Mapbox GL, etc.) can consume to render regions and
-city markers.
+Karabakh Atlas is a map website project for exploring Karabakh and its
+cities through an interactive, visual interface.
 
-## Project structure
+The project is split into two parts:
+
+- **Backend** (this repository, implemented) — a RESTful JSON API that
+  stores and serves region/city data.
+- **Frontend** (not built yet) — the interactive map UI (e.g. Leaflet or
+  Mapbox GL) that calls this API to render regions and city markers.
+
+## Project status
+
+- [x] Backend — data models, storage engine, REST API, tests
+- [ ] Frontend — map UI
+- [ ] Content — curated region/city dataset
+- [ ] Deployment
+
+Anyone picking up the frontend should point it at `/api/v1/regions` and
+`/api/v1/cities`, documented below.
+
+## Data model
+
+- **Region** — `name`, `description`, and the `cities` that belong to it.
+- **City** — `name`, `latitude`, `longitude`, `description`, `alt_names`
+  (a place for alternate name spellings/languages), and `region_id`.
+
+The dataset is deliberately left empty. Karabakh place names are used
+differently by different sources, so this backend does not ship any
+opinionated list of cities — populate it via the API or `console.py`
+with whatever dataset the project agrees on.
+
+---
+
+## Backend
+
+### Project structure
 
 ```
 karabakh-atlas/
@@ -26,18 +56,7 @@ karabakh-atlas/
 └── requirements.txt
 ```
 
-## Data model
-
-- **Region** — `name`, `description`, and the `cities` that belong to it.
-- **City** — `name`, `latitude`, `longitude`, `description`, `alt_names`
-  (a place for alternate name spellings/languages), and `region_id`.
-
-The seed data is deliberately left empty. Karabakh place names are used
-differently by different sources, so this backend does not ship any
-opinionated list of cities — populate it yourself via the API or
-`console.py` with whatever dataset your project has agreed on.
-
-## Setup
+### Setup
 
 ```bash
 python3 -m venv .venv
@@ -50,7 +69,7 @@ By default `KBA_TYPE_STORAGE=file`, which persists data to a local
 `kba_file.json` file — no database server required. This is the
 easiest way to develop and run the test suite.
 
-### Using MySQL instead
+#### Using MySQL instead
 
 1. Run `mysql -u root -p < setup_mysql_dev.sql` (and
    `setup_mysql_test.sql` for the test database). Change the placeholder
@@ -60,7 +79,7 @@ easiest way to develop and run the test suite.
 3. Never commit your `.env` file or real database credentials —
    `.env` is already git-ignored.
 
-## Running the API
+### Running the API
 
 ```bash
 source .venv/bin/activate
@@ -72,21 +91,21 @@ The API listens on `http://0.0.0.0:5000` by default.
 
 ### Endpoints
 
-| Method | Path                            | Description                    |
-|--------|----------------------------------|---------------------------------|
-| GET    | `/api/v1/status`                 | Health check                    |
-| GET    | `/api/v1/stats`                  | Object counts                   |
-| GET    | `/api/v1/regions`                | List all regions                |
-| POST   | `/api/v1/regions`                | Create a region                 |
-| GET    | `/api/v1/regions/<id>`           | Get one region                  |
-| PUT    | `/api/v1/regions/<id>`           | Update a region                 |
-| DELETE | `/api/v1/regions/<id>`           | Delete a region                 |
-| GET    | `/api/v1/regions/<id>/cities`   | List cities in a region         |
-| POST   | `/api/v1/regions/<id>/cities`   | Create a city in a region       |
-| GET    | `/api/v1/cities`                 | List all cities (`?q=` filters by name) |
-| GET    | `/api/v1/cities/<id>`            | Get one city                    |
-| PUT    | `/api/v1/cities/<id>`            | Update a city                   |
-| DELETE | `/api/v1/cities/<id>`            | Delete a city                   |
+| Method | Path                          | Description                             |
+|--------|-------------------------------|------------------------------------------|
+| GET    | `/api/v1/status`              | Health check                             |
+| GET    | `/api/v1/stats`               | Object counts                            |
+| GET    | `/api/v1/regions`             | List all regions                         |
+| POST   | `/api/v1/regions`             | Create a region                          |
+| GET    | `/api/v1/regions/<id>`        | Get one region                           |
+| PUT    | `/api/v1/regions/<id>`        | Update a region                          |
+| DELETE | `/api/v1/regions/<id>`        | Delete a region                          |
+| GET    | `/api/v1/regions/<id>/cities` | List cities in a region                  |
+| POST   | `/api/v1/regions/<id>/cities` | Create a city in a region                |
+| GET    | `/api/v1/cities`              | List all cities (`?q=` filters by name)  |
+| GET    | `/api/v1/cities/<id>`         | Get one city                             |
+| PUT    | `/api/v1/cities/<id>`         | Update a city                            |
+| DELETE | `/api/v1/cities/<id>`         | Delete a city                            |
 
 Example:
 
@@ -96,7 +115,7 @@ curl -X POST http://localhost:5000/api/v1/regions \
   -d '{"name": "Sample Region"}'
 ```
 
-## Command-line interpreter
+### Command-line interpreter
 
 `console.py` supports `create`, `show`, `destroy`, `all`, `count`, and
 `update` against `Region` and `City`, e.g.:
@@ -110,15 +129,23 @@ d1a5b6c0-...
 (kba) quit
 ```
 
-## Tests
+### Tests
 
 ```bash
 python3 -m unittest discover tests
 ```
 
-## Notes on API keys / secrets
+### Notes on API keys / secrets
 
-This backend does not itself require any third-party API key. If your
+This backend does not itself require any third-party API key. If the
 frontend uses a map-tile provider that needs one (Mapbox, etc.), keep
 that key in the frontend's own environment configuration — never commit
 it to this repository.
+
+## Roadmap
+
+- [ ] Frontend map UI consuming this API
+- [ ] Agree on and populate the actual region/city dataset
+- [ ] Decide on hosting/deployment for both API and frontend
+- [ ] Optional: authentication for editing data, image uploads,
+      region boundary (GeoJSON) support
