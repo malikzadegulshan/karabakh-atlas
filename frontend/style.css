@@ -137,7 +137,7 @@ aside.collapsed {
 }
 
 aside.collapsed ~ #sidebar-toggle {
-  left: 0;
+  left: 11px;
 }
 
 #status {
