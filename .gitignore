@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+kba_file.json
+*.sqlite3
+.pytest_cache/
+.coverage
+
+# Editor/OS cruft
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# In case npm tooling is ever used in frontend/ (e.g. for vendoring)
+node_modules/

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karabakh Atlas — Demo</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-text">
+      <h1 id="app-title">Karabakh Atlas</h1>
+      <p id="app-subtitle">MVP demo — cities loaded live from the backend API.</p>
+    </div>
+    <div id="lang-switcher">
+      <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-toggle-label">EN</span>
+      </button>
+      <div id="lang-menu" role="menu" hidden>
+        <button type="button" data-lang="en" role="menuitem" aria-label="English">EN</button>
+        <button type="button" data-lang="az" role="menuitem" aria-label="Azərbaycanca">AZ</button>
+        <button type="button" data-lang="tr" role="menuitem" aria-label="Türkçe">TR</button>
+        <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <aside id="sidebar">
+      <p id="status">Loading…</p>
+      <ul id="city-list"></ul>
+      <div id="city-detail"></div>
+    </aside>
+    <button id="sidebar-toggle" aria-label="Close city list">‹</button>
+    <div id="map"></div>
+  </main>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
