@@ -28,6 +28,7 @@ L.control
 const markersLayer = L.layerGroup().addTo(map);
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
+const detailEl = document.getElementById("city-detail");
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -48,9 +49,39 @@ function setStatus(message, isError) {
   statusEl.classList.toggle("error", Boolean(isError));
 }
 
+function cityInfoHtml(city) {
+  const parts = [`<strong>${escapeHtml(city.name)}</strong>`];
+  if (city.alt_names) {
+    parts.push(`<br><em>${escapeHtml(city.alt_names)}</em>`);
+  }
+  if (city.image_url) {
+    parts.push(
+      `<img class="popup-image" src="${escapeAttr(city.image_url)}" ` +
+        `alt="${escapeAttr(city.name)}">`
+    );
+  }
+  if (city.description) {
+    parts.push(`<p>${escapeHtml(city.description)}</p>`);
+  } else {
+    parts.push(`<p class="no-info">No information added for this city yet.</p>`);
+  }
+  if (city.image_credit) {
+    parts.push(`<p class="image-credit">${escapeHtml(city.image_credit)}</p>`);
+  }
+  return parts.join("");
+}
+
+function showCityDetail(city) {
+  detailEl.innerHTML = cityInfoHtml(city);
+  Array.from(listEl.children).forEach((li) => {
+    li.classList.toggle("active", li.dataset.cityId === city.id);
+  });
+}
+
 function renderCities(cities) {
   markersLayer.clearLayers();
   listEl.innerHTML = "";
+  detailEl.innerHTML = "";
 
   if (cities.length === 0) {
     setStatus(
@@ -66,30 +97,16 @@ function renderCities(cities) {
   const bounds = [];
   cities.forEach((city) => {
     const marker = L.marker([city.latitude, city.longitude]).addTo(markersLayer);
-    const popupParts = [`<strong>${escapeHtml(city.name)}</strong>`];
-    if (city.alt_names) {
-      popupParts.push(`<br><em>${escapeHtml(city.alt_names)}</em>`);
-    }
-    if (city.image_url) {
-      popupParts.push(
-        `<img class="popup-image" src="${escapeAttr(city.image_url)}" ` +
-          `alt="${escapeAttr(city.name)}">`
-      );
-    }
-    if (city.description) {
-      popupParts.push(`<p>${escapeHtml(city.description)}</p>`);
-    }
-    if (city.image_credit) {
-      popupParts.push(`<p class="image-credit">${escapeHtml(city.image_credit)}</p>`);
-    }
-    marker.bindPopup(popupParts.join(""));
+    marker.bindPopup(cityInfoHtml(city));
     bounds.push([city.latitude, city.longitude]);
 
     const li = document.createElement("li");
     li.textContent = city.name;
+    li.dataset.cityId = city.id;
     li.addEventListener("click", () => {
       map.setView([city.latitude, city.longitude], 12);
       marker.openPopup();
+      showCityDetail(city);
     });
     listEl.appendChild(li);
   });

@@ -63,6 +63,27 @@ aside {
   background: #f1f5f9;
 }
 
+#city-list li.active {
+  background: #e0e7ff;
+  font-weight: 600;
+}
+
+#city-detail {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+#city-detail:empty {
+  display: none;
+}
+
+#city-detail .no-info {
+  color: #64748b;
+  font-style: italic;
+}
+
 #map {
   flex: 1;
 }
