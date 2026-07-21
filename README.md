@@ -9,7 +9,7 @@ Leaflet-based map UI that renders that data).
 
 All rights reserved — see [LICENSE](LICENSE).
 
-## Running it locally
+## Running locally
 
 **Backend:**
 
