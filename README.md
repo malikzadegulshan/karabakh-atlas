@@ -1,0 +1,1 @@
+This project is for viewing Karabakh and its cities with a different view.
