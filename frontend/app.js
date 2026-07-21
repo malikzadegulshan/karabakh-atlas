@@ -47,7 +47,23 @@ function refreshLayerControl() {
 
 refreshLayerControl();
 
-const markersLayer = L.layerGroup().addTo(map);
+// Street tiles already render place-name labels on their own, so our
+// custom city-name markers would be redundant there; only show them
+// over satellite imagery, which has no labels of its own.
+const markersLayer = L.layerGroup();
+
+function updateMarkersVisibility(activeLayer) {
+  if (activeLayer === satelliteLayer) {
+    if (!map.hasLayer(markersLayer)) {
+      map.addLayer(markersLayer);
+    }
+  } else if (map.hasLayer(markersLayer)) {
+    map.removeLayer(markersLayer);
+  }
+}
+
+map.on("baselayerchange", (event) => updateMarkersVisibility(event.layer));
+updateMarkersVisibility(streetLayer);
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
