@@ -35,12 +35,6 @@ use (e.g. your own photo, or one under a permissive license such as
 Wikimedia Commons CC-BY/CC0), with `image_credit` holding the
 attribution text to display alongside it.
 
-Karabakh place names are used differently by different sources, so
-this repo doesn't hardcode a full opinionated list of cities — populate
-it via the API, `console.py`, or `seed_data.py` with whatever dataset
-the project agrees on. `seed_data.py` currently seeds one starter city
-(Khankendi, with "Stepanakert" recorded as `alt_names`) so there's data
-to demo against; add more entries to its `REGIONS` dict as needed:
 
 ```bash
 python3 seed_data.py
