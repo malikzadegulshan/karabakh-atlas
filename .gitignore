@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+kba_file.json
+*.sqlite3
+.pytest_cache/
+.coverage

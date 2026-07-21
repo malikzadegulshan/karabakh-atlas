@@ -1,0 +1,5 @@
+Flask==3.0.3
+Flask-Cors==4.0.1
+SQLAlchemy==2.0.35
+mysqlclient==2.2.4
+pycodestyle==2.11.1
