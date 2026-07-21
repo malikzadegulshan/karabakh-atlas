@@ -14,11 +14,29 @@ REGIONS = {
             "name": "Khankendi",
             "latitude": 39.8288,
             "longitude": 46.7661,
+            "description": (
+                "A city in the Karabakh region of Azerbaijan. Since 2023, "
+                "the city has seen redevelopment projects including the "
+                "restored Bulud Hotel and a new congress and business "
+                "center. Foreign nationals have been permitted to visit "
+                "since July 2025 with a permit obtained through the "
+                "Yolumuz Qarabag portal. (Source: president.az, "
+                "azerbaijan.az)"
+            ),
         },
         {
             "name": "Shusha",
             "latitude": 39.7581,
             "longitude": 46.7469,
+            "description": (
+                "A historic city in the Karabakh region of Azerbaijan, "
+                "founded in the 18th century as the capital of the "
+                "Karabakh Khanate. Promoted by Azerbaijan as its cultural "
+                "capital, known for carpet-weaving traditions and as the "
+                "birthplace of composer Uzeyir Hajibeyli and poet Molla "
+                "Panah Vagif. Named Cultural Capital of the Turkic World "
+                "for 2023. (Source: azerbaijan.travel)"
+            ),
         },
     ],
 }
