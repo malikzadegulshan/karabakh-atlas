@@ -9,8 +9,16 @@
 </head>
 <body>
   <header>
-    <h1>Karabakh Atlas</h1>
-    <p>MVP demo — cities loaded live from the backend API.</p>
+    <div class="header-text">
+      <h1 id="app-title">Karabakh Atlas</h1>
+      <p id="app-subtitle">MVP demo — cities loaded live from the backend API.</p>
+    </div>
+    <div id="lang-switcher" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="az">AZ</button>
+      <button type="button" data-lang="tr">TR</button>
+      <button type="button" data-lang="ru">RU</button>
+    </div>
   </header>
   <main>
     <aside id="sidebar">
@@ -23,6 +31,7 @@
   </main>
   <script src="vendor/leaflet/leaflet.js"></script>
   <script src="config.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

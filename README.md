@@ -191,6 +191,13 @@ dependency); only the map tile images are fetched live — a layer
 toggle (top-right) switches between OpenStreetMap streets and Esri
 World Imagery satellite tiles, both free and keyless.
 
+The UI (not the city data itself) has a language switcher — English,
+Azerbaijani, Turkish, and Russian — in `frontend/i18n.js`. These are
+best-effort translations, not reviewed by native speakers; treat them
+as a starting point and correct any phrasing that's off. City names
+and descriptions stay in whatever language they were entered in the
+backend regardless of the selected UI language.
+
 To run it:
 
 1. Start the backend (see above) — it must be reachable at
