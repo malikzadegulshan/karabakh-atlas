@@ -23,6 +23,14 @@ REGIONS = {
                 "Yolumuz Qarabag portal. (Source: president.az, "
                 "azerbaijan.az)"
             ),
+            "image_url": (
+                "https://commons.wikimedia.org/wiki/Special:FilePath/"
+                "Khankendi_congress_center.jpg"
+            ),
+            "image_credit": (
+                "Photo via Wikimedia Commons — see file page for author "
+                "and license"
+            ),
         },
         {
             "name": "Shusha",
@@ -36,6 +44,14 @@ REGIONS = {
                 "birthplace of composer Uzeyir Hajibeyli and poet Molla "
                 "Panah Vagif. Named Cultural Capital of the Turkic World "
                 "for 2023. (Source: azerbaijan.travel)"
+            ),
+            "image_url": (
+                "https://commons.wikimedia.org/wiki/Special:FilePath/"
+                "Shusha_general_view.jpg"
+            ),
+            "image_credit": (
+                "Photo via Wikimedia Commons — see file page for author "
+                "and license"
             ),
         },
     ],
