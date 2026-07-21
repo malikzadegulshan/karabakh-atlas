@@ -109,19 +109,32 @@ function setStatus(message, isError) {
   statusEl.classList.toggle("error", Boolean(isError));
 }
 
+function localizedName(city) {
+  return (city.name_i18n && city.name_i18n[currentLang]) || city.name;
+}
+
+function localizedDescription(city) {
+  return (
+    (city.description_i18n && city.description_i18n[currentLang]) ||
+    city.description
+  );
+}
+
 function cityInfoHtml(city) {
-  const parts = [`<strong>${escapeHtml(city.name)}</strong>`];
+  const name = localizedName(city);
+  const description = localizedDescription(city);
+  const parts = [`<strong>${escapeHtml(name)}</strong>`];
   if (city.alt_names) {
     parts.push(`<br><em>${escapeHtml(city.alt_names)}</em>`);
   }
   if (city.image_url) {
     parts.push(
       `<img class="popup-image" src="${escapeAttr(city.image_url)}" ` +
-        `alt="${escapeAttr(city.name)}">`
+        `alt="${escapeAttr(name)}">`
     );
   }
-  if (city.description) {
-    parts.push(`<p>${escapeHtml(city.description)}</p>`);
+  if (description) {
+    parts.push(`<p>${escapeHtml(description)}</p>`);
   } else {
     parts.push(`<p class="no-info">${escapeHtml(t("noInfo"))}</p>`);
   }
@@ -152,9 +165,10 @@ function renderCities(cities) {
 
   const bounds = [];
   cities.forEach((city) => {
+    const name = localizedName(city);
     const labelIcon = L.divIcon({
       className: "city-label",
-      html: escapeHtml(city.name),
+      html: escapeHtml(name),
       iconSize: null,
       iconAnchor: [0, 0],
     });
@@ -165,7 +179,7 @@ function renderCities(cities) {
     bounds.push([city.latitude, city.longitude]);
 
     const li = document.createElement("li");
-    li.textContent = city.name;
+    li.textContent = name;
     li.dataset.cityId = city.id;
     li.addEventListener("click", () => {
       map.setView([city.latitude, city.longitude], 12);

@@ -31,6 +31,42 @@ REGIONS = {
                 "Photo via Wikimedia Commons — see file page for author "
                 "and license"
             ),
+            "name_i18n": {
+                "az": "Xankəndi",
+                "tr": "Hankendi",
+                "ru": "Ханкенди",
+            },
+            "description_i18n": {
+                "az": (
+                    "Azərbaycanın Qarabağ bölgəsində yerləşən şəhərdir. "
+                    "2023-cü ildən bəri şəhərdə bərpa olunmuş Bulud Hotel "
+                    "və yeni konqres və biznes mərkəzi daxil olmaqla "
+                    "yenidənqurma layihələri həyata keçirilib. Xarici "
+                    "vətəndaşlara 2025-ci ilin iyul ayından etibarən "
+                    "'Yolumuz Qarabağ' portalı vasitəsilə əldə edilən "
+                    "icazə ilə səfər etməyə icazə verilir. (Mənbə: "
+                    "president.az, azerbaijan.az)"
+                ),
+                "tr": (
+                    "Azerbaycan'ın Karabağ bölgesinde bulunan bir "
+                    "şehirdir. 2023'ten bu yana şehirde restore edilen "
+                    "Bulud Oteli ve yeni bir kongre ve iş merkezi dahil "
+                    "olmak üzere yeniden yapılanma projeleri "
+                    "gerçekleştirilmiştir. Yabancı vatandaşların Temmuz "
+                    "2025'ten itibaren 'Yolumuz Qarabağ' portalından "
+                    "alınan bir izinle şehri ziyaret etmelerine izin "
+                    "verilmektedir. (Kaynak: president.az, azerbaijan.az)"
+                ),
+                "ru": (
+                    "Город в Карабахском регионе Азербайджана. С 2023 "
+                    "года в городе реализуются проекты реконструкции, "
+                    "включая восстановленный отель Bulud и новый "
+                    "конгресс- и бизнес-центр. С июля 2025 года "
+                    "иностранным гражданам разрешено посещать город по "
+                    "разрешению, оформленному через портал 'Yolumuz "
+                    "Qarabağ'. (Источник: president.az, azerbaijan.az)"
+                ),
+            },
         },
         {
             "name": "Shusha",
@@ -53,6 +89,44 @@ REGIONS = {
                 "Photo via Wikimedia Commons — see file page for author "
                 "and license"
             ),
+            "name_i18n": {
+                "az": "Şuşa",
+                "tr": "Şuşa",
+                "ru": "Шуша",
+            },
+            "description_i18n": {
+                "az": (
+                    "Azərbaycanın Qarabağ bölgəsində, 18-ci əsrdə Qarabağ "
+                    "xanlığının paytaxtı kimi qurulmuş tarixi şəhərdir. "
+                    "Azərbaycan tərəfindən mədəniyyət paytaxtı kimi "
+                    "təşviq olunur, xalça toxuculuğu ənənələri, bəstəkar "
+                    "Üzeyir Hacıbəyov və şair Molla Pənah Vaqifin "
+                    "doğulduğu yer kimi tanınır. 2023-cü il üçün Türk "
+                    "Dünyasının Mədəniyyət Paytaxtı elan edilib. (Mənbə: "
+                    "azerbaijan.travel)"
+                ),
+                "tr": (
+                    "Azerbaycan'ın Karabağ bölgesinde, 18. yüzyılda "
+                    "Karabağ Hanlığı'nın başkenti olarak kurulmuş tarihi "
+                    "bir şehirdir. Azerbaycan tarafından kültür başkenti "
+                    "olarak tanıtılmaktadır; halı dokuma gelenekleri ve "
+                    "besteci Üzeyir Hacıbeyov ile şair Molla Penah "
+                    "Vagif'in doğum yeri olarak bilinir. 2023 yılı için "
+                    "Türk Dünyasının Kültür Başkenti ilan edilmiştir. "
+                    "(Kaynak: azerbaijan.travel)"
+                ),
+                "ru": (
+                    "Исторический город в Карабахском регионе "
+                    "Азербайджана, основанный в XVIII веке как столица "
+                    "Карабахского ханства. Продвигается Азербайджаном "
+                    "как культурная столица страны, известен традициями "
+                    "ковроткачества, а также как место рождения "
+                    "композитора Узеира Гаджибекова и поэта Моллы "
+                    "Панаха Вагифа. Объявлен культурной столицей "
+                    "тюркского мира на 2023 год. (Источник: "
+                    "azerbaijan.travel)"
+                ),
+            },
         },
     ],
 }
@@ -70,7 +144,7 @@ def get_or_create_region(name):
 
 CITY_FIELDS = (
     "name", "latitude", "longitude", "description", "alt_names",
-    "image_url", "image_credit",
+    "image_url", "image_credit", "name_i18n", "description_i18n",
 )
 
 

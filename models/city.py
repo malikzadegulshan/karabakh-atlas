@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Defines the City class, a point of interest shown on the map."""
 from models.base_model import BaseModel, Base
-from sqlalchemy import Column, String, Float, Text, ForeignKey
+from sqlalchemy import Column, String, Float, Text, ForeignKey, JSON
 
 
 class City(BaseModel, Base):
@@ -16,3 +16,8 @@ class City(BaseModel, Base):
     alt_names = Column(String(255), nullable=True)
     image_url = Column(String(500), nullable=True)
     image_credit = Column(String(255), nullable=True)
+    # Optional per-language overrides, e.g. {"az": "...", "tr": "...", "ru": "..."}.
+    # `name`/`description` above remain the English fallback when a
+    # translation is missing for the requested language.
+    name_i18n = Column(JSON, nullable=True)
+    description_i18n = Column(JSON, nullable=True)
