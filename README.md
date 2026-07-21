@@ -13,7 +13,7 @@ The project is split into two parts:
 ## Project status
 
 - [x] Backend — data models, storage engine, REST API, tests
-- [ ] Frontend — map UI
+- [x] Frontend — MVP demo (map + markers, see below); production frontend still open
 - [ ] Content — curated region/city dataset
 - [ ] Deployment
 
@@ -142,9 +142,36 @@ frontend uses a map-tile provider that needs one (Mapbox, etc.), keep
 that key in the frontend's own environment configuration — never commit
 it to this repository.
 
+## Frontend (MVP demo)
+
+`frontend/` is a minimal static page — plain HTML/CSS/JS, no build step
+— that renders a Leaflet map, fetches `/api/v1/cities` from the running
+backend, and drops a marker + sidebar entry for each city. It's a proof
+that the API and a map UI work together end-to-end, not a production
+frontend.
+
+Leaflet itself is vendored under `frontend/vendor/leaflet/` (no CDN
+dependency); only the map tile images are fetched live, from the public
+OpenStreetMap tile servers.
+
+To run it:
+
+1. Start the backend (see above) — it must be reachable at
+   `http://localhost:5000` (or update `frontend/config.js` if not).
+2. Add at least one region and city so there's something to see (via
+   `console.py` or the API, as shown above).
+3. Serve the frontend as static files (opening `index.html` directly
+   from disk can trip browser CORS/file restrictions, so use a simple
+   server instead):
+   ```bash
+   cd frontend
+   python3 -m http.server 8000
+   ```
+4. Open `http://localhost:8000` in a browser.
+
 ## Roadmap
 
-- [ ] Frontend map UI consuming this API
+- [ ] Production frontend (this MVP is intentionally minimal)
 - [ ] Agree on and populate the actual region/city dataset
 - [ ] Decide on hosting/deployment for both API and frontend
 - [ ] Optional: authentication for editing data, image uploads,
