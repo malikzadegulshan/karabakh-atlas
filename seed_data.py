@@ -12,9 +12,13 @@ REGIONS = {
     "Karabakh": [
         {
             "name": "Khankendi",
-            "alt_names": "Stepanakert",
             "latitude": 39.8288,
             "longitude": 46.7661,
+        },
+        {
+            "name": "Shusha",
+            "latitude": 39.7581,
+            "longitude": 46.7469,
         },
     ],
 }
@@ -30,10 +34,17 @@ def get_or_create_region(name):
     return region
 
 
+CITY_FIELDS = ("name", "latitude", "longitude", "description", "alt_names")
+
+
 def get_or_create_city(region, city_data):
-    """Return the existing City under `region` matching city_data["name"]."""
+    """Return the City under `region` matching city_data["name"], syncing
+    its fields to city_data (clearing any field missing from city_data)."""
     for city in storage.all(City).values():
         if city.region_id == region.id and city.name == city_data["name"]:
+            for field in CITY_FIELDS:
+                setattr(city, field, city_data.get(field))
+            city.save()
             return city
     city = City(region_id=region.id, **city_data)
     city.save()
