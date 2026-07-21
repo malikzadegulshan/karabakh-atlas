@@ -40,6 +40,8 @@ def create_region():
         abort(400, description="Not a JSON")
     if "name" not in data:
         abort(400, description="Missing name")
+    data = {k: v for k, v in data.items()
+            if k not in ("id", "created_at", "updated_at")}
     region = Region(**data)
     region.save()
     return jsonify(region.to_dict()), 201

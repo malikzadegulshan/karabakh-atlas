@@ -30,6 +30,8 @@ def create_city(region_id):
     for field in ("name", "latitude", "longitude"):
         if field not in data:
             abort(400, description="Missing {}".format(field))
+    data = {k: v for k, v in data.items()
+            if k not in ("id", "created_at", "updated_at", "region_id")}
     data["region_id"] = region_id
     city = City(**data)
     city.save()
