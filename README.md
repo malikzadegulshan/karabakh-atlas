@@ -23,8 +23,17 @@ Anyone picking up the frontend should point it at `/api/v1/regions` and
 ## Data model
 
 - **Region** — `name`, `description`, and the `cities` that belong to it.
-- **City** — `name`, `latitude`, `longitude`, `description`, `alt_names`
-  (a place for alternate name spellings/languages), and `region_id`.
+- **City** — `name`, `latitude`, `longitude`, `description` (an info
+  section shown in the map popup), `alt_names` (alternate name
+  spellings/languages), `image_url` + `image_credit` (a picture and its
+  attribution, also shown in the popup), and `region_id`.
+
+This repo doesn't ship any photos itself — sourcing and licensing
+images for specific real-world places is left to whoever curates the
+content, so `image_url` should point at an image you have the right to
+use (e.g. your own photo, or one under a permissive license such as
+Wikimedia Commons CC-BY/CC0), with `image_credit` holding the
+attribution text to display alongside it.
 
 Karabakh place names are used differently by different sources, so
 this repo doesn't hardcode a full opinionated list of cities — populate

@@ -34,7 +34,10 @@ def get_or_create_region(name):
     return region
 
 
-CITY_FIELDS = ("name", "latitude", "longitude", "description", "alt_names")
+CITY_FIELDS = (
+    "name", "latitude", "longitude", "description", "alt_names",
+    "image_url", "image_credit",
+)
 
 
 def get_or_create_city(region, city_data):

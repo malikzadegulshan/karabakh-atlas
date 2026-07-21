@@ -35,6 +35,14 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function escapeAttr(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function setStatus(message, isError) {
   statusEl.textContent = message;
   statusEl.classList.toggle("error", Boolean(isError));
@@ -62,8 +70,17 @@ function renderCities(cities) {
     if (city.alt_names) {
       popupParts.push(`<br><em>${escapeHtml(city.alt_names)}</em>`);
     }
+    if (city.image_url) {
+      popupParts.push(
+        `<img class="popup-image" src="${escapeAttr(city.image_url)}" ` +
+          `alt="${escapeAttr(city.name)}">`
+      );
+    }
     if (city.description) {
       popupParts.push(`<p>${escapeHtml(city.description)}</p>`);
+    }
+    if (city.image_credit) {
+      popupParts.push(`<p class="image-credit">${escapeHtml(city.image_credit)}</p>`);
     }
     marker.bindPopup(popupParts.join(""));
     bounds.push([city.latitude, city.longitude]);

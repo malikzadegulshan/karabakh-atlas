@@ -14,3 +14,5 @@ class City(BaseModel, Base):
     longitude = Column(Float, nullable=False)
     description = Column(Text, nullable=True)
     alt_names = Column(String(255), nullable=True)
+    image_url = Column(String(500), nullable=True)
+    image_credit = Column(String(255), nullable=True)

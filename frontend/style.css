@@ -66,3 +66,19 @@ aside {
 #map {
   flex: 1;
 }
+
+.popup-image {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin: 0.4rem 0;
+}
+
+.image-credit {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
