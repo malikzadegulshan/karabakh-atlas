@@ -25,7 +25,7 @@ REGIONS = {
             ),
             "image_url": (
                 "https://commons.wikimedia.org/wiki/Special:FilePath/"
-                "Khankendi_congress_center.jpg"
+                "Stepanakert_Wikivoyage_banner.jpg"
             ),
             "image_credit": (
                 "Photo via Wikimedia Commons — see file page for author "

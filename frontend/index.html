@@ -13,11 +13,12 @@
     <p>MVP demo — cities loaded live from the backend API.</p>
   </header>
   <main>
-    <aside>
+    <aside id="sidebar">
       <p id="status">Loading…</p>
       <ul id="city-list"></ul>
       <div id="city-detail"></div>
     </aside>
+    <button id="sidebar-toggle" aria-label="Close city list">‹</button>
     <div id="map"></div>
   </main>
   <script src="vendor/leaflet/leaflet.js"></script>

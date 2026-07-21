@@ -29,6 +29,18 @@ const markersLayer = L.layerGroup().addTo(map);
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
+const sidebarEl = document.getElementById("sidebar");
+const sidebarToggleEl = document.getElementById("sidebar-toggle");
+
+sidebarToggleEl.addEventListener("click", () => {
+  const collapsed = sidebarEl.classList.toggle("collapsed");
+  sidebarToggleEl.textContent = collapsed ? "›" : "‹";
+  sidebarToggleEl.setAttribute(
+    "aria-label",
+    collapsed ? "Open city list" : "Close city list"
+  );
+  setTimeout(() => map.invalidateSize(), 220);
+});
 
 function escapeHtml(str) {
   const div = document.createElement("div");
