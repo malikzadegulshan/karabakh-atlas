@@ -13,11 +13,16 @@
       <h1 id="app-title">Karabakh Atlas</h1>
       <p id="app-subtitle">MVP demo — cities loaded live from the backend API.</p>
     </div>
-    <div id="lang-switcher" role="group" aria-label="Language">
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="az">AZ</button>
-      <button type="button" data-lang="tr">TR</button>
-      <button type="button" data-lang="ru">RU</button>
+    <div id="lang-switcher">
+      <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-toggle-label">EN</span>
+      </button>
+      <div id="lang-menu" role="menu" hidden>
+        <button type="button" data-lang="en" role="menuitem">English</button>
+        <button type="button" data-lang="az" role="menuitem">Azərbaycanca</button>
+        <button type="button" data-lang="tr" role="menuitem">Türkçe</button>
+        <button type="button" data-lang="ru" role="menuitem">Русский</button>
+      </div>
     </div>
   </header>
   <main>

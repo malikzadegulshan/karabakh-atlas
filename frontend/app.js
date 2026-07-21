@@ -37,7 +37,11 @@ function refreshLayerControl() {
     map.removeControl(layerControl);
   }
   layerControl = L.control
-    .layers({ [t("layerStreets")]: streetLayer, [t("layerSatellite")]: satelliteLayer })
+    .layers(
+      { [t("layerStreets")]: streetLayer, [t("layerSatellite")]: satelliteLayer },
+      null,
+      { position: "topleft" }
+    )
     .addTo(map);
 }
 
@@ -52,6 +56,14 @@ const sidebarToggleEl = document.getElementById("sidebar-toggle");
 const titleEl = document.getElementById("app-title");
 const subtitleEl = document.getElementById("app-subtitle");
 const langSwitcherEl = document.getElementById("lang-switcher");
+const langToggleEl = document.getElementById("lang-toggle");
+const langToggleLabelEl = document.getElementById("lang-toggle-label");
+const langMenuEl = document.getElementById("lang-menu");
+
+function closeLangMenu() {
+  langMenuEl.hidden = true;
+  langToggleEl.setAttribute("aria-expanded", "false");
+}
 
 function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
@@ -61,13 +73,22 @@ function applyStaticTranslations() {
     "aria-label",
     sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
   );
-  Array.from(langSwitcherEl.children).forEach((btn) => {
+  langToggleLabelEl.textContent = currentLang.toUpperCase();
+  Array.from(langMenuEl.children).forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
   });
 }
 
-langSwitcherEl.addEventListener("click", (event) => {
+langToggleEl.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const willOpen = langMenuEl.hidden;
+  langMenuEl.hidden = !willOpen;
+  langToggleEl.setAttribute("aria-expanded", String(willOpen));
+});
+
+langMenuEl.addEventListener("click", (event) => {
   const lang = event.target.dataset.lang;
+  closeLangMenu();
   if (!lang || lang === currentLang || !TRANSLATIONS[lang]) {
     return;
   }
@@ -76,6 +97,18 @@ langSwitcherEl.addEventListener("click", (event) => {
   applyStaticTranslations();
   refreshLayerControl();
   renderCities(lastCities);
+});
+
+document.addEventListener("click", (event) => {
+  if (!langSwitcherEl.contains(event.target)) {
+    closeLangMenu();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeLangMenu();
+  }
 });
 
 applyStaticTranslations();
