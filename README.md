@@ -133,6 +133,24 @@ curl -X POST http://localhost:5000/api/v1/regions \
   -d '{"name": "Sample Region"}'
 ```
 
+### Protecting the write endpoints before deploying publicly
+
+By default, `POST`/`PUT`/`DELETE` have no authentication — fine for
+local dev, but if you deploy this anywhere public, anyone who finds the
+URL could create/overwrite/delete your data (and rack up cost on
+metered hosting). Set `KBA_API_KEY` in `.env` before deploying, and
+every write request must then include a matching header:
+
+```bash
+curl -X POST http://localhost:5000/api/v1/regions \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $KBA_API_KEY" \
+  -d '{"name": "Sample Region"}'
+```
+
+`GET` requests are never affected. Leaving `KBA_API_KEY` unset keeps
+the previous open behavior, which is only appropriate for local dev.
+
 ### Command-line interpreter
 
 `console.py` supports `create`, `show`, `destroy`, `all`, `count`, and
