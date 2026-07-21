@@ -57,7 +57,7 @@ header p {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  min-width: 140px;
+  min-width: 64px;
   max-height: 200px;
   overflow-y: auto;
   padding: 0.3rem;
@@ -74,7 +74,8 @@ header p {
 #lang-menu button {
   padding: 0.45rem 0.7rem;
   font-size: 0.85rem;
-  text-align: left;
+  font-weight: 600;
+  text-align: center;
   color: #1f2937;
   background: none;
   border: none;
