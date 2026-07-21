@@ -4,11 +4,26 @@ const DEFAULT_ZOOM = 9;
 
 const map = L.map("map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 18,
+const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
   attribution:
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-}).addTo(map);
+});
+
+const satelliteLayer = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {
+    maxZoom: 19,
+    attribution:
+      "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  }
+);
+
+streetLayer.addTo(map);
+
+L.control
+  .layers({ Streets: streetLayer, Satellite: satelliteLayer })
+  .addTo(map);
 
 const markersLayer = L.layerGroup().addTo(map);
 const statusEl = document.getElementById("status");

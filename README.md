@@ -26,10 +26,19 @@ Anyone picking up the frontend should point it at `/api/v1/regions` and
 - **City** — `name`, `latitude`, `longitude`, `description`, `alt_names`
   (a place for alternate name spellings/languages), and `region_id`.
 
-The dataset is deliberately left empty. Karabakh place names are used
-differently by different sources, so this backend does not ship any
-opinionated list of cities — populate it via the API or `console.py`
-with whatever dataset the project agrees on.
+Karabakh place names are used differently by different sources, so
+this repo doesn't hardcode a full opinionated list of cities — populate
+it via the API, `console.py`, or `seed_data.py` with whatever dataset
+the project agrees on. `seed_data.py` currently seeds one starter city
+(Khankendi, with "Stepanakert" recorded as `alt_names`) so there's data
+to demo against; add more entries to its `REGIONS` dict as needed:
+
+```bash
+python3 seed_data.py
+```
+
+It's safe to re-run — existing regions/cities are matched by name
+rather than duplicated.
 
 ---
 
@@ -151,8 +160,9 @@ that the API and a map UI work together end-to-end, not a production
 frontend.
 
 Leaflet itself is vendored under `frontend/vendor/leaflet/` (no CDN
-dependency); only the map tile images are fetched live, from the public
-OpenStreetMap tile servers.
+dependency); only the map tile images are fetched live — a layer
+toggle (top-right) switches between OpenStreetMap streets and Esri
+World Imagery satellite tiles, both free and keyless.
 
 To run it:
 
