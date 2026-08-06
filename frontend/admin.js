@@ -392,7 +392,7 @@ function buildAddCityForm(region) {
 
   const nameInput = document.createElement("input");
   nameInput.type = "text";
-  nameInput.placeholder = "City name";
+  nameInput.placeholder = "Name";
   nameInput.required = true;
   nameInput.maxLength = 128;
 
