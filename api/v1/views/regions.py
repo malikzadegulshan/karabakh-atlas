@@ -4,6 +4,7 @@ from api.v1.views import app_views
 from flask import jsonify, abort, request
 from models import storage
 from models.region import Region
+from models.city import City
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
@@ -31,10 +32,13 @@ def get_region(region_id):
 
 @app_views.route("/regions/<region_id>", methods=["DELETE"])
 def delete_region(region_id):
-    """Delete a Region object by id, or 404 if not found."""
+    """Delete a Region object, and its cities, by id, or 404 if not found."""
     region = storage.all(Region).get("Region.{}".format(region_id))
     if region is None:
         abort(404)
+    for city in [c for c in storage.all(City).values()
+                 if c.region_id == region_id]:
+        city.delete()
     region.delete()
     storage.save()
     return jsonify({}), 200

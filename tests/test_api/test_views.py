@@ -61,6 +61,27 @@ class TestAPIViews(unittest.TestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, 400)
 
+    def test_delete_region_cascades_to_its_cities(self):
+        """Deleting a region also deletes the cities that belong to it."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Doomed Region"}),
+            content_type="application/json").data)
+        city = json.loads(self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps(
+                {"name": "Doomed City", "latitude": 1, "longitude": 1}),
+            content_type="application/json").data)
+
+        delete_resp = self.client.delete(
+            "/api/v1/regions/{}".format(region["id"]))
+        self.assertEqual(delete_resp.status_code, 200)
+
+        self.assertEqual(
+            self.client.get(
+                "/api/v1/cities/{}".format(city["id"])).status_code,
+            404)
+
     def test_region_city_lifecycle(self):
         """A region can be created, then a city nested under it."""
         region_resp = self.client.post(

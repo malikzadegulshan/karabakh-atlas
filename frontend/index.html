@@ -13,15 +13,18 @@
       <h1 id="app-title">Karabakh Atlas</h1>
       <p id="app-subtitle">MVP demo — cities loaded live from the backend API.</p>
     </div>
-    <div id="lang-switcher">
-      <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
-        <span id="lang-toggle-label">EN</span>
-      </button>
-      <div id="lang-menu" role="menu" hidden>
-        <button type="button" data-lang="en" role="menuitem" aria-label="English">EN</button>
-        <button type="button" data-lang="az" role="menuitem" aria-label="Azərbaycanca">AZ</button>
-        <button type="button" data-lang="tr" role="menuitem" aria-label="Türkçe">TR</button>
-        <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
+    <div class="header-actions">
+      <button type="button" id="admin-toggle">Manage</button>
+      <div id="lang-switcher">
+        <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
+          <span id="lang-toggle-label">EN</span>
+        </button>
+        <div id="lang-menu" role="menu" hidden>
+          <button type="button" data-lang="en" role="menuitem" aria-label="English">EN</button>
+          <button type="button" data-lang="az" role="menuitem" aria-label="Azərbaycanca">AZ</button>
+          <button type="button" data-lang="tr" role="menuitem" aria-label="Türkçe">TR</button>
+          <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
+        </div>
       </div>
     </div>
   </header>
@@ -34,9 +37,39 @@
     <button id="sidebar-toggle" aria-label="Close city list">‹</button>
     <div id="map"></div>
   </main>
+
+  <div id="admin-overlay" hidden>
+    <div id="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+      <div class="admin-panel-header">
+        <h2 id="admin-title">Manage Data</h2>
+        <button type="button" id="admin-close" aria-label="Close">×</button>
+      </div>
+      <div id="admin-message" class="admin-message" hidden></div>
+      <div class="admin-panel-body">
+        <section class="admin-section">
+          <label id="admin-api-key-label" for="admin-api-key">API key (only if the server requires one)</label>
+          <input type="password" id="admin-api-key" autocomplete="off">
+        </section>
+        <section class="admin-section">
+          <h3 id="admin-add-region-title">Add region</h3>
+          <form id="region-form" class="admin-form">
+            <input type="text" id="region-name-input" required maxlength="128">
+            <textarea id="region-description-input" rows="2"></textarea>
+            <button type="submit" id="region-form-submit">Add region</button>
+          </form>
+        </section>
+        <section class="admin-section">
+          <h3 id="admin-regions-title">Regions &amp; cities</h3>
+          <div id="admin-regions-list"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/leaflet/leaflet.js"></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
