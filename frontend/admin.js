@@ -7,6 +7,7 @@ const ADMIN_API_KEY_STORAGE = "kba_admin_api_key";
 // Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
 const CITY_CATEGORIES = [
   { value: "city", label: "City" },
+  { value: "road", label: "Road" },
   { value: "cafe", label: "Cafe" },
   { value: "restaurant", label: "Restaurant" },
   { value: "hotel", label: "Hotel" },
@@ -86,9 +87,27 @@ function buildCategoryPicker(selectedValue) {
     });
   }
 
+  const MENU_MAX_HEIGHT = 180;
+
+  function positionMenu() {
+    // The admin panel body scrolls internally and clips overflow, so a
+    // menu that would open below the visible area needs to flip above
+    // the input instead of getting cut off.
+    const inputRect = input.getBoundingClientRect();
+    const panelBody = document.querySelector(".admin-panel-body");
+    const bodyRect = panelBody.getBoundingClientRect();
+    const spaceBelow = bodyRect.bottom - inputRect.bottom;
+    const spaceAbove = inputRect.top - bodyRect.top;
+    menu.classList.toggle(
+      "flip-up",
+      spaceBelow < MENU_MAX_HEIGHT && spaceAbove > spaceBelow
+    );
+  }
+
   input.addEventListener("focus", () => {
     input.select();
     renderOptions("");
+    positionMenu();
     menu.hidden = false;
   });
   input.addEventListener("input", () => renderOptions(input.value));

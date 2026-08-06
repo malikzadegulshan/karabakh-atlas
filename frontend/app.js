@@ -92,6 +92,11 @@ updateMarkersVisibility(streetLayer);
 updatePoiVisibility();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
+const roadListEl = document.getElementById("road-list");
+const poiListEl = document.getElementById("poi-list");
+const citiesSectionTitleEl = document.getElementById("cities-section-title");
+const roadsSectionTitleEl = document.getElementById("roads-section-title");
+const poiSectionTitleEl = document.getElementById("poi-section-title");
 const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
@@ -115,6 +120,9 @@ function applyStaticTranslations() {
     "aria-label",
     sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
   );
+  citiesSectionTitleEl.textContent = t("sectionCities");
+  roadsSectionTitleEl.textContent = t("sectionRoads");
+  poiSectionTitleEl.textContent = t("sectionPois");
   langToggleLabelEl.textContent = currentLang.toUpperCase();
   Array.from(langMenuEl.children).forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
@@ -221,13 +229,16 @@ function cityInfoHtml(city) {
 
 function showCityDetail(city) {
   detailEl.innerHTML = cityInfoHtml(city);
-  Array.from(listEl.children).forEach((li) => {
-    li.classList.toggle("active", li.dataset.cityId === city.id);
+  [listEl, roadListEl, poiListEl].forEach((list) => {
+    Array.from(list.children).forEach((li) => {
+      li.classList.toggle("active", li.dataset.cityId === city.id);
+    });
   });
 }
 
 // Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
 const POI_COLORS = {
+  road: "#57534e",
   cafe: "#b45309",
   restaurant: "#b91c1c",
   hotel: "#1d4ed8",
@@ -275,45 +286,71 @@ function buildMarker(city) {
     .addTo(markersLayer);
 }
 
+function sidebarListFor(city) {
+  if (city.category === "road") {
+    return roadListEl;
+  }
+  return isPoi(city) ? poiListEl : listEl;
+}
+
+function buildListItem(city, marker, targetListEl) {
+  const li = document.createElement("li");
+  li.textContent = localizedName(city);
+  li.dataset.cityId = city.id;
+  li.addEventListener("click", () => {
+    const targetZoom = isPoi(city)
+      ? Math.max(map.getZoom(), POI_MIN_ZOOM)
+      : 12;
+    map.setView([city.latitude, city.longitude], targetZoom);
+    if (isPoi(city) && !map.hasLayer(poiMarkersLayer)) {
+      // Make sure the marker is actually on the map (zoomend, which
+      // normally handles this, may not have fired yet) before opening
+      // its popup.
+      map.addLayer(poiMarkersLayer);
+    }
+    marker.openPopup();
+    showCityDetail(city);
+  });
+  targetListEl.appendChild(li);
+}
+
 function renderCities(cities) {
   markersLayer.clearLayers();
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
+  roadListEl.innerHTML = "";
+  poiListEl.innerHTML = "";
   detailEl.innerHTML = "";
 
   if (cities.length === 0) {
     setStatus(t("noCities"), false);
+    roadsSectionTitleEl.hidden = true;
+    roadListEl.hidden = true;
+    poiSectionTitleEl.hidden = true;
+    poiListEl.hidden = true;
     return;
   }
 
   setStatus(t("citiesLoaded")(cities.length), false);
 
+  // Cities get their own persistent map label and always show in the
+  // "Cities" section; roads and everything else are user-added points
+  // of interest, kept in their own sections so they don't clutter the
+  // city list.
+  const roads = cities.filter((c) => c.category === "road");
+  const pois = cities.filter((c) => isPoi(c) && c.category !== "road");
+  roadsSectionTitleEl.hidden = roads.length === 0;
+  roadListEl.hidden = roads.length === 0;
+  poiSectionTitleEl.hidden = pois.length === 0;
+  poiListEl.hidden = pois.length === 0;
+
   const bounds = [];
   cities.forEach((city) => {
-    const name = localizedName(city);
     const marker = buildMarker(city);
     marker.bindPopup(cityInfoHtml(city));
     marker.on("click", () => showCityDetail(city));
     bounds.push([city.latitude, city.longitude]);
-
-    const li = document.createElement("li");
-    li.textContent = name;
-    li.dataset.cityId = city.id;
-    li.addEventListener("click", () => {
-      const targetZoom = isPoi(city)
-        ? Math.max(map.getZoom(), POI_MIN_ZOOM)
-        : 12;
-      map.setView([city.latitude, city.longitude], targetZoom);
-      if (isPoi(city) && !map.hasLayer(poiMarkersLayer)) {
-        // Make sure the marker is actually on the map (zoomend, which
-        // normally handles this, may not have fired yet) before opening
-        // its popup.
-        map.addLayer(poiMarkersLayer);
-      }
-      marker.openPopup();
-      showCityDetail(city);
-    });
-    listEl.appendChild(li);
+    buildListItem(city, marker, sidebarListFor(city));
   });
 
   map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });

@@ -178,23 +178,49 @@ aside.collapsed ~ #sidebar-toggle {
   color: #b91c1c;
 }
 
-#city-list {
+.sidebar-section-title {
+  margin: 0.8rem 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.sidebar-section-title[hidden] {
+  display: none;
+}
+
+#city-list,
+#road-list,
+#poi-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-#city-list li {
+#road-list[hidden],
+#poi-list[hidden] {
+  display: none;
+}
+
+#city-list li,
+#road-list li,
+#poi-list li {
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
   cursor: pointer;
 }
 
-#city-list li:hover {
+#city-list li:hover,
+#road-list li:hover,
+#poi-list li:hover {
   background: #f1f5f9;
 }
 
-#city-list li.active {
+#city-list li.active,
+#road-list li.active,
+#poi-list li.active {
   background: #e0e7ff;
   font-weight: 600;
 }
@@ -459,9 +485,14 @@ aside.collapsed ~ #sidebar-toggle {
 
 .admin-add-city-form input,
 .admin-add-city-form .category-picker {
-  width: auto;
-  flex: 1;
+  /* A non-zero flex-basis (instead of the flex:1 shorthand's 0%) makes
+     the wrap algorithm account for each item's real size, so a row that
+     doesn't fit wraps onto a new line instead of silently overflowing
+     the panel — flex-basis:0 tricks flex-wrap into thinking everything
+     fits on one line, then min-width shoves it past the edge anyway. */
+  flex: 1 1 140px;
   min-width: 90px;
+  width: auto;
 }
 
 .admin-add-city-form .pick-on-map,
@@ -502,10 +533,18 @@ aside.collapsed ~ #sidebar-toggle {
   display: none;
 }
 
+.category-picker-menu.flip-up {
+  top: auto;
+  bottom: calc(100% + 0.25rem);
+}
+
 .category-picker-menu .category-picker-option {
   display: block;
   width: 100%;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 0.35rem 0.5rem;
   font-size: 0.83rem;
   font-weight: 400;
