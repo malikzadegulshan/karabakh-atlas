@@ -4,6 +4,32 @@
 
 const ADMIN_API_KEY_STORAGE = "kba_admin_api_key";
 
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const CITY_CATEGORIES = [
+  { value: "city", label: "City" },
+  { value: "cafe", label: "Cafe" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "hotel", label: "Hotel" },
+  { value: "landmark", label: "Landmark" },
+  { value: "museum", label: "Museum" },
+  { value: "shop", label: "Shop" },
+  { value: "other", label: "Other" },
+];
+
+function buildCategorySelect(selectedValue) {
+  const select = document.createElement("select");
+  CITY_CATEGORIES.forEach(({ value, label }) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    if (value === (selectedValue || "city")) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+  return select;
+}
+
 const adminOverlayEl = document.getElementById("admin-overlay");
 const adminToggleEl = document.getElementById("admin-toggle");
 const adminCloseEl = document.getElementById("admin-close");
@@ -193,7 +219,8 @@ function buildAdminCityRow(city) {
   li.dataset.cityId = city.id;
 
   const label = document.createElement("span");
-  label.textContent = `${city.name} (${city.latitude}, ${city.longitude})`;
+  const categoryTag = city.category && city.category !== "city" ? ` [${city.category}]` : "";
+  label.textContent = `${city.name}${categoryTag} (${city.latitude}, ${city.longitude})`;
   li.appendChild(label);
 
   const actions = document.createElement("div");
@@ -239,6 +266,8 @@ function buildAddCityForm(region) {
   lngInput.placeholder = "Longitude";
   lngInput.required = true;
 
+  const categorySelect = buildCategorySelect("city");
+
   const submit = document.createElement("button");
   submit.type = "submit";
   submit.textContent = "Add city";
@@ -246,6 +275,7 @@ function buildAddCityForm(region) {
   form.appendChild(nameInput);
   form.appendChild(latInput);
   form.appendChild(lngInput);
+  form.appendChild(categorySelect);
   form.appendChild(submit);
 
   form.addEventListener("submit", async (event) => {
@@ -262,7 +292,7 @@ function buildAddCityForm(region) {
     try {
       await apiRequest(
         "POST", `/regions/${region.id}/cities`,
-        { name, latitude, longitude });
+        { name, latitude, longitude, category: categorySelect.value });
       showAdminMessage(`City "${name}" added.`, false);
       await refreshAdminData();
       await loadCities();
@@ -371,6 +401,8 @@ function startEditCity(city) {
   descInput.placeholder = "Description";
   descInput.value = city.description || "";
 
+  const categorySelect = buildCategorySelect(city.category);
+
   const actions = document.createElement("div");
   actions.className = "admin-form-actions";
 
@@ -388,6 +420,7 @@ function startEditCity(city) {
   form.appendChild(nameInput);
   form.appendChild(latInput);
   form.appendChild(lngInput);
+  form.appendChild(categorySelect);
   form.appendChild(descInput);
   form.appendChild(actions);
 
@@ -405,6 +438,7 @@ function startEditCity(city) {
     try {
       await apiRequest("PUT", `/cities/${city.id}`, {
         name, latitude, longitude,
+        category: categorySelect.value,
         description: descInput.value.trim() || null,
       });
       showAdminMessage(`City "${name}" updated.`, false);

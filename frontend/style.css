@@ -349,6 +349,7 @@ aside.collapsed ~ #sidebar-toggle {
 
 .admin-form input,
 .admin-form textarea,
+.admin-form select,
 #admin-api-key {
   width: 100%;
   padding: 0.45rem 0.6rem;
@@ -457,7 +458,8 @@ aside.collapsed ~ #sidebar-toggle {
   margin-top: 0.6rem;
 }
 
-.admin-add-city-form input {
+.admin-add-city-form input,
+.admin-add-city-form select {
   width: auto;
   flex: 1;
   min-width: 90px;
@@ -525,7 +527,8 @@ aside.collapsed ~ #sidebar-toggle {
     flex-direction: column;
   }
 
-  .admin-add-city-form input {
+  .admin-add-city-form input,
+  .admin-add-city-form select {
     width: 100%;
   }
 

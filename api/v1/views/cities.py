@@ -11,12 +11,22 @@ from api.v1.validation import (
     require_number_in_range,
     optional_string,
     optional_i18n_dict,
+    optional_enum,
     only_allowed_fields,
 )
+
+# "city" renders as a persistent map label; every other value is a
+# user-added point of interest, rendered as a small marker only when
+# zoomed in.
+CITY_CATEGORIES = {
+    "city", "cafe", "restaurant", "hotel", "landmark", "museum", "shop",
+    "other",
+}
 
 CITY_FIELDS = {
     "name", "latitude", "longitude", "description", "alt_names",
     "image_url", "image_credit", "name_i18n", "description_i18n",
+    "category",
 }
 
 
@@ -35,6 +45,7 @@ def _validate_city_data(data, *, require_required_fields):
     optional_string(data, "image_credit", max_length=255)
     optional_i18n_dict(data, "name_i18n")
     optional_i18n_dict(data, "description_i18n")
+    optional_enum(data, "category", CITY_CATEGORIES)
 
 
 @app_views.route("/regions/<region_id>/cities", methods=["GET"])
@@ -62,6 +73,7 @@ def create_city(region_id):
     except ValidationError as error:
         abort(400, description=error.message)
     data["region_id"] = region_id
+    data.setdefault("category", "city")
     city = City(**data)
     city.save()
     return jsonify(city.to_dict()), 201
