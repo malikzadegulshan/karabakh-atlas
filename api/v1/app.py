@@ -1,18 +1,37 @@
 #!/usr/bin/python3
 """Starts the Flask API application for the Karabakh Atlas backend."""
 import os
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_swagger_ui import get_swaggerui_blueprint
 from models import storage
 from api.v1.views import app_views
 
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
+OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
+SWAGGER_UI_PATH = "/api/docs"
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 app.register_blueprint(app_views)
+app.register_blueprint(
+    get_swaggerui_blueprint(
+        SWAGGER_UI_PATH,
+        OPENAPI_SPEC_PATH,
+        config={"app_name": "Karabakh Atlas API"},
+    ),
+    url_prefix=SWAGGER_UI_PATH,
+)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
+
+@app.route(OPENAPI_SPEC_PATH)
+def openapi_spec():
+    """Serve the static OpenAPI spec backing the Swagger UI at /api/docs."""
+    return send_from_directory(
+        os.path.dirname(__file__), "openapi.yaml",
+        mimetype="application/yaml")
 
 
 @app.before_request

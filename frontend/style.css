@@ -14,9 +14,10 @@ body {
 header {
   display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   padding: 0.4rem 1.25rem;
   background: #221539;
   color: #fff;
@@ -31,6 +32,28 @@ header p {
   margin: 0.1rem 0 0;
   font-size: 0.75rem;
   color: #cbd5e1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+#admin-toggle {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#admin-toggle:hover {
+  background: #374151;
 }
 
 #lang-switcher {
@@ -223,4 +246,290 @@ aside.collapsed ~ #sidebar-toggle {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   pointer-events: auto;
+}
+
+/* Admin panel */
+
+#admin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 10, 25, 0.55);
+}
+
+#admin-overlay[hidden] {
+  display: none;
+}
+
+#admin-panel {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.admin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: #221539;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.admin-panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+#admin-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.1rem 0.4rem;
+}
+
+.admin-panel-body {
+  padding: 1rem 1.25rem 1.5rem;
+  overflow-y: auto;
+}
+
+.admin-message {
+  margin: 0.75rem 1.25rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-message[hidden] {
+  display: none;
+}
+
+.admin-section {
+  margin-bottom: 1.5rem;
+}
+
+.admin-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.admin-section label {
+  display: block;
+  font-size: 0.8rem;
+  color: #475569;
+  margin-bottom: 0.3rem;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-form input,
+.admin-form textarea,
+#admin-api-key {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.admin-form button,
+.admin-form-actions button {
+  align-self: flex-start;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: #221539;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.admin-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admin-form-actions button[type="button"] {
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+.admin-region {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-region-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.admin-region-description {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.admin-actions button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.admin-actions button.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.admin-city-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+
+.admin-city {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.admin-empty {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 0.4rem 0;
+}
+
+.admin-add-city-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.admin-add-city-form input {
+  width: auto;
+  flex: 1;
+  min-width: 90px;
+}
+
+/* Responsive: narrow (phone/small tablet) viewports */
+
+@media (max-width: 700px) {
+  header {
+    padding: 0.5rem 1rem;
+  }
+
+  header h1 {
+    font-size: 0.95rem;
+  }
+
+  header p {
+    font-size: 0.7rem;
+  }
+
+  aside {
+    position: absolute;
+    inset: 0 auto 0 0;
+    /* Above Leaflet's own controls (.leaflet-top/.leaflet-bottom use
+       z-index: 1000), so the drawer fully covers the map when open. */
+    z-index: 1050;
+    width: min(260px, 82vw);
+    background: #fff;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+  }
+
+  aside.collapsed {
+    box-shadow: none;
+  }
+
+  #sidebar-toggle {
+    left: min(260px, 82vw);
+    z-index: 1060;
+  }
+
+  aside.collapsed ~ #sidebar-toggle {
+    left: 11px;
+  }
+
+  #admin-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  #admin-panel {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .admin-region-header {
+    flex-wrap: wrap;
+  }
+
+  .admin-city {
+    flex-wrap: wrap;
+  }
+
+  .admin-add-city-form {
+    flex-direction: column;
+  }
+
+  .admin-add-city-form input {
+    width: 100%;
+  }
+
+  .admin-add-city-form button {
+    width: 100%;
+  }
 }
