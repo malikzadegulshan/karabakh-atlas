@@ -27,6 +27,40 @@ class TestAPIViews(unittest.TestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, 400)
 
+    def test_create_region_rejects_blank_name(self):
+        """POST /api/v1/regions with a blank/whitespace name is rejected."""
+        response = self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "   "}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_city_rejects_out_of_range_latitude(self):
+        """POST .../cities with an out-of-range latitude is rejected."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps(
+                {"name": "Nowhere", "latitude": 999, "longitude": 46}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_city_rejects_non_numeric_coordinates(self):
+        """POST .../cities with a string latitude is rejected."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps(
+                {"name": "Nowhere", "latitude": "banana", "longitude": 46}),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
     def test_region_city_lifecycle(self):
         """A region can be created, then a city nested under it."""
         region_resp = self.client.post(
@@ -59,9 +93,9 @@ class TestAPIViews(unittest.TestCase):
         response = self.client.get("/api/v1/cities/does-not-exist")
         self.assertEqual(response.status_code, 404)
 
-    def test_create_region_ignores_client_supplied_id(self):
-        """POST /api/v1/regions with a client-chosen id can't collide with
-        (and overwrite) an existing region."""
+    def test_create_region_rejects_client_supplied_id(self):
+        """POST /api/v1/regions with an "id" field is rejected outright,
+        so it can never collide with (and overwrite) an existing region."""
         original_resp = self.client.post(
             "/api/v1/regions",
             data=json.dumps({"name": "Original"}),
@@ -72,17 +106,16 @@ class TestAPIViews(unittest.TestCase):
             "/api/v1/regions",
             data=json.dumps({"name": "Hijacked", "id": original["id"]}),
             content_type="application/json")
-        attack = json.loads(attack_resp.data)
-        self.assertNotEqual(attack["id"], original["id"])
+        self.assertEqual(attack_resp.status_code, 400)
 
         still_original = self.client.get(
             "/api/v1/regions/{}".format(original["id"]))
         self.assertEqual(
             json.loads(still_original.data)["name"], "Original")
 
-    def test_create_city_ignores_client_supplied_id(self):
-        """POST .../cities with a client-chosen id can't collide with
-        (and overwrite) an existing city."""
+    def test_create_city_rejects_client_supplied_id(self):
+        """POST .../cities with an "id" field is rejected outright, so it
+        can never collide with (and overwrite) an existing city."""
         region = json.loads(self.client.post(
             "/api/v1/regions",
             data=json.dumps({"name": "Region"}),
@@ -94,14 +127,14 @@ class TestAPIViews(unittest.TestCase):
                 {"name": "Original City", "latitude": 1, "longitude": 1}),
             content_type="application/json").data)
 
-        attack = json.loads(self.client.post(
+        attack_resp = self.client.post(
             "/api/v1/regions/{}/cities".format(region["id"]),
             data=json.dumps({
                 "name": "Hijacked City", "latitude": 2, "longitude": 2,
                 "id": original["id"],
             }),
-            content_type="application/json").data)
-        self.assertNotEqual(attack["id"], original["id"])
+            content_type="application/json")
+        self.assertEqual(attack_resp.status_code, 400)
 
         still_original = self.client.get(
             "/api/v1/cities/{}".format(original["id"]))

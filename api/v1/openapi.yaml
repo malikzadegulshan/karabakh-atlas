@@ -1,0 +1,370 @@
+openapi: 3.0.3
+info:
+  title: Karabakh Atlas API
+  description: >
+    REST API serving region/city data for the Karabakh Atlas map website.
+    Write endpoints (POST/PUT/DELETE) require an X-API-Key header only
+    when the server has KBA_API_KEY configured; otherwise they are open.
+  version: "1.0"
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Region:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    RegionInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 128
+        description:
+          type: string
+          nullable: true
+    City:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        region_id:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        description:
+          type: string
+          nullable: true
+        alt_names:
+          type: string
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+        image_credit:
+          type: string
+          nullable: true
+        name_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        description_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    CityInput:
+      type: object
+      required: [name, latitude, longitude]
+      properties:
+        name:
+          type: string
+          maxLength: 128
+        latitude:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+        description:
+          type: string
+          nullable: true
+        alt_names:
+          type: string
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+        image_credit:
+          type: string
+          nullable: true
+        name_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        description_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+paths:
+  /status:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: API is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+  /stats:
+    get:
+      summary: Object counts
+      responses:
+        "200":
+          description: Counts of regions and cities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  regions:
+                    type: integer
+                  cities:
+                    type: integer
+  /regions:
+    get:
+      summary: List all regions
+      responses:
+        "200":
+          description: List of regions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Region"
+    post:
+      summary: Create a region
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegionInput"
+      responses:
+        "201":
+          description: Region created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing/invalid X-API-Key (only when KBA_API_KEY is set)
+  /regions/{region_id}:
+    parameters:
+      - name: region_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get one region
+      responses:
+        "200":
+          description: The region
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "404":
+          description: Not found
+    put:
+      summary: Update a region
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Updated region
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400":
+          description: Validation error
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a region
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+  /regions/{region_id}/cities:
+    parameters:
+      - name: region_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: List cities in a region
+      responses:
+        "200":
+          description: List of cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/City"
+        "404":
+          description: Region not found
+    post:
+      summary: Create a city in a region
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CityInput"
+      responses:
+        "201":
+          description: City created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+        "400":
+          description: Validation error
+        "404":
+          description: Region not found
+  /cities:
+    get:
+      summary: List all cities
+      parameters:
+        - name: q
+          in: query
+          description: Filter by name (case-insensitive substring)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/City"
+  /cities/{city_id}:
+    parameters:
+      - name: city_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get one city
+      responses:
+        "200":
+          description: The city
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+        "404":
+          description: Not found
+    put:
+      summary: Update a city
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CityInput"
+      responses:
+        "200":
+          description: Updated city
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+        "400":
+          description: Validation error
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a city
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
