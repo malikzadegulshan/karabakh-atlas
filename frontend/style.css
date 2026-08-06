@@ -14,9 +14,10 @@ body {
 header {
   display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   padding: 0.4rem 1.25rem;
   background: #221539;
   color: #fff;
@@ -460,4 +461,75 @@ aside.collapsed ~ #sidebar-toggle {
   width: auto;
   flex: 1;
   min-width: 90px;
+}
+
+/* Responsive: narrow (phone/small tablet) viewports */
+
+@media (max-width: 700px) {
+  header {
+    padding: 0.5rem 1rem;
+  }
+
+  header h1 {
+    font-size: 0.95rem;
+  }
+
+  header p {
+    font-size: 0.7rem;
+  }
+
+  aside {
+    position: absolute;
+    inset: 0 auto 0 0;
+    /* Above Leaflet's own controls (.leaflet-top/.leaflet-bottom use
+       z-index: 1000), so the drawer fully covers the map when open. */
+    z-index: 1050;
+    width: min(260px, 82vw);
+    background: #fff;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+  }
+
+  aside.collapsed {
+    box-shadow: none;
+  }
+
+  #sidebar-toggle {
+    left: min(260px, 82vw);
+    z-index: 1060;
+  }
+
+  aside.collapsed ~ #sidebar-toggle {
+    left: 11px;
+  }
+
+  #admin-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  #admin-panel {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .admin-region-header {
+    flex-wrap: wrap;
+  }
+
+  .admin-city {
+    flex-wrap: wrap;
+  }
+
+  .admin-add-city-form {
+    flex-direction: column;
+  }
+
+  .admin-add-city-form input {
+    width: 100%;
+  }
+
+  .admin-add-city-form button {
+    width: 100%;
+  }
 }
