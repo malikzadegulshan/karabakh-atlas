@@ -12,22 +12,105 @@ const CITY_CATEGORIES = [
   { value: "hotel", label: "Hotel" },
   { value: "landmark", label: "Landmark" },
   { value: "museum", label: "Museum" },
+  { value: "park", label: "Park" },
+  { value: "university", label: "University" },
+  { value: "school", label: "School" },
+  { value: "hospital", label: "Hospital" },
+  { value: "pharmacy", label: "Pharmacy" },
+  { value: "bank", label: "Bank" },
+  { value: "government", label: "Government office" },
+  { value: "police", label: "Police" },
+  { value: "fire_station", label: "Fire station" },
+  { value: "mosque", label: "Mosque" },
+  { value: "church", label: "Church" },
+  { value: "fuel_station", label: "Fuel station" },
+  { value: "parking", label: "Parking" },
   { value: "shop", label: "Shop" },
   { value: "other", label: "Other" },
 ];
 
-function buildCategorySelect(selectedValue) {
-  const select = document.createElement("select");
-  CITY_CATEGORIES.forEach(({ value, label }) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    if (value === (selectedValue || "city")) {
-      option.selected = true;
+// A searchable combobox for picking a category — plain <select> gets
+// unwieldy once there are 20+ categories, so this filters as you type.
+function buildCategoryPicker(selectedValue) {
+  const initial =
+    CITY_CATEGORIES.find((c) => c.value === selectedValue) ||
+    CITY_CATEGORIES[0];
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "category-picker";
+  wrapper.dataset.value = initial.value;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "category-picker-input";
+  input.autocomplete = "off";
+  input.value = initial.label;
+
+  const menu = document.createElement("div");
+  menu.className = "category-picker-menu";
+  menu.hidden = true;
+
+  function selectedLabel() {
+    const current = CITY_CATEGORIES.find((c) => c.value === wrapper.dataset.value);
+    return current ? current.label : "";
+  }
+
+  function renderOptions(query) {
+    menu.innerHTML = "";
+    const q = query.trim().toLowerCase();
+    const matches = CITY_CATEGORIES.filter((c) => c.label.toLowerCase().includes(q));
+    if (matches.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "category-picker-empty";
+      empty.textContent = "No matching category";
+      menu.appendChild(empty);
+      return;
     }
-    select.appendChild(option);
+    matches.forEach((c) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "category-picker-option";
+      if (c.value === wrapper.dataset.value) {
+        option.classList.add("active");
+      }
+      option.textContent = c.label;
+      option.addEventListener("mousedown", (event) => {
+        // mousedown (not click) fires before the input's blur handler,
+        // so the selection lands before blur snaps the text back.
+        event.preventDefault();
+        wrapper.dataset.value = c.value;
+        input.value = c.label;
+        menu.hidden = true;
+      });
+      menu.appendChild(option);
+    });
+  }
+
+  input.addEventListener("focus", () => {
+    input.select();
+    renderOptions("");
+    menu.hidden = false;
   });
-  return select;
+  input.addEventListener("input", () => renderOptions(input.value));
+  input.addEventListener("blur", () => {
+    menu.hidden = true;
+    input.value = selectedLabel();
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      menu.hidden = true;
+      input.value = selectedLabel();
+      input.blur();
+    }
+  });
+
+  wrapper.appendChild(input);
+  wrapper.appendChild(menu);
+  return wrapper;
+}
+
+function categoryPickerValue(picker) {
+  return picker.dataset.value;
 }
 
 const adminOverlayEl = document.getElementById("admin-overlay");
@@ -88,6 +171,46 @@ document.addEventListener("keydown", (event) => {
     closeAdminPanel();
   }
 });
+
+const mapPickBannerEl = document.getElementById("map-pick-banner");
+const mapPickCancelEl = document.getElementById("map-pick-cancel");
+let activePick = null;
+
+function stopPickingLocation() {
+  if (!activePick) {
+    return;
+  }
+  map.off("click", activePick.onMapClick);
+  document.removeEventListener("keydown", activePick.onKeydown);
+  mapPickBannerEl.hidden = true;
+  adminOverlayEl.hidden = false;
+  activePick = null;
+}
+
+// Temporarily hides the admin panel so the underlying Leaflet map is
+// clickable, and fills `latInput`/`lngInput` with the clicked location.
+function startPickingLocation(latInput, lngInput) {
+  stopPickingLocation();
+  adminOverlayEl.hidden = true;
+  mapPickBannerEl.hidden = false;
+
+  const onMapClick = (event) => {
+    latInput.value = event.latlng.lat.toFixed(6);
+    lngInput.value = event.latlng.lng.toFixed(6);
+    stopPickingLocation();
+  };
+  const onKeydown = (event) => {
+    if (event.key === "Escape") {
+      stopPickingLocation();
+    }
+  };
+
+  activePick = { onMapClick, onKeydown };
+  map.on("click", onMapClick);
+  document.addEventListener("keydown", onKeydown);
+}
+
+mapPickCancelEl.addEventListener("click", stopPickingLocation);
 
 async function apiRequest(method, path, body) {
   const options = { method, headers: adminHeaders() };
@@ -266,7 +389,13 @@ function buildAddCityForm(region) {
   lngInput.placeholder = "Longitude";
   lngInput.required = true;
 
-  const categorySelect = buildCategorySelect("city");
+  const categoryPicker = buildCategoryPicker("city");
+
+  const pickOnMapBtn = document.createElement("button");
+  pickOnMapBtn.type = "button";
+  pickOnMapBtn.className = "pick-on-map";
+  pickOnMapBtn.textContent = "Pick on map";
+  pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
 
   const submit = document.createElement("button");
   submit.type = "submit";
@@ -275,7 +404,8 @@ function buildAddCityForm(region) {
   form.appendChild(nameInput);
   form.appendChild(latInput);
   form.appendChild(lngInput);
-  form.appendChild(categorySelect);
+  form.appendChild(pickOnMapBtn);
+  form.appendChild(categoryPicker);
   form.appendChild(submit);
 
   form.addEventListener("submit", async (event) => {
@@ -292,7 +422,7 @@ function buildAddCityForm(region) {
     try {
       await apiRequest(
         "POST", `/regions/${region.id}/cities`,
-        { name, latitude, longitude, category: categorySelect.value });
+        { name, latitude, longitude, category: categoryPickerValue(categoryPicker) });
       showAdminMessage(`City "${name}" added.`, false);
       await refreshAdminData();
       await loadCities();
@@ -401,7 +531,13 @@ function startEditCity(city) {
   descInput.placeholder = "Description";
   descInput.value = city.description || "";
 
-  const categorySelect = buildCategorySelect(city.category);
+  const categoryPicker = buildCategoryPicker(city.category);
+
+  const pickOnMapBtn = document.createElement("button");
+  pickOnMapBtn.type = "button";
+  pickOnMapBtn.className = "pick-on-map";
+  pickOnMapBtn.textContent = "Pick on map";
+  pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
 
   const actions = document.createElement("div");
   actions.className = "admin-form-actions";
@@ -420,7 +556,8 @@ function startEditCity(city) {
   form.appendChild(nameInput);
   form.appendChild(latInput);
   form.appendChild(lngInput);
-  form.appendChild(categorySelect);
+  form.appendChild(pickOnMapBtn);
+  form.appendChild(categoryPicker);
   form.appendChild(descInput);
   form.appendChild(actions);
 
@@ -438,7 +575,7 @@ function startEditCity(city) {
     try {
       await apiRequest("PUT", `/cities/${city.id}`, {
         name, latitude, longitude,
-        category: categorySelect.value,
+        category: categoryPickerValue(categoryPicker),
         description: descInput.value.trim() || null,
       });
       showAdminMessage(`City "${name}" updated.`, false);

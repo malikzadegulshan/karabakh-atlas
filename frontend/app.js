@@ -226,12 +226,26 @@ function showCityDetail(city) {
   });
 }
 
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
 const POI_COLORS = {
   cafe: "#b45309",
   restaurant: "#b91c1c",
   hotel: "#1d4ed8",
   landmark: "#7c3aed",
   museum: "#0f766e",
+  park: "#15803d",
+  university: "#4338ca",
+  school: "#4f46e5",
+  hospital: "#dc2626",
+  pharmacy: "#16a34a",
+  bank: "#065f46",
+  government: "#374151",
+  police: "#1e3a8a",
+  fire_station: "#c2410c",
+  mosque: "#0891b2",
+  church: "#0e7490",
+  fuel_station: "#78350f",
+  parking: "#525252",
   shop: "#c2410c",
   other: "#334155",
 };

@@ -17,10 +17,12 @@ from api.v1.validation import (
 
 # "city" renders as a persistent map label; every other value is a
 # user-added point of interest, rendered as a small marker only when
-# zoomed in.
+# zoomed in. Keep in sync with CITY_CATEGORIES in frontend/admin.js.
 CITY_CATEGORIES = {
-    "city", "cafe", "restaurant", "hotel", "landmark", "museum", "shop",
-    "other",
+    "city", "cafe", "restaurant", "hotel", "landmark", "museum", "park",
+    "university", "school", "hospital", "pharmacy", "bank", "government",
+    "police", "fire_station", "mosque", "church", "fuel_station",
+    "parking", "shop", "other",
 }
 
 CITY_FIELDS = {
