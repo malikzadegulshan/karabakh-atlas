@@ -16,7 +16,12 @@ class City(BaseModel, Base):
     alt_names = Column(String(255), nullable=True)
     image_url = Column(String(500), nullable=True)
     image_credit = Column(String(255), nullable=True)
-    # Optional per-language overrides, e.g. {"az": "...", "tr": "...", "ru": "..."}.
+    # "city" for regular cities (map label + sidebar entry); anything else
+    # (cafe/restaurant/hotel/...) is a user-added point of interest,
+    # rendered as a small marker only when zoomed in.
+    category = Column(String(32), nullable=False, default="city")
+    # Optional per-language overrides, e.g. {"az": "...", "tr": "...",
+    # "ru": "..."}.
     # `name`/`description` above remain the English fallback when a
     # translation is missing for the requested language.
     name_i18n = Column(JSON, nullable=True)

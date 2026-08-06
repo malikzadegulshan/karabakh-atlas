@@ -1,4 +1,4 @@
-# Karabakh Atlas
+# Karabakh Atlas - Dirchalish
 
 Karabakh Atlas is a map website project for exploring Karabakh and its
 cities through an interactive, visual interface. It's split into a

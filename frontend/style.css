@@ -457,10 +457,113 @@ aside.collapsed ~ #sidebar-toggle {
   margin-top: 0.6rem;
 }
 
-.admin-add-city-form input {
+.admin-add-city-form input,
+.admin-add-city-form .category-picker {
   width: auto;
   flex: 1;
   min-width: 90px;
+}
+
+.admin-add-city-form .pick-on-map,
+.admin-edit-city-form .pick-on-map {
+  align-self: center;
+  background: #e2e8f0;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+/* Category picker: a searchable combobox (plain <select> gets unwieldy
+   once there are 20+ categories). */
+
+.category-picker {
+  position: relative;
+}
+
+.category-picker-input {
+  width: 100%;
+}
+
+.category-picker-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 0.25rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.category-picker-menu[hidden] {
+  display: none;
+}
+
+.category-picker-menu .category-picker-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: #1f2937;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.category-picker-menu .category-picker-option:hover,
+.category-picker-menu .category-picker-option.active {
+  background: #f1f5f9;
+}
+
+.category-picker-empty {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Map coordinate picker */
+
+#map-pick-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  background: #221539;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+}
+
+#map-pick-banner[hidden] {
+  display: none;
+}
+
+#map-pick-cancel {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#map-pick-cancel:hover {
+  background: #374151;
 }
 
 /* Responsive: narrow (phone/small tablet) viewports */
@@ -525,11 +628,19 @@ aside.collapsed ~ #sidebar-toggle {
     flex-direction: column;
   }
 
-  .admin-add-city-form input {
+  .admin-add-city-form input,
+  .admin-add-city-form .category-picker {
     width: 100%;
   }
 
   .admin-add-city-form button {
     width: 100%;
+  }
+
+  #map-pick-banner {
+    width: min(320px, 90vw);
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
   }
 }

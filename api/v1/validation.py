@@ -61,6 +61,15 @@ def optional_i18n_dict(data, field):
                 "{} entries must map language codes to strings".format(field))
 
 
+def optional_enum(data, field, choices):
+    """Raise ValidationError if data[field] is present but not in choices."""
+    if field not in data or data[field] is None:
+        return
+    if data[field] not in choices:
+        raise ValidationError(
+            "{} must be one of: {}".format(field, ", ".join(sorted(choices))))
+
+
 def only_allowed_fields(data, allowed):
     """Raise ValidationError if data contains keys outside `allowed`."""
     unexpected = set(data) - allowed

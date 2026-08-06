@@ -14,6 +14,7 @@ REGIONS = {
             "name": "Khankendi",
             "latitude": 39.8288,
             "longitude": 46.7661,
+            "category": "city",
             "description": (
                 "A city in the Karabakh region of Azerbaijan. Since 2023, "
                 "the city has seen redevelopment projects including the "
@@ -72,6 +73,7 @@ REGIONS = {
             "name": "Shusha",
             "latitude": 39.7581,
             "longitude": 46.7469,
+            "category": "city",
             "description": (
                 "A historic city in the Karabakh region of Azerbaijan, "
                 "founded in the 18th century as the capital of the "
@@ -144,7 +146,8 @@ def get_or_create_region(name):
 
 CITY_FIELDS = (
     "name", "latitude", "longitude", "description", "alt_names",
-    "image_url", "image_credit", "name_i18n", "description_i18n",
+    "image_url", "image_credit", "category", "name_i18n",
+    "description_i18n",
 )
 
 
