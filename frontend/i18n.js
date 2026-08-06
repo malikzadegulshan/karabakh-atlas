@@ -19,6 +19,9 @@ const TRANSLATIONS = {
     layerSatellite: "Satellite",
     sidebarClose: "Close city list",
     sidebarOpen: "Open city list",
+    sectionCities: "Cities",
+    sectionRoads: "Roads",
+    sectionPois: "Points of Interest",
   },
   az: {
     title: "Qarabağ Atlası",
@@ -36,6 +39,9 @@ const TRANSLATIONS = {
     layerSatellite: "Peyk",
     sidebarClose: "Şəhər siyahısını bağla",
     sidebarOpen: "Şəhər siyahısını aç",
+    sectionCities: "Şəhərlər",
+    sectionRoads: "Yollar",
+    sectionPois: "Maraqlı yerlər",
   },
   tr: {
     title: "Karabağ Atlası",
@@ -52,6 +58,9 @@ const TRANSLATIONS = {
     layerSatellite: "Uydu",
     sidebarClose: "Şehir listesini kapat",
     sidebarOpen: "Şehir listesini aç",
+    sectionCities: "Şehirler",
+    sectionRoads: "Yollar",
+    sectionPois: "İlgi Çekici Yerler",
   },
   ru: {
     title: "Атлас Карабаха",
@@ -68,6 +77,9 @@ const TRANSLATIONS = {
     layerSatellite: "Спутник",
     sidebarClose: "Закрыть список городов",
     sidebarOpen: "Открыть список городов",
+    sectionCities: "Города",
+    sectionRoads: "Дороги",
+    sectionPois: "Интересные места",
   },
 };
 

@@ -91,6 +91,22 @@ class TestAPIViews(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(json.loads(response.data)["category"], "cafe")
 
+    def test_create_city_accepts_road_category(self):
+        """POST .../cities accepts the "road" category."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Main Street", "latitude": 1, "longitude": 1,
+                "category": "road",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(json.loads(response.data)["category"], "road")
+
     def test_create_city_rejects_unknown_category(self):
         """POST .../cities with an unrecognized category is rejected."""
         region = json.loads(self.client.post(
