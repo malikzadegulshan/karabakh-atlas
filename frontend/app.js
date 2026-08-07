@@ -8,12 +8,16 @@ if (!TRANSLATIONS[currentLang]) {
 }
 let lastCities = [];
 let layerControl = null;
+let searchQuery = "";
 
 function t(key) {
   return TRANSLATIONS[currentLang][key];
 }
 
-const map = L.map("map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+// Zoom control moves to the bottom-right (Leaflet's default top-left spot
+// would sit right under the floating search bar/buttons).
+const map = L.map("map", { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+L.control.zoom({ position: "bottomright" }).addTo(map);
 
 // CartoDB Positron: a clean, free/keyless basemap with place labels but
 // no baked-in amenity icons (cafe/restaurant/etc.), so our own
@@ -49,7 +53,7 @@ function refreshLayerControl() {
     .layers(
       { [t("layerStreets")]: streetLayer, [t("layerSatellite")]: satelliteLayer },
       null,
-      { position: "topleft" }
+      { position: "bottomright" }
     )
     .addTo(map);
 }
@@ -92,16 +96,11 @@ updateMarkersVisibility(streetLayer);
 updatePoiVisibility();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
-const roadListEl = document.getElementById("road-list");
-const poiListEl = document.getElementById("poi-list");
-const citiesSectionTitleEl = document.getElementById("cities-section-title");
-const roadsSectionTitleEl = document.getElementById("roads-section-title");
-const poiSectionTitleEl = document.getElementById("poi-section-title");
 const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
 const titleEl = document.getElementById("app-title");
-const subtitleEl = document.getElementById("app-subtitle");
+const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
@@ -115,14 +114,11 @@ function closeLangMenu() {
 function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
-  subtitleEl.textContent = t("subtitle");
+  searchInputEl.placeholder = t("searchPlaceholder");
   sidebarToggleEl.setAttribute(
     "aria-label",
     sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
   );
-  citiesSectionTitleEl.textContent = t("sectionCities");
-  roadsSectionTitleEl.textContent = t("sectionRoads");
-  poiSectionTitleEl.textContent = t("sectionPois");
   langToggleLabelEl.textContent = currentLang.toUpperCase();
   Array.from(langMenuEl.children).forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
@@ -146,7 +142,7 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
-  renderCities(lastCities);
+  applyFilterAndRender();
 });
 
 document.addEventListener("click", (event) => {
@@ -229,10 +225,8 @@ function cityInfoHtml(city) {
 
 function showCityDetail(city) {
   detailEl.innerHTML = cityInfoHtml(city);
-  [listEl, roadListEl, poiListEl].forEach((list) => {
-    Array.from(list.children).forEach((li) => {
-      li.classList.toggle("active", li.dataset.cityId === city.id);
-    });
+  Array.from(listEl.children).forEach((li) => {
+    li.classList.toggle("active", li.dataset.cityId === city.id);
   });
 }
 
@@ -286,63 +280,30 @@ function buildMarker(city) {
     .addTo(markersLayer);
 }
 
-function sidebarListFor(city) {
-  if (city.category === "road") {
-    return roadListEl;
-  }
-  return isPoi(city) ? poiListEl : listEl;
-}
-
-function buildListItem(city, marker, targetListEl) {
+function buildListItem(city, marker) {
   const li = document.createElement("li");
   li.textContent = localizedName(city);
   li.dataset.cityId = city.id;
   li.addEventListener("click", () => {
-    const targetZoom = isPoi(city)
-      ? Math.max(map.getZoom(), POI_MIN_ZOOM)
-      : 12;
-    map.setView([city.latitude, city.longitude], targetZoom);
-    if (isPoi(city) && !map.hasLayer(poiMarkersLayer)) {
-      // Make sure the marker is actually on the map (zoomend, which
-      // normally handles this, may not have fired yet) before opening
-      // its popup.
-      map.addLayer(poiMarkersLayer);
-    }
+    map.setView([city.latitude, city.longitude], 12);
     marker.openPopup();
     showCityDetail(city);
   });
-  targetListEl.appendChild(li);
+  listEl.appendChild(li);
 }
 
 function renderCities(cities) {
   markersLayer.clearLayers();
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
-  roadListEl.innerHTML = "";
-  poiListEl.innerHTML = "";
   detailEl.innerHTML = "";
 
   if (cities.length === 0) {
     setStatus(t("noCities"), false);
-    roadsSectionTitleEl.hidden = true;
-    roadListEl.hidden = true;
-    poiSectionTitleEl.hidden = true;
-    poiListEl.hidden = true;
     return;
   }
 
   setStatus(t("citiesLoaded")(cities.length), false);
-
-  // Cities get their own persistent map label and always show in the
-  // "Cities" section; roads and everything else are user-added points
-  // of interest, kept in their own sections so they don't clutter the
-  // city list.
-  const roads = cities.filter((c) => c.category === "road");
-  const pois = cities.filter((c) => isPoi(c) && c.category !== "road");
-  roadsSectionTitleEl.hidden = roads.length === 0;
-  roadListEl.hidden = roads.length === 0;
-  poiSectionTitleEl.hidden = pois.length === 0;
-  poiListEl.hidden = pois.length === 0;
 
   const bounds = [];
   cities.forEach((city) => {
@@ -350,11 +311,36 @@ function renderCities(cities) {
     marker.bindPopup(cityInfoHtml(city));
     marker.on("click", () => showCityDetail(city));
     bounds.push([city.latitude, city.longitude]);
-    buildListItem(city, marker, sidebarListFor(city));
+    // Roads and other points of interest still show up as markers on
+    // the map, but only cities get a sidebar entry — the sidebar is
+    // meant as a quick city index, not a listing of every added point.
+    if (!isPoi(city)) {
+      buildListItem(city, marker);
+    }
   });
 
   map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
 }
+
+function matchesSearch(city) {
+  if (!searchQuery) {
+    return true;
+  }
+  const q = searchQuery.toLowerCase();
+  return (
+    localizedName(city).toLowerCase().includes(q) ||
+    city.name.toLowerCase().includes(q)
+  );
+}
+
+function applyFilterAndRender() {
+  renderCities(lastCities.filter(matchesSearch));
+}
+
+searchInputEl.addEventListener("input", () => {
+  searchQuery = searchInputEl.value.trim();
+  applyFilterAndRender();
+});
 
 async function loadCities() {
   try {
@@ -364,7 +350,7 @@ async function loadCities() {
     }
     const cities = await res.json();
     lastCities = cities;
-    renderCities(cities);
+    applyFilterAndRender();
   } catch (err) {
     setStatus(t("apiError")(API_BASE, err.message), true);
   }

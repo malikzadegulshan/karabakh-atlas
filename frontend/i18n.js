@@ -6,7 +6,7 @@
 const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
-    subtitle: "MVP demo — cities loaded live from the backend API.",
+    searchPlaceholder: "Search cities…",
     loading: "Loading…",
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
@@ -19,13 +19,10 @@ const TRANSLATIONS = {
     layerSatellite: "Satellite",
     sidebarClose: "Close city list",
     sidebarOpen: "Open city list",
-    sectionCities: "Cities",
-    sectionRoads: "Roads",
-    sectionPois: "Points of Interest",
   },
   az: {
     title: "Qarabağ Atlası",
-    subtitle: "MVP demosu — şəhərlər backend API-dən canlı yüklənir.",
+    searchPlaceholder: "Şəhər axtar…",
     loading: "Yüklənir…",
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
@@ -39,13 +36,10 @@ const TRANSLATIONS = {
     layerSatellite: "Peyk",
     sidebarClose: "Şəhər siyahısını bağla",
     sidebarOpen: "Şəhər siyahısını aç",
-    sectionCities: "Şəhərlər",
-    sectionRoads: "Yollar",
-    sectionPois: "Maraqlı yerlər",
   },
   tr: {
     title: "Karabağ Atlası",
-    subtitle: "MVP demo — şehirler backend API'den canlı yükleniyor.",
+    searchPlaceholder: "Şehir ara…",
     loading: "Yükleniyor…",
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
@@ -58,13 +52,10 @@ const TRANSLATIONS = {
     layerSatellite: "Uydu",
     sidebarClose: "Şehir listesini kapat",
     sidebarOpen: "Şehir listesini aç",
-    sectionCities: "Şehirler",
-    sectionRoads: "Yollar",
-    sectionPois: "İlgi Çekici Yerler",
   },
   ru: {
     title: "Атлас Карабаха",
-    subtitle: "MVP-демо — города загружаются напрямую с backend API.",
+    searchPlaceholder: "Поиск городов…",
     loading: "Загрузка…",
     noCities:
       "Backend доступен, но города ещё не добавлены. Используйте " +
@@ -77,9 +68,6 @@ const TRANSLATIONS = {
     layerSatellite: "Спутник",
     sidebarClose: "Закрыть список городов",
     sidebarOpen: "Открыть список городов",
-    sectionCities: "Города",
-    sectionRoads: "Дороги",
-    sectionPois: "Интересные места",
   },
 };
 
