@@ -280,6 +280,25 @@ aside.collapsed ~ #sidebar-toggle {
   pointer-events: auto;
 }
 
+.poi-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.poi-marker {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
 /* Admin panel */
 
 #admin-overlay {
