@@ -508,8 +508,14 @@ aside.collapsed ~ #sidebar-toggle {
   margin-top: 0.6rem;
 }
 
-.admin-add-city-form input,
-.admin-add-city-form .category-picker {
+/* Direct-child combinator (>), not a plain descendant selector: the
+   category picker's own <input> is also an `input` nested inside this
+   form, and a descendant selector here would win by specificity over
+   `.category-picker-input`'s own width:100%, shrinking it to the
+   browser's default ~20-character width regardless of its content —
+   very visible with long translated category names. */
+.admin-add-city-form > input,
+.admin-add-city-form > .category-picker {
   /* A non-zero flex-basis (instead of the flex:1 shorthand's 0%) makes
      the wrap algorithm account for each item's real size, so a row that
      doesn't fit wraps onto a new line instead of silently overflowing
@@ -727,8 +733,8 @@ aside.collapsed ~ #sidebar-toggle {
     flex-direction: column;
   }
 
-  .admin-add-city-form input,
-  .admin-add-city-form .category-picker {
+  .admin-add-city-form > input,
+  .admin-add-city-form > .category-picker {
     width: 100%;
   }
 
