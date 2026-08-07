@@ -14,7 +14,7 @@ const TRANSLATIONS = {
     citiesLoaded: (n) => `${n} cit${n === 1 ? "y" : "ies"} loaded.`,
     apiError: (base, msg) =>
       `Could not reach the API at ${base}. Is the backend running? (${msg})`,
-    noInfo: "No information added for this city yet.",
+    noInfo: "No information added for this point yet.",
     layerStreets: "Streets",
     layerSatellite: "Satellite",
     layerHistorical: "Historical",
@@ -33,7 +33,7 @@ const TRANSLATIONS = {
     apiError: (base, msg) =>
       `${base} ünvanındakı API-yə qoşulmaq mümkün olmadı. Backend ` +
       `işləyirmi? (${msg})`,
-    noInfo: "Bu şəhər üçün hələ məlumat əlavə edilməyib.",
+    noInfo: "Bu yer üçün hələ məlumat əlavə edilməyib.",
     layerStreets: "Küçələr",
     layerSatellite: "Peyk",
     layerHistorical: "Tarixi",
@@ -51,7 +51,7 @@ const TRANSLATIONS = {
     citiesLoaded: (n) => `${n} şehir yüklendi.`,
     apiError: (base, msg) =>
       `${base} adresindeki API'ye ulaşılamadı. Backend çalışıyor mu? (${msg})`,
-    noInfo: "Bu şehir için henüz bilgi eklenmedi.",
+    noInfo: "Bu yer için henüz bilgi eklenmedi.",
     layerStreets: "Sokaklar",
     layerSatellite: "Uydu",
     layerHistorical: "Tarihi",
@@ -64,7 +64,7 @@ const TRANSLATIONS = {
     searchPlaceholder: "Поиск городов…",
     loading: "Загрузка…",
     noCities:
-      "Backend доступен, но города ещё не добавлены. Используйте " +
+      "Backend доступен, но зона ещё не добавлены. Используйте " +
       "console.py или API, чтобы добавить их.",
     citiesLoaded: (n) => `Загружено городов: ${n}.`,
     apiError: (base, msg) =>
