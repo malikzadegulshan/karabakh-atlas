@@ -4,83 +4,71 @@
 
 const ADMIN_API_KEY_STORAGE = "kba_admin_api_key";
 
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const CITY_CATEGORIES = [
-  { value: "city", label: "City" },
-  { value: "road", label: "Road" },
-  { value: "cafe", label: "Cafe" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "hotel", label: "Hotel" },
-  { value: "landmark", label: "Landmark" },
-  { value: "museum", label: "Museum" },
-  { value: "park", label: "Park" },
-  { value: "university", label: "University" },
-  { value: "school", label: "School" },
-  { value: "hospital", label: "Hospital" },
-  { value: "pharmacy", label: "Pharmacy" },
-  { value: "bank", label: "Bank" },
-  { value: "government", label: "Government office" },
-  { value: "police", label: "Police" },
-  { value: "fire_station", label: "Fire station" },
-  { value: "mosque", label: "Mosque" },
-  { value: "church", label: "Church" },
-  { value: "fuel_station", label: "Fuel station" },
-  { value: "parking", label: "Parking" },
-  { value: "shop", label: "Shop" },
-  { value: "other", label: "Other" },
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py. Display
+// labels come from TRANSLATIONS[currentLang].categories so they follow
+// the language switcher; only the values are shared with the backend.
+const CITY_CATEGORY_VALUES = [
+  "city", "road", "cafe", "restaurant", "hotel", "landmark", "museum",
+  "park", "university", "school", "hospital", "pharmacy", "bank",
+  "government", "police", "fire_station", "mosque", "church",
+  "fuel_station", "parking", "shop", "other",
 ];
+
+function categoryLabel(value) {
+  return (t("categories") && t("categories")[value]) || value;
+}
 
 // A searchable combobox for picking a category — plain <select> gets
 // unwieldy once there are 20+ categories, so this filters as you type.
 function buildCategoryPicker(selectedValue) {
-  const initial =
-    CITY_CATEGORIES.find((c) => c.value === selectedValue) ||
-    CITY_CATEGORIES[0];
+  const initialValue = CITY_CATEGORY_VALUES.includes(selectedValue)
+    ? selectedValue
+    : CITY_CATEGORY_VALUES[0];
 
   const wrapper = document.createElement("div");
   wrapper.className = "category-picker";
-  wrapper.dataset.value = initial.value;
+  wrapper.dataset.value = initialValue;
 
   const input = document.createElement("input");
   input.type = "text";
   input.className = "category-picker-input";
   input.autocomplete = "off";
-  input.value = initial.label;
+  input.value = categoryLabel(initialValue);
 
   const menu = document.createElement("div");
   menu.className = "category-picker-menu";
   menu.hidden = true;
 
   function selectedLabel() {
-    const current = CITY_CATEGORIES.find((c) => c.value === wrapper.dataset.value);
-    return current ? current.label : "";
+    return categoryLabel(wrapper.dataset.value);
   }
 
   function renderOptions(query) {
     menu.innerHTML = "";
     const q = query.trim().toLowerCase();
-    const matches = CITY_CATEGORIES.filter((c) => c.label.toLowerCase().includes(q));
+    const matches = CITY_CATEGORY_VALUES.filter((value) =>
+      categoryLabel(value).toLowerCase().includes(q));
     if (matches.length === 0) {
       const empty = document.createElement("div");
       empty.className = "category-picker-empty";
-      empty.textContent = "No matching category";
+      empty.textContent = t("categoryNoMatch");
       menu.appendChild(empty);
       return;
     }
-    matches.forEach((c) => {
+    matches.forEach((value) => {
       const option = document.createElement("button");
       option.type = "button";
       option.className = "category-picker-option";
-      if (c.value === wrapper.dataset.value) {
+      if (value === wrapper.dataset.value) {
         option.classList.add("active");
       }
-      option.textContent = c.label;
+      option.textContent = categoryLabel(value);
       option.addEventListener("mousedown", (event) => {
         // mousedown (not click) fires before the input's blur handler,
         // so the selection lands before blur snaps the text back.
         event.preventDefault();
-        wrapper.dataset.value = c.value;
-        input.value = c.label;
+        wrapper.dataset.value = value;
+        input.value = categoryLabel(value);
         menu.hidden = true;
       });
       menu.appendChild(option);
@@ -134,9 +122,13 @@ function categoryPickerValue(picker) {
 
 const adminOverlayEl = document.getElementById("admin-overlay");
 const adminToggleEl = document.getElementById("admin-toggle");
+const adminTitleEl = document.getElementById("admin-title");
 const adminCloseEl = document.getElementById("admin-close");
 const adminMessageEl = document.getElementById("admin-message");
 const adminApiKeyEl = document.getElementById("admin-api-key");
+const adminApiKeyLabelEl = document.getElementById("admin-api-key-label");
+const adminAddRegionTitleEl = document.getElementById("admin-add-region-title");
+const adminRegionsTitleEl = document.getElementById("admin-regions-title");
 const regionFormEl = document.getElementById("region-form");
 const regionNameInputEl = document.getElementById("region-name-input");
 const regionDescriptionInputEl = document.getElementById("region-description-input");
@@ -147,6 +139,18 @@ adminApiKeyEl.value = localStorage.getItem(ADMIN_API_KEY_STORAGE) || "";
 adminApiKeyEl.addEventListener("input", () => {
   localStorage.setItem(ADMIN_API_KEY_STORAGE, adminApiKeyEl.value);
 });
+
+function applyAdminStaticTranslations() {
+  adminToggleEl.textContent = t("adminToggle");
+  adminTitleEl.textContent = t("adminTitle");
+  adminCloseEl.setAttribute("aria-label", t("adminClose"));
+  adminApiKeyLabelEl.textContent = t("adminApiKeyLabel");
+  adminAddRegionTitleEl.textContent = t("adminAddRegionTitle");
+  regionFormSubmitEl.textContent = t("adminAddRegionSubmit");
+  adminRegionsTitleEl.textContent = t("adminRegionsTitle");
+  mapPickInstructionEl.textContent = t("mapPickInstruction");
+  mapPickCancelEl.textContent = t("mapPickCancel");
+}
 
 function adminHeaders() {
   const headers = { "Content-Type": "application/json" };
@@ -171,6 +175,7 @@ function clearAdminMessage() {
 function openAdminPanel() {
   adminOverlayEl.hidden = false;
   clearAdminMessage();
+  applyAdminStaticTranslations();
   refreshAdminData();
 }
 
@@ -192,6 +197,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 const mapPickBannerEl = document.getElementById("map-pick-banner");
+const mapPickInstructionEl = mapPickBannerEl.querySelector("span");
 const mapPickCancelEl = document.getElementById("map-pick-cancel");
 let activePick = null;
 
@@ -253,7 +259,7 @@ regionFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = regionNameInputEl.value.trim();
   if (!name) {
-    showAdminMessage("Region name can't be empty.", true);
+    showAdminMessage(t("regionNameEmpty"), true);
     return;
   }
   regionFormSubmitEl.disabled = true;
@@ -262,7 +268,7 @@ regionFormEl.addEventListener("submit", async (event) => {
       name,
       description: regionDescriptionInputEl.value.trim() || null,
     });
-    showAdminMessage(`Region "${name}" created.`, false);
+    showAdminMessage(t("regionCreated")(name), false);
     regionFormEl.reset();
     await refreshAdminData();
   } catch (err) {
@@ -273,7 +279,7 @@ regionFormEl.addEventListener("submit", async (event) => {
 });
 
 async function refreshAdminData() {
-  adminRegionsListEl.textContent = "Loading…";
+  adminRegionsListEl.textContent = t("adminLoading");
   try {
     const [regions, cities] = await Promise.all([
       apiRequest("GET", "/regions"),
@@ -291,7 +297,7 @@ function renderAdminRegions(regions, cities) {
   if (regions.length === 0) {
     const empty = document.createElement("p");
     empty.className = "admin-empty";
-    empty.textContent = "No regions yet — add one above.";
+    empty.textContent = t("adminNoRegions");
     adminRegionsListEl.appendChild(empty);
     return;
   }
@@ -318,13 +324,13 @@ function buildAdminRegionCard(region, regionCities) {
 
   const editBtn = document.createElement("button");
   editBtn.type = "button";
-  editBtn.textContent = "Edit";
+  editBtn.textContent = t("adminEdit");
   editBtn.addEventListener("click", () => startEditRegion(region));
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.className = "danger";
-  deleteBtn.textContent = "Delete";
+  deleteBtn.textContent = t("adminDelete");
   deleteBtn.addEventListener("click", () => deleteRegion(region));
 
   actions.appendChild(editBtn);
@@ -344,7 +350,7 @@ function buildAdminRegionCard(region, regionCities) {
   if (regionCities.length === 0) {
     const li = document.createElement("li");
     li.className = "admin-empty";
-    li.textContent = "No cities in this region yet.";
+    li.textContent = t("adminNoCities");
     cityList.appendChild(li);
   } else {
     regionCities.forEach((city) => cityList.appendChild(buildAdminCityRow(city)));
@@ -361,7 +367,9 @@ function buildAdminCityRow(city) {
   li.dataset.cityId = city.id;
 
   const label = document.createElement("span");
-  const categoryTag = city.category && city.category !== "city" ? ` [${city.category}]` : "";
+  const categoryTag = city.category && city.category !== "city"
+    ? ` [${categoryLabel(city.category)}]`
+    : "";
   label.textContent = `${city.name}${categoryTag} (${city.latitude}, ${city.longitude})`;
   li.appendChild(label);
 
@@ -370,13 +378,13 @@ function buildAdminCityRow(city) {
 
   const editBtn = document.createElement("button");
   editBtn.type = "button";
-  editBtn.textContent = "Edit";
+  editBtn.textContent = t("adminEdit");
   editBtn.addEventListener("click", () => startEditCity(city));
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.className = "danger";
-  deleteBtn.textContent = "Delete";
+  deleteBtn.textContent = t("adminDelete");
   deleteBtn.addEventListener("click", () => deleteCity(city));
 
   actions.appendChild(editBtn);
@@ -392,20 +400,20 @@ function buildAddCityForm(region) {
 
   const nameInput = document.createElement("input");
   nameInput.type = "text";
-  nameInput.placeholder = "Name";
+  nameInput.placeholder = t("fieldName");
   nameInput.required = true;
   nameInput.maxLength = 128;
 
   const latInput = document.createElement("input");
   latInput.type = "number";
   latInput.step = "any";
-  latInput.placeholder = "Latitude";
+  latInput.placeholder = t("fieldLatitude");
   latInput.required = true;
 
   const lngInput = document.createElement("input");
   lngInput.type = "number";
   lngInput.step = "any";
-  lngInput.placeholder = "Longitude";
+  lngInput.placeholder = t("fieldLongitude");
   lngInput.required = true;
 
   const categoryPicker = buildCategoryPicker("city");
@@ -413,12 +421,12 @@ function buildAddCityForm(region) {
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
   pickOnMapBtn.className = "pick-on-map";
-  pickOnMapBtn.textContent = "Pick on map";
+  pickOnMapBtn.textContent = t("adminPickOnMap");
   pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
 
   const submit = document.createElement("button");
   submit.type = "submit";
-  submit.textContent = "Add city";
+  submit.textContent = t("adminAddCity");
 
   form.appendChild(nameInput);
   form.appendChild(latInput);
@@ -433,8 +441,7 @@ function buildAddCityForm(region) {
     const latitude = parseFloat(latInput.value);
     const longitude = parseFloat(lngInput.value);
     if (!name || Number.isNaN(latitude) || Number.isNaN(longitude)) {
-      showAdminMessage(
-        "Please fill in a valid name, latitude, and longitude.", true);
+      showAdminMessage(t("invalidCityFields"), true);
       return;
     }
     submit.disabled = true;
@@ -442,7 +449,7 @@ function buildAddCityForm(region) {
       await apiRequest(
         "POST", `/regions/${region.id}/cities`,
         { name, latitude, longitude, category: categoryPickerValue(categoryPicker) });
-      showAdminMessage(`City "${name}" added.`, false);
+      showAdminMessage(t("cityAdded")(name), false);
       await refreshAdminData();
       await loadCities();
     } catch (err) {
@@ -480,11 +487,11 @@ function startEditRegion(region) {
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "submit";
-  saveBtn.textContent = "Save";
+  saveBtn.textContent = t("adminSave");
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = t("adminCancel");
   cancelBtn.addEventListener("click", refreshAdminData);
 
   actions.appendChild(saveBtn);
@@ -497,7 +504,7 @@ function startEditRegion(region) {
     event.preventDefault();
     const name = nameInput.value.trim();
     if (!name) {
-      showAdminMessage("Region name can't be empty.", true);
+      showAdminMessage(t("regionNameEmpty"), true);
       return;
     }
     saveBtn.disabled = true;
@@ -505,7 +512,7 @@ function startEditRegion(region) {
       await apiRequest("PUT", `/regions/${region.id}`, {
         name, description: descInput.value.trim() || null,
       });
-      showAdminMessage(`Region "${name}" updated.`, false);
+      showAdminMessage(t("regionUpdated")(name), false);
       await refreshAdminData();
       await loadCities();
     } catch (err) {
@@ -547,7 +554,7 @@ function startEditCity(city) {
 
   const descInput = document.createElement("textarea");
   descInput.rows = 2;
-  descInput.placeholder = "Description";
+  descInput.placeholder = t("fieldDescription");
   descInput.value = city.description || "";
 
   const categoryPicker = buildCategoryPicker(city.category);
@@ -555,7 +562,7 @@ function startEditCity(city) {
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
   pickOnMapBtn.className = "pick-on-map";
-  pickOnMapBtn.textContent = "Pick on map";
+  pickOnMapBtn.textContent = t("adminPickOnMap");
   pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
 
   const actions = document.createElement("div");
@@ -563,11 +570,11 @@ function startEditCity(city) {
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "submit";
-  saveBtn.textContent = "Save";
+  saveBtn.textContent = t("adminSave");
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = t("adminCancel");
   cancelBtn.addEventListener("click", refreshAdminData);
 
   actions.appendChild(saveBtn);
@@ -586,8 +593,7 @@ function startEditCity(city) {
     const latitude = parseFloat(latInput.value);
     const longitude = parseFloat(lngInput.value);
     if (!name || Number.isNaN(latitude) || Number.isNaN(longitude)) {
-      showAdminMessage(
-        "Please fill in a valid name, latitude, and longitude.", true);
+      showAdminMessage(t("invalidCityFields"), true);
       return;
     }
     saveBtn.disabled = true;
@@ -597,7 +603,7 @@ function startEditCity(city) {
         category: categoryPickerValue(categoryPicker),
         description: descInput.value.trim() || null,
       });
-      showAdminMessage(`City "${name}" updated.`, false);
+      showAdminMessage(t("cityUpdated")(name), false);
       await refreshAdminData();
       await loadCities();
     } catch (err) {
@@ -610,14 +616,13 @@ function startEditCity(city) {
 }
 
 async function deleteRegion(region) {
-  const ok = window.confirm(
-    `Delete region "${region.name}" and all its cities? This can't be undone.`);
+  const ok = window.confirm(t("confirmDeleteRegion")(region.name));
   if (!ok) {
     return;
   }
   try {
     await apiRequest("DELETE", `/regions/${region.id}`);
-    showAdminMessage(`Region "${region.name}" deleted.`, false);
+    showAdminMessage(t("regionDeleted")(region.name), false);
     await refreshAdminData();
     await loadCities();
   } catch (err) {
@@ -626,16 +631,18 @@ async function deleteRegion(region) {
 }
 
 async function deleteCity(city) {
-  const ok = window.confirm(`Delete city "${city.name}"? This can't be undone.`);
+  const ok = window.confirm(t("confirmDeleteCity")(city.name));
   if (!ok) {
     return;
   }
   try {
     await apiRequest("DELETE", `/cities/${city.id}`);
-    showAdminMessage(`City "${city.name}" deleted.`, false);
+    showAdminMessage(t("cityDeleted")(city.name), false);
     await refreshAdminData();
     await loadCities();
   } catch (err) {
     showAdminMessage(err.message, true);
   }
 }
+
+applyAdminStaticTranslations();
