@@ -6,7 +6,7 @@
 const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
-    searchPlaceholder: "Search cities…",
+    searchPlaceholder: "Search places…",
     loading: "Loading…",
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
@@ -24,7 +24,7 @@ const TRANSLATIONS = {
   },
   az: {
     title: "Qarabağ Atlası",
-    searchPlaceholder: "Şəhər axtar…",
+    searchPlaceholder: "Yer axtar…",
     loading: "Yüklənir…",
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
@@ -43,7 +43,7 @@ const TRANSLATIONS = {
   },
   tr: {
     title: "Karabağ Atlası",
-    searchPlaceholder: "Şehir ara…",
+    searchPlaceholder: "Yer ara…",
     loading: "Yükleniyor…",
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
@@ -61,7 +61,7 @@ const TRANSLATIONS = {
   },
   ru: {
     title: "Атлас Карабаха",
-    searchPlaceholder: "Поиск городов…",
+    searchPlaceholder: "Поиск местов…",
     loading: "Загрузка…",
     noCities:
       "Backend доступен, но зона ещё не добавлены. Используйте " +
