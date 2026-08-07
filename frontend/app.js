@@ -249,7 +249,10 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
-  applyFilterAndRender();
+  // Only the labels change here, not the underlying data, so don't
+  // re-fit the map to the markers — that was resetting the user's pan
+  // and zoom on every language switch.
+  applyFilterAndRender({ fitBounds: false });
 });
 
 document.addEventListener("click", (event) => {
@@ -362,19 +365,47 @@ const POI_COLORS = {
   other: "#334155",
 };
 
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_ICONS = {
+  road: "🛣️",
+  cafe: "☕",
+  restaurant: "🍽️",
+  hotel: "🏨",
+  landmark: "🗿",
+  museum: "🏛️",
+  park: "🌳",
+  university: "🎓",
+  school: "📚",
+  hospital: "🏥",
+  pharmacy: "💊",
+  bank: "🏦",
+  government: "🏢",
+  police: "👮",
+  fire_station: "🚒",
+  mosque: "🕌",
+  church: "⛪",
+  fuel_station: "⛽",
+  parking: "🅿️",
+  shop: "🛍️",
+  other: "📍",
+};
+
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
 }
 
 function buildMarker(city) {
   if (isPoi(city)) {
-    return L.circleMarker([city.latitude, city.longitude], {
-      radius: 7,
-      weight: 2,
-      color: "#fff",
-      fillColor: POI_COLORS[city.category] || POI_COLORS.other,
-      fillOpacity: 0.9,
-    }).addTo(poiMarkersLayer);
+    const badgeIcon = L.divIcon({
+      className: "poi-marker-wrapper",
+      html:
+        `<div class="poi-marker" style="background:${POI_COLORS[city.category] || POI_COLORS.other}">` +
+        `${POI_ICONS[city.category] || POI_ICONS.other}</div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 13],
+    });
+    return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
+      .addTo(poiMarkersLayer);
   }
   const name = localizedName(city);
   const labelIcon = L.divIcon({
@@ -399,7 +430,7 @@ function buildListItem(city, marker) {
   listEl.appendChild(li);
 }
 
-function renderCities(cities) {
+function renderCities(cities, { fitBounds = true } = {}) {
   markersLayer.clearLayers();
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
@@ -426,7 +457,9 @@ function renderCities(cities) {
     }
   });
 
-  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+  if (fitBounds) {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+  }
 }
 
 function matchesSearch(city) {
@@ -440,8 +473,8 @@ function matchesSearch(city) {
   );
 }
 
-function applyFilterAndRender() {
-  renderCities(lastCities.filter(matchesSearch));
+function applyFilterAndRender(options) {
+  renderCities(lastCities.filter(matchesSearch), options);
 }
 
 searchInputEl.addEventListener("input", () => {
