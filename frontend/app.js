@@ -43,38 +43,77 @@ const satelliteLayer = L.tileLayer(
   }
 );
 
-// NASA GIBS: free, keyless daily satellite imagery (MODIS Terra) going
-// back to February 2000 — the oldest imagery we can get without a paid
-// provider. Its native resolution is ~250m/pixel (vs street-level for
-// the Esri layer above). `maxNativeZoom` stops Leaflet from blowing the
-// same low-res tile up to fill a much closer zoom (that upscaling is
-// what makes it look pixelated); the layer's own `maxZoom` is left
-// permissive on purpose — Leaflet's layer-switcher control disables any
-// base layer whose maxZoom is below the map's *current* zoom, which
-// would make Historical unselectable while browsing a city. The zoom
-// cap while Historical is active is instead enforced on the map itself,
-// below, so switching layers is never blocked.
-const GIBS_MIN_YEAR = 2000;
-const GIBS_MAX_YEAR = new Date().getFullYear();
-const GIBS_MAX_ZOOM = 9;
-const DEFAULT_MAX_ZOOM = 19;
-let selectedYear = GIBS_MAX_YEAR;
+// Esri World Imagery Wayback: the same high-resolution basemap as the
+// Satellite layer above, just at different capture dates — free,
+// keyless, and genuinely zoomable (unlike coarse ~250m/pixel sources
+// like NASA MODIS), at the cost of only reaching back to ~2014 instead
+// of the early 2000s. Release dates/tile URLs come from Esri's own
+// published config rather than being guessed at, since the exact
+// per-release tile path isn't otherwise documented.
+const WAYBACK_CONFIG_URL =
+  "https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json";
+const WAYBACK_FALLBACK_MIN_YEAR = 2014;
+let waybackReleases = []; // [{ date, urlTemplate }], sorted oldest to newest
+let selectedYear = new Date().getFullYear();
 
-function gibsUrlForYear(year) {
-  return (
-    "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" +
-    `MODIS_Terra_CorrectedReflectance_TrueColor/default/${year}-07-15/` +
-    "GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg"
-  );
+const historicalLayer = L.tileLayer("", {
+  maxZoom: 19,
+  attribution:
+    "Imagery: Esri World Imagery Wayback — Source: Esri, Maxar, " +
+    "Earthstar Geographics, and the GIS User Community",
+});
+
+function releaseForYear(year) {
+  const target = new Date(`${year}-07-15`);
+  return waybackReleases.reduce((closest, release) => {
+    const diff = Math.abs(release.date - target);
+    return diff < Math.abs(closest.date - target) ? release : closest;
+  }, waybackReleases[0]);
 }
 
-const historicalLayer = L.tileLayer(gibsUrlForYear(selectedYear), {
-  maxZoom: DEFAULT_MAX_ZOOM,
-  maxNativeZoom: GIBS_MAX_ZOOM,
-  attribution:
-    "Imagery: NASA GIBS / MODIS Terra (a single day per year — expect " +
-    "cloud cover in some spots)",
-});
+function applySelectedYear() {
+  if (waybackReleases.length === 0) {
+    return;
+  }
+  historicalLayer.setUrl(releaseForYear(selectedYear).urlTemplate);
+}
+
+async function loadWaybackReleases() {
+  try {
+    const res = await fetch(WAYBACK_CONFIG_URL);
+    if (!res.ok) {
+      throw new Error(`Wayback config returned ${res.status}`);
+    }
+    const config = await res.json();
+    const releases = [];
+    Object.values(config).forEach((entry) => {
+      const dateMatch = /(\d{4}-\d{2}-\d{2})/.exec(entry.itemTitle || "");
+      if (!dateMatch || !entry.itemURL) {
+        return;
+      }
+      releases.push({
+        date: new Date(dateMatch[1]),
+        urlTemplate: entry.itemURL
+          .replace("{level}", "{z}")
+          .replace("{row}", "{y}")
+          .replace("{col}", "{x}"),
+      });
+    });
+    releases.sort((a, b) => a.date - b.date);
+    if (releases.length === 0) {
+      return;
+    }
+    waybackReleases = releases;
+    yearSliderEl.min = releases[0].date.getFullYear();
+    yearSliderEl.max = releases[releases.length - 1].date.getFullYear();
+    yearSliderEl.value = selectedYear;
+    applySelectedYear();
+  } catch (err) {
+    // Leave the fallback slider range in place; the layer just won't
+    // have tiles until this succeeds (same degradation as any other
+    // tile provider being unreachable).
+  }
+}
 
 streetLayer.addTo(map);
 
@@ -131,9 +170,12 @@ const timelineEl = document.getElementById("timeline");
 const yearSliderEl = document.getElementById("year-slider");
 const yearLabelEl = document.getElementById("year-label");
 
-yearSliderEl.min = GIBS_MIN_YEAR;
-yearSliderEl.max = GIBS_MAX_YEAR;
+// Placeholder range until the real Wayback release list loads (or, if
+// that fetch fails, what stays in effect as a fallback).
+yearSliderEl.min = WAYBACK_FALLBACK_MIN_YEAR;
+yearSliderEl.max = selectedYear;
 yearSliderEl.value = selectedYear;
+loadWaybackReleases();
 
 function updateYearLabel() {
   yearLabelEl.textContent = t("yearLabel")(selectedYear);
@@ -142,32 +184,16 @@ function updateYearLabel() {
 yearSliderEl.addEventListener("input", () => {
   selectedYear = Number(yearSliderEl.value);
   updateYearLabel();
-  historicalLayer.setUrl(gibsUrlForYear(selectedYear));
+  applySelectedYear();
 });
 
 function updateTimelineVisibility(activeLayer) {
   timelineEl.hidden = activeLayer !== historicalLayer;
 }
 
-// Zooming in past the Historical layer's real resolution is what makes
-// it look pixelated, so cap the map's own zoom while it's active (this
-// also disables the "+" zoom button once you hit the cap) and zoom back
-// out immediately if you switched to it from a closer view.
-function updateZoomCapForLayer(activeLayer) {
-  if (activeLayer === historicalLayer) {
-    if (map.getZoom() > GIBS_MAX_ZOOM) {
-      map.setZoom(GIBS_MAX_ZOOM);
-    }
-    map.setMaxZoom(GIBS_MAX_ZOOM);
-  } else {
-    map.setMaxZoom(DEFAULT_MAX_ZOOM);
-  }
-}
-
 map.on("baselayerchange", (event) => {
   updateMarkersVisibility(event.layer);
   updateTimelineVisibility(event.layer);
-  updateZoomCapForLayer(event.layer);
 });
 map.on("zoomend", updatePoiVisibility);
 updateMarkersVisibility(streetLayer);
