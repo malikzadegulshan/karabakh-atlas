@@ -6,7 +6,7 @@
 const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
-    subtitle: "MVP demo — cities loaded live from the backend API.",
+    searchPlaceholder: "Search cities…",
     loading: "Loading…",
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
@@ -17,15 +17,14 @@ const TRANSLATIONS = {
     noInfo: "No information added for this city yet.",
     layerStreets: "Streets",
     layerSatellite: "Satellite",
+    layerHistorical: "Historical",
+    yearLabel: (year) => `Year: ${year}`,
     sidebarClose: "Close city list",
     sidebarOpen: "Open city list",
-    sectionCities: "Cities",
-    sectionRoads: "Roads",
-    sectionPois: "Points of Interest",
   },
   az: {
     title: "Qarabağ Atlası",
-    subtitle: "MVP demosu — şəhərlər backend API-dən canlı yüklənir.",
+    searchPlaceholder: "Şəhər axtar…",
     loading: "Yüklənir…",
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
@@ -37,15 +36,14 @@ const TRANSLATIONS = {
     noInfo: "Bu şəhər üçün hələ məlumat əlavə edilməyib.",
     layerStreets: "Küçələr",
     layerSatellite: "Peyk",
+    layerHistorical: "Tarixi",
+    yearLabel: (year) => `İl: ${year}`,
     sidebarClose: "Şəhər siyahısını bağla",
     sidebarOpen: "Şəhər siyahısını aç",
-    sectionCities: "Şəhərlər",
-    sectionRoads: "Yollar",
-    sectionPois: "Maraqlı yerlər",
   },
   tr: {
     title: "Karabağ Atlası",
-    subtitle: "MVP demo — şehirler backend API'den canlı yükleniyor.",
+    searchPlaceholder: "Şehir ara…",
     loading: "Yükleniyor…",
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
@@ -56,15 +54,14 @@ const TRANSLATIONS = {
     noInfo: "Bu şehir için henüz bilgi eklenmedi.",
     layerStreets: "Sokaklar",
     layerSatellite: "Uydu",
+    layerHistorical: "Tarihi",
+    yearLabel: (year) => `Yıl: ${year}`,
     sidebarClose: "Şehir listesini kapat",
     sidebarOpen: "Şehir listesini aç",
-    sectionCities: "Şehirler",
-    sectionRoads: "Yollar",
-    sectionPois: "İlgi Çekici Yerler",
   },
   ru: {
     title: "Атлас Карабаха",
-    subtitle: "MVP-демо — города загружаются напрямую с backend API.",
+    searchPlaceholder: "Поиск городов…",
     loading: "Загрузка…",
     noCities:
       "Backend доступен, но города ещё не добавлены. Используйте " +
@@ -75,11 +72,10 @@ const TRANSLATIONS = {
     noInfo: "Информация об этом городе пока не добавлена.",
     layerStreets: "Улицы",
     layerSatellite: "Спутник",
+    layerHistorical: "Исторический",
+    yearLabel: (year) => `Год: ${year}`,
     sidebarClose: "Закрыть список городов",
     sidebarOpen: "Открыть список городов",
-    sectionCities: "Города",
-    sectionRoads: "Дороги",
-    sectionPois: "Интересные места",
   },
 };
 
