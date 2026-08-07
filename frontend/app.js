@@ -43,6 +43,33 @@ const satelliteLayer = L.tileLayer(
   }
 );
 
+// NASA GIBS: free, keyless daily satellite imagery (MODIS Terra) going
+// back to February 2000 — the oldest imagery we can get without a paid
+// provider. Resolution is much coarser than the Esri layer above (~250m
+// per pixel vs street-level), so this is for seeing how the region
+// looked in a given year, not for zooming in on individual buildings.
+// `maxNativeZoom` lets Leaflet keep using the coarser tiles (scaled up)
+// past their native zoom instead of requesting tiles that don't exist.
+const GIBS_MIN_YEAR = 2000;
+const GIBS_MAX_YEAR = new Date().getFullYear();
+let selectedYear = GIBS_MAX_YEAR;
+
+function gibsUrlForYear(year) {
+  return (
+    "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" +
+    `MODIS_Terra_CorrectedReflectance_TrueColor/default/${year}-07-15/` +
+    "GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg"
+  );
+}
+
+const historicalLayer = L.tileLayer(gibsUrlForYear(selectedYear), {
+  maxZoom: 19,
+  maxNativeZoom: 9,
+  attribution:
+    "Imagery: NASA GIBS / MODIS Terra (a single day per year — expect " +
+    "cloud cover in some spots)",
+});
+
 streetLayer.addTo(map);
 
 function refreshLayerControl() {
@@ -51,7 +78,11 @@ function refreshLayerControl() {
   }
   layerControl = L.control
     .layers(
-      { [t("layerStreets")]: streetLayer, [t("layerSatellite")]: satelliteLayer },
+      {
+        [t("layerStreets")]: streetLayer,
+        [t("layerSatellite")]: satelliteLayer,
+        [t("layerHistorical")]: historicalLayer,
+      },
       null,
       { position: "bottomright" }
     )
@@ -62,7 +93,7 @@ refreshLayerControl();
 
 // Street tiles already render place-name labels on their own, so our
 // custom city-name markers would be redundant there; only show them
-// over satellite imagery, which has no labels of its own.
+// over satellite/historical imagery, which has no labels of its own.
 const markersLayer = L.layerGroup();
 
 // Points of interest (cafes, restaurants, etc.) are shown on both tile
@@ -72,7 +103,7 @@ const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
 
 function updateMarkersVisibility(activeLayer) {
-  if (activeLayer === satelliteLayer) {
+  if (activeLayer === satelliteLayer || activeLayer === historicalLayer) {
     if (!map.hasLayer(markersLayer)) {
       map.addLayer(markersLayer);
     }
@@ -90,10 +121,37 @@ function updatePoiVisibility() {
   }
 }
 
-map.on("baselayerchange", (event) => updateMarkersVisibility(event.layer));
+const timelineEl = document.getElementById("timeline");
+const yearSliderEl = document.getElementById("year-slider");
+const yearLabelEl = document.getElementById("year-label");
+
+yearSliderEl.min = GIBS_MIN_YEAR;
+yearSliderEl.max = GIBS_MAX_YEAR;
+yearSliderEl.value = selectedYear;
+
+function updateYearLabel() {
+  yearLabelEl.textContent = t("yearLabel")(selectedYear);
+}
+
+yearSliderEl.addEventListener("input", () => {
+  selectedYear = Number(yearSliderEl.value);
+  updateYearLabel();
+  historicalLayer.setUrl(gibsUrlForYear(selectedYear));
+});
+
+function updateTimelineVisibility(activeLayer) {
+  timelineEl.hidden = activeLayer !== historicalLayer;
+}
+
+map.on("baselayerchange", (event) => {
+  updateMarkersVisibility(event.layer);
+  updateTimelineVisibility(event.layer);
+});
 map.on("zoomend", updatePoiVisibility);
 updateMarkersVisibility(streetLayer);
+updateTimelineVisibility(streetLayer);
 updatePoiVisibility();
+updateYearLabel();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
@@ -115,6 +173,7 @@ function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
   searchInputEl.placeholder = t("searchPlaceholder");
+  updateYearLabel();
   sidebarToggleEl.setAttribute(
     "aria-label",
     sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
