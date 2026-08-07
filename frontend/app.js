@@ -45,13 +45,19 @@ const satelliteLayer = L.tileLayer(
 
 // NASA GIBS: free, keyless daily satellite imagery (MODIS Terra) going
 // back to February 2000 — the oldest imagery we can get without a paid
-// provider. Resolution is much coarser than the Esri layer above (~250m
-// per pixel vs street-level), so this is for seeing how the region
-// looked in a given year, not for zooming in on individual buildings.
-// `maxNativeZoom` lets Leaflet keep using the coarser tiles (scaled up)
-// past their native zoom instead of requesting tiles that don't exist.
+// provider. Its native resolution is ~250m/pixel (vs street-level for
+// the Esri layer above). `maxNativeZoom` stops Leaflet from blowing the
+// same low-res tile up to fill a much closer zoom (that upscaling is
+// what makes it look pixelated); the layer's own `maxZoom` is left
+// permissive on purpose — Leaflet's layer-switcher control disables any
+// base layer whose maxZoom is below the map's *current* zoom, which
+// would make Historical unselectable while browsing a city. The zoom
+// cap while Historical is active is instead enforced on the map itself,
+// below, so switching layers is never blocked.
 const GIBS_MIN_YEAR = 2000;
 const GIBS_MAX_YEAR = new Date().getFullYear();
+const GIBS_MAX_ZOOM = 9;
+const DEFAULT_MAX_ZOOM = 19;
 let selectedYear = GIBS_MAX_YEAR;
 
 function gibsUrlForYear(year) {
@@ -63,8 +69,8 @@ function gibsUrlForYear(year) {
 }
 
 const historicalLayer = L.tileLayer(gibsUrlForYear(selectedYear), {
-  maxZoom: 19,
-  maxNativeZoom: 9,
+  maxZoom: DEFAULT_MAX_ZOOM,
+  maxNativeZoom: GIBS_MAX_ZOOM,
   attribution:
     "Imagery: NASA GIBS / MODIS Terra (a single day per year — expect " +
     "cloud cover in some spots)",
@@ -143,9 +149,25 @@ function updateTimelineVisibility(activeLayer) {
   timelineEl.hidden = activeLayer !== historicalLayer;
 }
 
+// Zooming in past the Historical layer's real resolution is what makes
+// it look pixelated, so cap the map's own zoom while it's active (this
+// also disables the "+" zoom button once you hit the cap) and zoom back
+// out immediately if you switched to it from a closer view.
+function updateZoomCapForLayer(activeLayer) {
+  if (activeLayer === historicalLayer) {
+    if (map.getZoom() > GIBS_MAX_ZOOM) {
+      map.setZoom(GIBS_MAX_ZOOM);
+    }
+    map.setMaxZoom(GIBS_MAX_ZOOM);
+  } else {
+    map.setMaxZoom(DEFAULT_MAX_ZOOM);
+  }
+}
+
 map.on("baselayerchange", (event) => {
   updateMarkersVisibility(event.layer);
   updateTimelineVisibility(event.layer);
+  updateZoomCapForLayer(event.layer);
 });
 map.on("zoomend", updatePoiVisibility);
 updateMarkersVisibility(streetLayer);
