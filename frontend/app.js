@@ -253,6 +253,14 @@ langMenuEl.addEventListener("click", (event) => {
   // re-fit the map to the markers — that was resetting the user's pan
   // and zoom on every language switch.
   applyFilterAndRender({ fitBounds: false });
+  // The admin panel is a full-screen modal, so it's never open at the
+  // same time as the language switcher — its dynamic content only needs
+  // to be in the right language when it's (re)opened, which
+  // openAdminPanel() already handles. Just keep the always-visible
+  // "Manage" button in sync here.
+  if (typeof applyAdminStaticTranslations === "function") {
+    applyAdminStaticTranslations();
+  }
 });
 
 document.addEventListener("click", (event) => {
