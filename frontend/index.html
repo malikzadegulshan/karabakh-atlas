@@ -3,31 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karabakh Atlas — Demo</title>
+  <title>Karabakh Atlas — Dirchalish</title>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <div class="header-text">
-      <h1 id="app-title">Karabakh Atlas</h1>
-      <p id="app-subtitle">MVP demo — cities loaded live from the backend API.</p>
-    </div>
-    <div class="header-actions">
-      <button type="button" id="admin-toggle">Manage</button>
-      <div id="lang-switcher">
-        <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
-          <span id="lang-toggle-label">EN</span>
-        </button>
-        <div id="lang-menu" role="menu" hidden>
-          <button type="button" data-lang="en" role="menuitem" aria-label="English">EN</button>
-          <button type="button" data-lang="az" role="menuitem" aria-label="Azərbaycanca">AZ</button>
-          <button type="button" data-lang="tr" role="menuitem" aria-label="Türkçe">TR</button>
-          <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
-        </div>
-      </div>
-    </div>
-  </header>
+  <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
   <main>
     <aside id="sidebar">
       <p id="status">Loading…</p>
@@ -36,9 +17,32 @@
     </aside>
     <button id="sidebar-toggle" aria-label="Close city list">‹</button>
     <div id="map"></div>
+    <div id="top-bar">
+      <div id="search-box">
+        <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
+      </div>
+      <div class="header-actions">
+        <button type="button" id="admin-toggle">Manage</button>
+        <div id="lang-switcher">
+          <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
+            <span id="lang-toggle-label">EN</span>
+          </button>
+          <div id="lang-menu" role="menu" hidden>
+            <button type="button" data-lang="en" role="menuitem" aria-label="English">EN</button>
+            <button type="button" data-lang="az" role="menuitem" aria-label="Azərbaycanca">AZ</button>
+            <button type="button" data-lang="tr" role="menuitem" aria-label="Türkçe">TR</button>
+            <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="map-pick-banner" hidden>
       <span>Click anywhere on the map to set the location</span>
       <button type="button" id="map-pick-cancel">Cancel</button>
+    </div>
+    <div id="timeline" hidden>
+      <span id="year-label">2026</span>
+      <input type="range" id="year-slider" min="2000" max="2026" value="2026" step="1">
     </div>
   </main>
 

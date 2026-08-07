@@ -11,49 +11,80 @@ body {
   color: #1b1b1b;
 }
 
-header {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Minimal floating header, Google-Maps style: a search box and a couple
+   of buttons floating over the map instead of a solid title bar. */
+
+#top-bar {
+  position: absolute;
+  top: 12px;
+  left: calc(260px + 12px);
+  right: 12px;
+  z-index: 1200;
   display: flex;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.4rem 1.25rem;
-  background: #221539;
-  color: #fff;
+  gap: 0.6rem;
+  transition: left 0.2s ease;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 1.05rem;
+aside.collapsed ~ #top-bar {
+  left: 12px;
 }
 
-header p {
-  margin: 0.1rem 0 0;
-  font-size: 0.75rem;
-  color: #cbd5e1;
+#search-box {
+  flex: 1;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 0.55rem 1rem;
+}
+
+#search-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #1f2937;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
 #admin-toggle {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #cbd5e1;
-  background: transparent;
-  border: 1px solid #475569;
-  border-radius: 4px;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
 
 #admin-toggle:hover {
-  background: #374151;
+  background: #f1f5f9;
 }
 
 #lang-switcher {
@@ -62,26 +93,27 @@ header p {
 }
 
 #lang-toggle {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #cbd5e1;
-  background: transparent;
-  border: 1px solid #475569;
-  border-radius: 4px;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
 
 #lang-toggle:hover,
 #lang-toggle[aria-expanded="true"] {
-  background: #374151;
+  background: #f1f5f9;
 }
 
 #lang-menu {
   position: absolute;
   top: calc(100% + 0.4rem);
   right: 0;
-  z-index: 1000;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
   min-width: 64px;
@@ -246,6 +278,25 @@ aside.collapsed ~ #sidebar-toggle {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   pointer-events: auto;
+}
+
+.poi-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.poi-marker {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
 }
 
 /* Admin panel */
@@ -459,9 +510,14 @@ aside.collapsed ~ #sidebar-toggle {
 
 .admin-add-city-form input,
 .admin-add-city-form .category-picker {
-  width: auto;
-  flex: 1;
+  /* A non-zero flex-basis (instead of the flex:1 shorthand's 0%) makes
+     the wrap algorithm account for each item's real size, so a row that
+     doesn't fit wraps onto a new line instead of silently overflowing
+     the panel — flex-basis:0 tricks flex-wrap into thinking everything
+     fits on one line, then min-width shoves it past the edge anyway. */
+  flex: 1 1 140px;
   min-width: 90px;
+  width: auto;
 }
 
 .admin-add-city-form .pick-on-map,
@@ -502,10 +558,18 @@ aside.collapsed ~ #sidebar-toggle {
   display: none;
 }
 
+.category-picker-menu.flip-up {
+  top: auto;
+  bottom: calc(100% + 0.25rem);
+}
+
 .category-picker-menu .category-picker-option {
   display: block;
   width: 100%;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 0.35rem 0.5rem;
   font-size: 0.83rem;
   font-weight: 400;
@@ -566,19 +630,54 @@ aside.collapsed ~ #sidebar-toggle {
   background: #374151;
 }
 
+/* Historical-imagery year timeline */
+
+#timeline {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+#timeline[hidden] {
+  display: none;
+}
+
+#year-label {
+  min-width: 5.5em;
+  white-space: nowrap;
+}
+
+#year-slider {
+  width: 220px;
+}
+
 /* Responsive: narrow (phone/small tablet) viewports */
 
 @media (max-width: 700px) {
-  header {
-    padding: 0.5rem 1rem;
+  /* The mobile sidebar overlays the map instead of pushing it, so the
+     floating top bar always hugs the left edge regardless of whether
+     the sidebar is open. */
+  #top-bar,
+  aside.collapsed ~ #top-bar {
+    left: 12px;
+    right: 12px;
+    flex-wrap: wrap;
   }
 
-  header h1 {
-    font-size: 0.95rem;
-  }
-
-  header p {
-    font-size: 0.7rem;
+  #search-box {
+    max-width: none;
   }
 
   aside {
@@ -642,5 +741,13 @@ aside.collapsed ~ #sidebar-toggle {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
+  }
+
+  #timeline {
+    width: min(300px, 90vw);
+  }
+
+  #year-slider {
+    width: 100%;
   }
 }

@@ -77,10 +77,10 @@ components:
           description: >
             "city" renders as a persistent map label; any other value is
             a user-added point of interest shown only when zoomed in.
-          enum: [city, cafe, restaurant, hotel, landmark, museum, park,
-                  university, school, hospital, pharmacy, bank, government,
-                  police, fire_station, mosque, church, fuel_station,
-                  parking, shop, other]
+          enum: [city, road, cafe, restaurant, hotel, landmark, museum,
+                  park, university, school, hospital, pharmacy, bank,
+                  government, police, fire_station, mosque, church,
+                  fuel_station, parking, shop, other]
           default: city
         name_i18n:
           type: object
@@ -135,10 +135,10 @@ components:
             "city" renders as a persistent map label; any other value is
             a user-added point of interest shown only when zoomed in.
             Defaults to "city" when omitted.
-          enum: [city, cafe, restaurant, hotel, landmark, museum, park,
-                  university, school, hospital, pharmacy, bank, government,
-                  police, fire_station, mosque, church, fuel_station,
-                  parking, shop, other]
+          enum: [city, road, cafe, restaurant, hotel, landmark, museum,
+                  park, university, school, hospital, pharmacy, bank,
+                  government, police, fire_station, mosque, church,
+                  fuel_station, parking, shop, other]
         name_i18n:
           type: object
           nullable: true

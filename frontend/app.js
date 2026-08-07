@@ -8,12 +8,16 @@ if (!TRANSLATIONS[currentLang]) {
 }
 let lastCities = [];
 let layerControl = null;
+let searchQuery = "";
 
 function t(key) {
   return TRANSLATIONS[currentLang][key];
 }
 
-const map = L.map("map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+// Zoom control moves to the bottom-right (Leaflet's default top-left spot
+// would sit right under the floating search bar/buttons).
+const map = L.map("map", { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+L.control.zoom({ position: "bottomright" }).addTo(map);
 
 // CartoDB Positron: a clean, free/keyless basemap with place labels but
 // no baked-in amenity icons (cafe/restaurant/etc.), so our own
@@ -39,6 +43,78 @@ const satelliteLayer = L.tileLayer(
   }
 );
 
+// Esri World Imagery Wayback: the same high-resolution basemap as the
+// Satellite layer above, just at different capture dates — free,
+// keyless, and genuinely zoomable (unlike coarse ~250m/pixel sources
+// like NASA MODIS), at the cost of only reaching back to ~2014 instead
+// of the early 2000s. Release dates/tile URLs come from Esri's own
+// published config rather than being guessed at, since the exact
+// per-release tile path isn't otherwise documented.
+const WAYBACK_CONFIG_URL =
+  "https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json";
+const WAYBACK_FALLBACK_MIN_YEAR = 2014;
+let waybackReleases = []; // [{ date, urlTemplate }], sorted oldest to newest
+let selectedYear = new Date().getFullYear();
+
+const historicalLayer = L.tileLayer("", {
+  maxZoom: 19,
+  attribution:
+    "Imagery: Esri World Imagery Wayback — Source: Esri, Maxar, " +
+    "Earthstar Geographics, and the GIS User Community",
+});
+
+function releaseForYear(year) {
+  const target = new Date(`${year}-07-15`);
+  return waybackReleases.reduce((closest, release) => {
+    const diff = Math.abs(release.date - target);
+    return diff < Math.abs(closest.date - target) ? release : closest;
+  }, waybackReleases[0]);
+}
+
+function applySelectedYear() {
+  if (waybackReleases.length === 0) {
+    return;
+  }
+  historicalLayer.setUrl(releaseForYear(selectedYear).urlTemplate);
+}
+
+async function loadWaybackReleases() {
+  try {
+    const res = await fetch(WAYBACK_CONFIG_URL);
+    if (!res.ok) {
+      throw new Error(`Wayback config returned ${res.status}`);
+    }
+    const config = await res.json();
+    const releases = [];
+    Object.values(config).forEach((entry) => {
+      const dateMatch = /(\d{4}-\d{2}-\d{2})/.exec(entry.itemTitle || "");
+      if (!dateMatch || !entry.itemURL) {
+        return;
+      }
+      releases.push({
+        date: new Date(dateMatch[1]),
+        urlTemplate: entry.itemURL
+          .replace("{level}", "{z}")
+          .replace("{row}", "{y}")
+          .replace("{col}", "{x}"),
+      });
+    });
+    releases.sort((a, b) => a.date - b.date);
+    if (releases.length === 0) {
+      return;
+    }
+    waybackReleases = releases;
+    yearSliderEl.min = releases[0].date.getFullYear();
+    yearSliderEl.max = releases[releases.length - 1].date.getFullYear();
+    yearSliderEl.value = selectedYear;
+    applySelectedYear();
+  } catch (err) {
+    // Leave the fallback slider range in place; the layer just won't
+    // have tiles until this succeeds (same degradation as any other
+    // tile provider being unreachable).
+  }
+}
+
 streetLayer.addTo(map);
 
 function refreshLayerControl() {
@@ -47,9 +123,13 @@ function refreshLayerControl() {
   }
   layerControl = L.control
     .layers(
-      { [t("layerStreets")]: streetLayer, [t("layerSatellite")]: satelliteLayer },
+      {
+        [t("layerStreets")]: streetLayer,
+        [t("layerSatellite")]: satelliteLayer,
+        [t("layerHistorical")]: historicalLayer,
+      },
       null,
-      { position: "topleft" }
+      { position: "bottomright" }
     )
     .addTo(map);
 }
@@ -58,7 +138,7 @@ refreshLayerControl();
 
 // Street tiles already render place-name labels on their own, so our
 // custom city-name markers would be redundant there; only show them
-// over satellite imagery, which has no labels of its own.
+// over satellite/historical imagery, which has no labels of its own.
 const markersLayer = L.layerGroup();
 
 // Points of interest (cafes, restaurants, etc.) are shown on both tile
@@ -68,7 +148,7 @@ const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
 
 function updateMarkersVisibility(activeLayer) {
-  if (activeLayer === satelliteLayer) {
+  if (activeLayer === satelliteLayer || activeLayer === historicalLayer) {
     if (!map.hasLayer(markersLayer)) {
       map.addLayer(markersLayer);
     }
@@ -86,17 +166,47 @@ function updatePoiVisibility() {
   }
 }
 
-map.on("baselayerchange", (event) => updateMarkersVisibility(event.layer));
+const timelineEl = document.getElementById("timeline");
+const yearSliderEl = document.getElementById("year-slider");
+const yearLabelEl = document.getElementById("year-label");
+
+// Placeholder range until the real Wayback release list loads (or, if
+// that fetch fails, what stays in effect as a fallback).
+yearSliderEl.min = WAYBACK_FALLBACK_MIN_YEAR;
+yearSliderEl.max = selectedYear;
+yearSliderEl.value = selectedYear;
+loadWaybackReleases();
+
+function updateYearLabel() {
+  yearLabelEl.textContent = t("yearLabel")(selectedYear);
+}
+
+yearSliderEl.addEventListener("input", () => {
+  selectedYear = Number(yearSliderEl.value);
+  updateYearLabel();
+  applySelectedYear();
+});
+
+function updateTimelineVisibility(activeLayer) {
+  timelineEl.hidden = activeLayer !== historicalLayer;
+}
+
+map.on("baselayerchange", (event) => {
+  updateMarkersVisibility(event.layer);
+  updateTimelineVisibility(event.layer);
+});
 map.on("zoomend", updatePoiVisibility);
 updateMarkersVisibility(streetLayer);
+updateTimelineVisibility(streetLayer);
 updatePoiVisibility();
+updateYearLabel();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
 const titleEl = document.getElementById("app-title");
-const subtitleEl = document.getElementById("app-subtitle");
+const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
@@ -110,7 +220,8 @@ function closeLangMenu() {
 function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
-  subtitleEl.textContent = t("subtitle");
+  searchInputEl.placeholder = t("searchPlaceholder");
+  updateYearLabel();
   sidebarToggleEl.setAttribute(
     "aria-label",
     sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
@@ -138,7 +249,18 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
-  renderCities(lastCities);
+  // Only the labels change here, not the underlying data, so don't
+  // re-fit the map to the markers — that was resetting the user's pan
+  // and zoom on every language switch.
+  applyFilterAndRender({ fitBounds: false });
+  // The admin panel is a full-screen modal, so it's never open at the
+  // same time as the language switcher — its dynamic content only needs
+  // to be in the right language when it's (re)opened, which
+  // openAdminPanel() already handles. Just keep the always-visible
+  // "Manage" button in sync here.
+  if (typeof applyAdminStaticTranslations === "function") {
+    applyAdminStaticTranslations();
+  }
 });
 
 document.addEventListener("click", (event) => {
@@ -228,6 +350,7 @@ function showCityDetail(city) {
 
 // Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
 const POI_COLORS = {
+  road: "#57534e",
   cafe: "#b45309",
   restaurant: "#b91c1c",
   hotel: "#1d4ed8",
@@ -250,19 +373,47 @@ const POI_COLORS = {
   other: "#334155",
 };
 
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_ICONS = {
+  road: "🛣️",
+  cafe: "☕",
+  restaurant: "🍽️",
+  hotel: "🏨",
+  landmark: "🗿",
+  museum: "🏛️",
+  park: "🌳",
+  university: "🎓",
+  school: "📚",
+  hospital: "🏥",
+  pharmacy: "💊",
+  bank: "🏦",
+  government: "🏢",
+  police: "👮",
+  fire_station: "🚒",
+  mosque: "🕌",
+  church: "⛪",
+  fuel_station: "⛽",
+  parking: "🅿️",
+  shop: "🛍️",
+  other: "📍",
+};
+
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
 }
 
 function buildMarker(city) {
   if (isPoi(city)) {
-    return L.circleMarker([city.latitude, city.longitude], {
-      radius: 7,
-      weight: 2,
-      color: "#fff",
-      fillColor: POI_COLORS[city.category] || POI_COLORS.other,
-      fillOpacity: 0.9,
-    }).addTo(poiMarkersLayer);
+    const badgeIcon = L.divIcon({
+      className: "poi-marker-wrapper",
+      html:
+        `<div class="poi-marker" style="background:${POI_COLORS[city.category] || POI_COLORS.other}">` +
+        `${POI_ICONS[city.category] || POI_ICONS.other}</div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 13],
+    });
+    return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
+      .addTo(poiMarkersLayer);
   }
   const name = localizedName(city);
   const labelIcon = L.divIcon({
@@ -275,7 +426,19 @@ function buildMarker(city) {
     .addTo(markersLayer);
 }
 
-function renderCities(cities) {
+function buildListItem(city, marker) {
+  const li = document.createElement("li");
+  li.textContent = localizedName(city);
+  li.dataset.cityId = city.id;
+  li.addEventListener("click", () => {
+    map.setView([city.latitude, city.longitude], 12);
+    marker.openPopup();
+    showCityDetail(city);
+  });
+  listEl.appendChild(li);
+}
+
+function renderCities(cities, { fitBounds = true } = {}) {
   markersLayer.clearLayers();
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
@@ -290,34 +453,42 @@ function renderCities(cities) {
 
   const bounds = [];
   cities.forEach((city) => {
-    const name = localizedName(city);
     const marker = buildMarker(city);
     marker.bindPopup(cityInfoHtml(city));
     marker.on("click", () => showCityDetail(city));
     bounds.push([city.latitude, city.longitude]);
-
-    const li = document.createElement("li");
-    li.textContent = name;
-    li.dataset.cityId = city.id;
-    li.addEventListener("click", () => {
-      const targetZoom = isPoi(city)
-        ? Math.max(map.getZoom(), POI_MIN_ZOOM)
-        : 12;
-      map.setView([city.latitude, city.longitude], targetZoom);
-      if (isPoi(city) && !map.hasLayer(poiMarkersLayer)) {
-        // Make sure the marker is actually on the map (zoomend, which
-        // normally handles this, may not have fired yet) before opening
-        // its popup.
-        map.addLayer(poiMarkersLayer);
-      }
-      marker.openPopup();
-      showCityDetail(city);
-    });
-    listEl.appendChild(li);
+    // Roads and other points of interest still show up as markers on
+    // the map, but only cities get a sidebar entry — the sidebar is
+    // meant as a quick city index, not a listing of every added point.
+    if (!isPoi(city)) {
+      buildListItem(city, marker);
+    }
   });
 
-  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+  if (fitBounds) {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+  }
 }
+
+function matchesSearch(city) {
+  if (!searchQuery) {
+    return true;
+  }
+  const q = searchQuery.toLowerCase();
+  return (
+    localizedName(city).toLowerCase().includes(q) ||
+    city.name.toLowerCase().includes(q)
+  );
+}
+
+function applyFilterAndRender(options) {
+  renderCities(lastCities.filter(matchesSearch), options);
+}
+
+searchInputEl.addEventListener("input", () => {
+  searchQuery = searchInputEl.value.trim();
+  applyFilterAndRender();
+});
 
 async function loadCities() {
   try {
@@ -327,7 +498,7 @@ async function loadCities() {
     }
     const cities = await res.json();
     lastCities = cities;
-    renderCities(cities);
+    applyFilterAndRender();
   } catch (err) {
     setStatus(t("apiError")(API_BASE, err.message), true);
   }
