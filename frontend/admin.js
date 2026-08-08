@@ -394,6 +394,38 @@ function buildAdminCityRow(city) {
   return li;
 }
 
+// Per-language name overrides — same name_i18n field the seeded cities
+// (Khankendi/Shusha) already use, just now editable from the admin
+// panel for any city or point of interest. English uses the main Name
+// field as its fallback, so there's no separate "EN" input here.
+const NAME_I18N_LANGS = ["az", "tr", "ru"];
+
+function buildNameI18nInputs(existingNameI18n) {
+  const inputs = {};
+  const elements = NAME_I18N_LANGS.map((lang) => {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = `${t("fieldName")} (${lang.toUpperCase()})`;
+    input.maxLength = 128;
+    input.value = (existingNameI18n && existingNameI18n[lang]) || "";
+    inputs[lang] = input;
+    return input;
+  });
+
+  function collect() {
+    const result = {};
+    NAME_I18N_LANGS.forEach((lang) => {
+      const value = inputs[lang].value.trim();
+      if (value) {
+        result[lang] = value;
+      }
+    });
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  return { elements, collect };
+}
+
 function buildAddCityForm(region) {
   const form = document.createElement("form");
   form.className = "admin-form admin-add-city-form";
@@ -416,6 +448,8 @@ function buildAddCityForm(region) {
   lngInput.placeholder = t("fieldLongitude");
   lngInput.required = true;
 
+  const nameI18n = buildNameI18nInputs(null);
+
   const categoryPicker = buildCategoryPicker("city");
 
   const pickOnMapBtn = document.createElement("button");
@@ -429,6 +463,7 @@ function buildAddCityForm(region) {
   submit.textContent = t("adminAddCity");
 
   form.appendChild(nameInput);
+  nameI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(latInput);
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
@@ -445,10 +480,13 @@ function buildAddCityForm(region) {
       return;
     }
     submit.disabled = true;
+    const payload = { name, latitude, longitude, category: categoryPickerValue(categoryPicker) };
+    const nameI18nValue = nameI18n.collect();
+    if (nameI18nValue) {
+      payload.name_i18n = nameI18nValue;
+    }
     try {
-      await apiRequest(
-        "POST", `/regions/${region.id}/cities`,
-        { name, latitude, longitude, category: categoryPickerValue(categoryPicker) });
+      await apiRequest("POST", `/regions/${region.id}/cities`, payload);
       showAdminMessage(t("cityAdded")(name), false);
       await refreshAdminData();
       await loadCities();
@@ -557,6 +595,8 @@ function startEditCity(city) {
   descInput.placeholder = t("fieldDescription");
   descInput.value = city.description || "";
 
+  const nameI18n = buildNameI18nInputs(city.name_i18n);
+
   const categoryPicker = buildCategoryPicker(city.category);
 
   const pickOnMapBtn = document.createElement("button");
@@ -580,6 +620,7 @@ function startEditCity(city) {
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
   form.appendChild(nameInput);
+  nameI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(latInput);
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
@@ -602,6 +643,7 @@ function startEditCity(city) {
         name, latitude, longitude,
         category: categoryPickerValue(categoryPicker),
         description: descInput.value.trim() || null,
+        name_i18n: nameI18n.collect(),
       });
       showAdminMessage(t("cityUpdated")(name), false);
       await refreshAdminData();
