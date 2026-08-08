@@ -3,8 +3,9 @@
 import json
 from models.region import Region
 from models.city import City
+from models.user import User
 
-classes = {"Region": Region, "City": City}
+classes = {"Region": Region, "City": City, "User": User}
 
 
 class FileStorage:
