@@ -36,8 +36,11 @@ class BaseModel:
             self.id = str(uuid.uuid4())
             self.created_at = datetime.utcnow()
             self.updated_at = datetime.utcnow()
-            import models
-            models.storage.new(self)
+            # Not registered with storage here — only save() does that.
+            # A schema-enforcing database (unlike FileStorage) will
+            # reject an incomplete object like this the moment anything
+            # in the session flushes, even if this instance itself is
+            # never explicitly saved.
 
     def __str__(self):
         """Return the informal string representation of the instance."""

@@ -27,6 +27,7 @@ class TestRegion(unittest.TestCase):
     def test_cities_property_starts_empty(self):
         """A brand new region has no linked cities."""
         region = Region()
+        region.name = "Sample Region"
         region.save()
         self.assertEqual(region.cities, [])
 

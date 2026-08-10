@@ -1,0 +1,36 @@
+# Render Blueprint — deploys the backend API, the static frontend, and a
+# free PostgreSQL database together. In the Render dashboard: New +  →
+# Blueprint → point it at this repo. If any field names here have drifted
+# from Render's current schema, the same three services can be created
+# by hand from the dashboard using the same settings.
+databases:
+  - name: karabakh-atlas-db
+    plan: free
+    databaseName: karabakh_atlas
+    user: karabakh_atlas
+
+services:
+  - type: web
+    name: karabakh-atlas-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT api.v1.app:app
+    envVars:
+      - key: KBA_TYPE_STORAGE
+        value: db
+      - key: KBA_AUTO_SEED
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: karabakh-atlas-db
+          property: connectionString
+      - key: KBA_API_KEY
+        generateValue: true
+
+  - type: web
+    name: karabakh-atlas-frontend
+    runtime: static
+    staticPublishPath: frontend
+    buildCommand: ""
+    envVars: []
