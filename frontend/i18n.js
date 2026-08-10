@@ -6,7 +6,7 @@
 const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
-    searchPlaceholder: "Search cities…",
+    searchPlaceholder: "Search places…",
     loading: "Loading…",
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
@@ -14,7 +14,7 @@ const TRANSLATIONS = {
     citiesLoaded: (n) => `${n} cit${n === 1 ? "y" : "ies"} loaded.`,
     apiError: (base, msg) =>
       `Could not reach the API at ${base}. Is the backend running? (${msg})`,
-    noInfo: "No information added for this city yet.",
+    noInfo: "No information added for this point yet.",
     layerStreets: "Streets",
     layerSatellite: "Satellite",
     layerHistorical: "Historical",
@@ -82,7 +82,7 @@ const TRANSLATIONS = {
   },
   az: {
     title: "Qarabağ Atlası",
-    searchPlaceholder: "Şəhər axtar…",
+    searchPlaceholder: "Yer axtar…",
     loading: "Yüklənir…",
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
@@ -91,7 +91,7 @@ const TRANSLATIONS = {
     apiError: (base, msg) =>
       `${base} ünvanındakı API-yə qoşulmaq mümkün olmadı. Backend ` +
       `işləyirmi? (${msg})`,
-    noInfo: "Bu şəhər üçün hələ məlumat əlavə edilməyib.",
+    noInfo: "Bu yer üçün hələ məlumat əlavə edilməyib.",
     layerStreets: "Küçələr",
     layerSatellite: "Peyk",
     layerHistorical: "Tarixi",
@@ -160,7 +160,7 @@ const TRANSLATIONS = {
   },
   tr: {
     title: "Karabağ Atlası",
-    searchPlaceholder: "Şehir ara…",
+    searchPlaceholder: "Yer ara…",
     loading: "Yükleniyor…",
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
@@ -168,7 +168,7 @@ const TRANSLATIONS = {
     citiesLoaded: (n) => `${n} şehir yüklendi.`,
     apiError: (base, msg) =>
       `${base} adresindeki API'ye ulaşılamadı. Backend çalışıyor mu? (${msg})`,
-    noInfo: "Bu şehir için henüz bilgi eklenmedi.",
+    noInfo: "Bu yer için henüz bilgi eklenmedi.",
     layerStreets: "Sokaklar",
     layerSatellite: "Uydu",
     layerHistorical: "Tarihi",
@@ -236,10 +236,10 @@ const TRANSLATIONS = {
   },
   ru: {
     title: "Атлас Карабаха",
-    searchPlaceholder: "Поиск городов…",
+    searchPlaceholder: "Поиск местов…",
     loading: "Загрузка…",
     noCities:
-      "Backend доступен, но города ещё не добавлены. Используйте " +
+      "Backend доступен, но зона ещё не добавлены. Используйте " +
       "console.py или API, чтобы добавить их.",
     citiesLoaded: (n) => `Загружено городов: ${n}.`,
     apiError: (base, msg) =>
