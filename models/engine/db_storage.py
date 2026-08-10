@@ -24,7 +24,7 @@ class DBStorage:
         db = os.environ.get("KBA_MYSQL_DB")
         env = os.environ.get("KBA_ENV")
         self.__engine = create_engine(
-            "mysql+mysqldb://{}:{}@{}/{}".format(user, pwd, host, db),
+            "postgresql+psycopg2://{}:{}@{}/{}".format(user, pwd, host, db),
             pool_pre_ping=True)
         if env == "test":
             Base.metadata.drop_all(self.__engine)
