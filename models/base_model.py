@@ -23,7 +23,12 @@ class BaseModel:
             for key, value in kwargs.items():
                 if key == "__class__":
                     continue
-                if key in ("created_at", "updated_at") and isinstance(value, str):
+                # Every DateTime column in this codebase is named with an
+                # "_at" suffix (created_at, updated_at,
+                # verification_token_expires_at, ...) — reload from
+                # FileStorage's JSON hands these back as strings, so
+                # parse any of them back into real datetime objects.
+                if key.endswith("_at") and isinstance(value, str):
                     value = datetime.strptime(value, TIME_FORMAT)
                 setattr(self, key, value)
             if "id" not in kwargs:
@@ -63,9 +68,9 @@ class BaseModel:
         """Return a JSON-serializable dictionary of the instance."""
         new_dict = self.__dict__.copy()
         new_dict["__class__"] = type(self).__name__
-        for key in ("created_at", "updated_at"):
-            if isinstance(new_dict.get(key), datetime):
-                new_dict[key] = new_dict[key].isoformat()
+        for key, value in new_dict.items():
+            if isinstance(value, datetime):
+                new_dict[key] = value.isoformat()
         new_dict.pop("_sa_instance_state", None)
         return new_dict
 

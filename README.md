@@ -52,3 +52,21 @@ python3 -m api.v1.app
 Sign in with those credentials from the site, and the "Manage" button
 appears. Further admins can then be promoted directly in the database,
 or by re-running with different `KBA_ADMIN_*` values for a second admin.
+
+Regular accounts get a verification email on registration (a link back
+to the site that confirms the address). Without `KBA_SMTP_*` configured,
+that email just gets printed to the console instead of sent — fine for
+local dev, since nothing on the site actually requires a verified email
+yet. To send real emails, using a Gmail account is the simplest free
+option:
+
+1. Turn on 2-Step Verification on the Gmail account, if it isn't
+   already (Google Account → Security).
+2. Google Account → Security → App passwords → create one for "Mail".
+   This gives a 16-character password — **not** the account's normal
+   login password, and free (no billing account involved).
+3. Set:
+   ```bash
+   export KBA_SMTP_HOST=smtp.gmail.com KBA_SMTP_PORT=587 \
+          KBA_SMTP_USER=you@gmail.com KBA_SMTP_PASSWORD='the-app-password'
+   ```

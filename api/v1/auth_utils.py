@@ -6,41 +6,67 @@ from flask import session, jsonify
 from models import storage
 from models.user import User
 
-LOGIN_MAX_ATTEMPTS = 5
-LOGIN_WINDOW_SECONDS = 300
 
-# In-memory, per-process. Good enough to blunt naive password-guessing
-# scripts on a single small deployment; a multi-worker/multi-instance
-# setup would need a shared store (e.g. Redis) to enforce the limit
-# consistently across processes.
-_login_attempts = {}
+class RateLimiter:
+    """A simple fixed-window rate limiter, keyed by an arbitrary string.
+
+    In-memory, per-process. Good enough to blunt naive abuse (password
+    guessing, verification-email spam) on a single small deployment; a
+    multi-worker/multi-instance setup would need a shared store (e.g.
+    Redis) to enforce the limit consistently across processes.
+    """
+
+    def __init__(self, max_attempts, window_seconds):
+        self.max_attempts = max_attempts
+        self.window_seconds = window_seconds
+        self._attempts = {}
+
+    def _recent(self, key, now):
+        return [t for t in self._attempts.get(key, [])
+                if now - t < self.window_seconds]
+
+    def is_limited(self, key):
+        """Return True if `key` has hit the limit within the window."""
+        now = time.time()
+        attempts = self._recent(key, now)
+        self._attempts[key] = attempts
+        return len(attempts) >= self.max_attempts
+
+    def record(self, key):
+        """Record an attempt against `key`."""
+        now = time.time()
+        attempts = self._recent(key, now)
+        attempts.append(now)
+        self._attempts[key] = attempts
+
+    def clear(self, key):
+        """Forget recorded attempts for `key` (e.g. after success)."""
+        self._attempts.pop(key, None)
 
 
-def _recent_failures(key, now):
-    return [t for t in _login_attempts.get(key, [])
-            if now - t < LOGIN_WINDOW_SECONDS]
+login_limiter = RateLimiter(max_attempts=5, window_seconds=300)
+resend_verification_limiter = RateLimiter(max_attempts=3, window_seconds=3600)
+
+# Kept as module-level names for backward compatibility with existing
+# call sites/tests.
+LOGIN_MAX_ATTEMPTS = login_limiter.max_attempts
+LOGIN_WINDOW_SECONDS = login_limiter.window_seconds
 
 
 def is_login_rate_limited(key):
     """Return True if `key` (e.g. "<ip>:<email>") has failed too many
     logins within the current window."""
-    now = time.time()
-    attempts = _recent_failures(key, now)
-    _login_attempts[key] = attempts
-    return len(attempts) >= LOGIN_MAX_ATTEMPTS
+    return login_limiter.is_limited(key)
 
 
 def record_login_failure(key):
     """Record a failed login attempt against `key`."""
-    now = time.time()
-    attempts = _recent_failures(key, now)
-    attempts.append(now)
-    _login_attempts[key] = attempts
+    login_limiter.record(key)
 
 
 def clear_login_failures(key):
     """Forget recorded failures for `key` after a successful login."""
-    _login_attempts.pop(key, None)
+    login_limiter.clear(key)
 
 
 def get_current_user():

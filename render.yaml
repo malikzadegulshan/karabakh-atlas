@@ -52,6 +52,19 @@ services:
         sync: false
       - key: KBA_ADMIN_NAME
         sync: false
+      # Sends registration verification emails via Gmail SMTP. Fill in
+      # via the dashboard, same as the admin vars above — never commit
+      # real credentials. KBA_SMTP_PASSWORD is a Gmail "App Password",
+      # not the actual account password. Left unset, verification
+      # emails just don't send (registration still works either way).
+      - key: KBA_SMTP_HOST
+        value: smtp.gmail.com
+      - key: KBA_SMTP_PORT
+        value: "587"
+      - key: KBA_SMTP_USER
+        sync: false
+      - key: KBA_SMTP_PASSWORD
+        sync: false
 
   - type: web
     name: karabakh-atlas-frontend

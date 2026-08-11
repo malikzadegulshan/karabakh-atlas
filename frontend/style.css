@@ -148,6 +148,33 @@ aside.collapsed ~ #top-bar {
   background: #e2e8f0;
 }
 
+#account-resend-verification {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+#account-resend-verification:hover {
+  background: #fde68a;
+}
+
+#account-resend-verification:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Same [hidden] specificity issue as #account-status: an explicit
+   "display" on this ID selector would otherwise beat the [hidden]
+   attribute's default UA rule. */
+#account-resend-verification[hidden] {
+  display: none;
+}
+
 .account-tabs {
   display: flex;
   gap: 0.4rem;

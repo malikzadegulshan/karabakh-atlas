@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-"""Authentication views: register, login, logout, and current user."""
+"""Authentication views: register, login, logout, current user, and
+email verification."""
+import os
 from flask import jsonify, abort, request, session
 from api.v1.views import app_views
 from api.v1.auth_utils import (
@@ -7,7 +9,9 @@ from api.v1.auth_utils import (
     is_login_rate_limited,
     record_login_failure,
     clear_login_failures,
+    resend_verification_limiter,
 )
+from api.v1.mailer import send_email
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
@@ -20,6 +24,7 @@ from models.user import User
 
 REGISTER_FIELDS = {"name", "email", "password"}
 LOGIN_FIELDS = {"email", "password"}
+VERIFY_FIELDS = {"token"}
 
 
 def _find_user_by_email(email):
@@ -30,9 +35,34 @@ def _find_user_by_email(email):
     return None
 
 
+def _frontend_origin():
+    origins = os.environ.get(
+        "KBA_FRONTEND_ORIGIN", "http://localhost:8000").split(",")
+    return origins[0].strip()
+
+
+def _send_verification_email(user):
+    token = user.generate_verification_token()
+    user.save()
+    link = "{}/index.html?verify={}".format(_frontend_origin(), token)
+    send_email(
+        user.email,
+        "Verify your Karabakh Atlas account",
+        "Hi {},\n\n"
+        "Confirm your email address by opening this link:\n{}\n\n"
+        "This link expires in 24 hours. If you didn't create this "
+        "account, you can ignore this email.".format(user.name, link),
+    )
+
+
 @app_views.route("/auth/register", methods=["POST"])
 def register():
-    """Create a new user account (role "user") and log them in."""
+    """Create a new user account (role "user") and log them in.
+
+    The account works immediately (email verification isn't required to
+    use the site) — it just starts unverified, with a verification email
+    sent in the background.
+    """
     data = request.get_json(silent=True)
     if data is None:
         abort(400, description="Not a JSON")
@@ -49,9 +79,12 @@ def register():
         return jsonify(
             {"error": "An account with this email already exists"}), 409
 
-    user = User(name=data["name"].strip(), email=email, role="user")
+    user = User(
+        name=data["name"].strip(), email=email, role="user",
+        email_verified=False)
     user.set_password(data["password"])
     user.save()
+    _send_verification_email(user)
 
     session.clear()
     session["user_id"] = user.id
@@ -105,3 +138,45 @@ def me():
     if user is None:
         return jsonify({"error": "Not logged in"}), 401
     return jsonify(user.public_dict()), 200
+
+
+@app_views.route("/auth/verify", methods=["POST"])
+def verify_email():
+    """Confirm an email address using the token from the verification
+    email. Doesn't require being logged in as that user — possessing
+    the token (from the user's own inbox) is the proof of ownership.
+    """
+    data = request.get_json(silent=True)
+    if data is None:
+        abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(data, VERIFY_FIELDS)
+        require_non_empty_string(data, "token", max_length=128)
+    except ValidationError as error:
+        abort(400, description=error.message)
+
+    token = data["token"]
+    for user in storage.all(User).values():
+        if user.verification_token == token:
+            if not user.consume_verification_token(token):
+                return jsonify({"error": "Verification link expired"}), 400
+            user.save()
+            return jsonify(user.public_dict()), 200
+    return jsonify({"error": "Invalid verification link"}), 400
+
+
+@app_views.route("/auth/resend-verification", methods=["POST"])
+def resend_verification():
+    """Send a fresh verification email to the logged-in user."""
+    user = get_current_user()
+    if user is None:
+        return jsonify({"error": "Login required"}), 401
+    if user.email_verified:
+        return jsonify({"error": "Email is already verified"}), 400
+    if resend_verification_limiter.is_limited(user.id):
+        return jsonify({
+            "error": "Too many verification emails sent. Try again later.",
+        }), 429
+    resend_verification_limiter.record(user.id)
+    _send_verification_email(user)
+    return jsonify({}), 200

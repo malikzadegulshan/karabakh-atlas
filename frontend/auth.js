@@ -8,6 +8,7 @@ const accountWidgetEl = document.getElementById("account-widget");
 const accountSigninToggleEl = document.getElementById("account-signin-toggle");
 const accountStatusEl = document.getElementById("account-status");
 const accountNameEl = document.getElementById("account-name");
+const accountResendEl = document.getElementById("account-resend-verification");
 const accountLogoutEl = document.getElementById("account-logout");
 const accountOverlayEl = document.getElementById("account-overlay");
 const accountTitleEl = document.getElementById("account-title");
@@ -41,6 +42,7 @@ function applyAccountStaticTranslations() {
   accountTitleEl.textContent = accountTabLoginEl.classList.contains("active")
     ? t("accountSignIn")
     : t("accountCreateAccount");
+  accountResendEl.textContent = t("accountResendVerification");
   if (currentUser) {
     accountNameEl.textContent = currentUser.name;
   }
@@ -51,6 +53,7 @@ function renderAccountWidget() {
   accountSigninToggleEl.hidden = loggedIn;
   accountStatusEl.hidden = !loggedIn;
   adminToggleEl.hidden = !loggedIn || currentUser.role !== "admin";
+  accountResendEl.hidden = !loggedIn || currentUser.email_verified;
   if (loggedIn) {
     accountNameEl.textContent = currentUser.name;
   }
@@ -187,5 +190,43 @@ accountLogoutEl.addEventListener("click", async () => {
   renderAccountWidget();
 });
 
+accountResendEl.addEventListener("click", async () => {
+  accountResendEl.disabled = true;
+  try {
+    await authRequest("/auth/resend-verification", {});
+    accountResendEl.textContent = t("accountVerificationSent");
+  } catch (err) {
+    window.alert(err.message);
+  } finally {
+    setTimeout(() => {
+      accountResendEl.disabled = false;
+      accountResendEl.textContent = t("accountResendVerification");
+    }, 4000);
+  }
+});
+
+// The verification email links back here with ?verify=<token>. Strip it
+// from the URL right away (so a refresh/bookmark/share doesn't resend
+// the same request), then submit it and report the result.
+async function handleEmailVerificationLink() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("verify");
+  if (!token) {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete("verify");
+  window.history.replaceState({}, "", url);
+
+  openAccountPanel();
+  try {
+    await authRequest("/auth/verify", { token });
+    await refreshCurrentUser();
+    showAccountMessage(t("accountVerifySuccess"), false);
+  } catch (err) {
+    showAccountMessage(err.message, true);
+  }
+}
+
 applyAccountStaticTranslations();
-refreshCurrentUser();
+refreshCurrentUser().then(handleEmailVerificationLink);
