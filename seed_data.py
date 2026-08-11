@@ -130,6 +130,163 @@ REGIONS = {
                 ),
             },
         },
+        {
+            "name": "Aghdam",
+            "latitude": 39.9908,
+            "longitude": 46.9264,
+            "category": "city",
+            "description": (
+                "A city in the Karabakh region of Azerbaijan, largely "
+                "destroyed during the First Karabakh War and left "
+                "uninhabited for nearly three decades. Its most "
+                "recognizable landmark, the Aghdam Mosque, survived the "
+                "destruction and has been preserved as a memorial. "
+                "Since 2020 the city has been the focus of large-scale "
+                "reconstruction under Azerbaijan's 'Great Return' "
+                "program. (Source: azerbaijan.travel, president.az)"
+            ),
+            "name_i18n": {
+                "az": "Ağdam",
+                "tr": "Ağdam",
+                "ru": "Агдам",
+            },
+            "description_i18n": {
+                "az": (
+                    "Azərbaycanın Qarabağ bölgəsində yerləşən şəhər, "
+                    "Birinci Qarabağ müharibəsi zamanı böyük dağıntıya "
+                    "məruz qalmış və təxminən otuz il ərzində əhalisiz "
+                    "qalmışdır. Ən tanınmış abidəsi olan Ağdam məscidi "
+                    "dağıntıdan sağ çıxmış və xatirə abidəsi kimi "
+                    "qorunub saxlanılır. 2020-ci ildən bəri şəhər "
+                    "Azərbaycanın 'Böyük Qayıdış' proqramı çərçivəsində "
+                    "genişmiqyaslı bərpa işlərinin mərkəzindədir. "
+                    "(Mənbə: azerbaijan.travel, president.az)"
+                ),
+                "tr": (
+                    "Azerbaycan'ın Karabağ bölgesinde bulunan bir "
+                    "şehirdir; Birinci Karabağ Savaşı sırasında büyük "
+                    "ölçüde tahrip edilmiş ve yaklaşık otuz yıl boyunca "
+                    "ıssız kalmıştır. En tanınmış yapısı olan Ağdam "
+                    "Camii yıkımdan kurtulmuş ve bir anıt olarak "
+                    "korunmaktadır. 2020'den bu yana şehir, Azerbaycan'ın "
+                    "'Büyük Dönüş' programı kapsamında geniş çaplı "
+                    "yeniden yapılanmanın merkezindedir. (Kaynak: "
+                    "azerbaijan.travel, president.az)"
+                ),
+                "ru": (
+                    "Город в Карабахском регионе Азербайджана, "
+                    "значительно разрушенный во время Первой карабахской "
+                    "войны и остававшийся безлюдным около тридцати лет. "
+                    "Его самая узнаваемая достопримечательность, "
+                    "Агдамская мечеть, уцелела и сохраняется как "
+                    "памятник. С 2020 года город находится в центре "
+                    "масштабных восстановительных работ в рамках "
+                    "программы Азербайджана «Великое возвращение». "
+                    "(Источник: azerbaijan.travel, president.az)"
+                ),
+            },
+        },
+        {
+            "name": "Fuzuli",
+            "latitude": 39.6062,
+            "longitude": 47.1467,
+            "category": "city",
+            "description": (
+                "A city in the Karabakh region of Azerbaijan, "
+                "historically an agricultural center at the edge of the "
+                "Karabakh lowlands. Fuzuli International Airport, opened "
+                "nearby in 2021, has become a key transport link for the "
+                "region's reconstruction. Named after the 16th-century "
+                "poet Muhammad Fuzuli. (Source: azerbaijan.travel, "
+                "president.az)"
+            ),
+            "name_i18n": {
+                "az": "Füzuli",
+                "tr": "Füzuli",
+                "ru": "Физули",
+            },
+            "description_i18n": {
+                "az": (
+                    "Azərbaycanın Qarabağ bölgəsində yerləşən şəhər, "
+                    "tarixən Qarabağ düzənliyinin kənarında əkinçilik "
+                    "mərkəzi olmuşdur. 2021-ci ildə yaxınlıqda açılan "
+                    "Füzuli Beynəlxalq Hava Limanı bölgənin bərpası üçün "
+                    "mühüm nəqliyyat əlaqəsinə çevrilmişdir. Şəhər adını "
+                    "16-cı əsr şairi Məhəmməd Füzulinin şərəfinə "
+                    "daşıyır. (Mənbə: azerbaijan.travel, president.az)"
+                ),
+                "tr": (
+                    "Azerbaycan'ın Karabağ bölgesinde bulunan bir "
+                    "şehirdir, tarihsel olarak Karabağ ovasının kenarında "
+                    "bir tarım merkeziydi. 2021'de yakınında açılan "
+                    "Füzuli Uluslararası Havalimanı, bölgenin yeniden "
+                    "yapılanması için önemli bir ulaşım bağlantısı haline "
+                    "gelmiştir. Şehir, adını 16. yüzyıl şairi Muhammed "
+                    "Fuzuli'den almaktadır. (Kaynak: azerbaijan.travel, "
+                    "president.az)"
+                ),
+                "ru": (
+                    "Город в Карабахском регионе Азербайджана, "
+                    "исторически являвшийся сельскохозяйственным центром "
+                    "на краю Карабахской равнины. Международный аэропорт "
+                    "Физули, открытый неподалёку в 2021 году, стал "
+                    "важным транспортным звеном для восстановления "
+                    "региона. Город назван в честь поэта XVI века "
+                    "Мухаммеда Физули. (Источник: azerbaijan.travel, "
+                    "president.az)"
+                ),
+            },
+        },
+        {
+            "name": "Lachin",
+            "latitude": 39.6412,
+            "longitude": 46.5464,
+            "category": "city",
+            "description": (
+                "A city in the Karabakh region of Azerbaijan, "
+                "historically known for its mountain scenery and as a "
+                "waypoint between Karabakh and Armenia. A new "
+                "Lachin–Khankendi road, along with wider "
+                "reconstruction efforts, has been developed since 2022 "
+                "to reconnect the city to the region. (Source: "
+                "azerbaijan.travel, president.az)"
+            ),
+            "name_i18n": {
+                "az": "Laçın",
+                "tr": "Laçin",
+                "ru": "Лачин",
+            },
+            "description_i18n": {
+                "az": (
+                    "Azərbaycanın Qarabağ bölgəsində yerləşən şəhər, "
+                    "tarixən dağ mənzərələri və Qarabağ ilə Ermənistan "
+                    "arasında keçid nöqtəsi kimi tanınır. 2022-ci ildən "
+                    "bəri yeni Laçın–Xankəndi yolu və digər bərpa "
+                    "işləri şəhərin bölgə ilə yenidən əlaqələndirilməsi "
+                    "üçün həyata keçirilib. (Mənbə: azerbaijan.travel, "
+                    "president.az)"
+                ),
+                "tr": (
+                    "Azerbaycan'ın Karabağ bölgesinde bulunan bir "
+                    "şehirdir, tarihsel olarak dağ manzaraları ve "
+                    "Karabağ ile Ermenistan arasında bir geçiş noktası "
+                    "olarak bilinir. 2022'den bu yana yeni "
+                    "Laçin–Hankendi yolu ve diğer yeniden yapılanma "
+                    "çalışmaları şehri bölgeyle yeniden bağlamak için "
+                    "gerçekleştirilmiştir. (Kaynak: azerbaijan.travel, "
+                    "president.az)"
+                ),
+                "ru": (
+                    "Город в Карабахском регионе Азербайджана, "
+                    "исторически известный горными пейзажами и как "
+                    "пункт перехода между Карабахом и Арменией. С 2022 "
+                    "года были реализованы новая дорога "
+                    "Лачин–Ханкенди и другие восстановительные "
+                    "работы для воссоединения города с регионом. "
+                    "(Источник: azerbaijan.travel, president.az)"
+                ),
+            },
+        },
     ],
 }
 

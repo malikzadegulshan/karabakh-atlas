@@ -11,7 +11,6 @@ const TRANSLATIONS = {
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
       "Use console.py or the API to add some.",
-    citiesLoaded: (n) => `${n} cit${n === 1 ? "y" : "ies"} loaded.`,
     apiError: (base, msg) =>
       `Could not reach the API at ${base}. Is the backend running? (${msg})`,
     noInfo: "No information added for this point yet.",
@@ -87,7 +86,6 @@ const TRANSLATIONS = {
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
       "Əlavə etmək üçün console.py və ya API-dən istifadə edin.",
-    citiesLoaded: (n) => `${n} şəhər yükləndi.`,
     apiError: (base, msg) =>
       `${base} ünvanındakı API-yə qoşulmaq mümkün olmadı. Backend ` +
       `işləyirmi? (${msg})`,
@@ -165,7 +163,6 @@ const TRANSLATIONS = {
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
       "Eklemek için console.py veya API'yi kullanın.",
-    citiesLoaded: (n) => `${n} şehir yüklendi.`,
     apiError: (base, msg) =>
       `${base} adresindeki API'ye ulaşılamadı. Backend çalışıyor mu? (${msg})`,
     noInfo: "Bu yer için henüz bilgi eklenmedi.",
@@ -241,7 +238,6 @@ const TRANSLATIONS = {
     noCities:
       "Backend доступен, но зона ещё не добавлены. Используйте " +
       "console.py или API, чтобы добавить их.",
-    citiesLoaded: (n) => `Загружено городов: ${n}.`,
     apiError: (base, msg) =>
       `Не удалось подключиться к API по адресу ${base}. Backend запущен? (${msg})`,
     noInfo: "Информация об этом городе пока не добавлена.",
