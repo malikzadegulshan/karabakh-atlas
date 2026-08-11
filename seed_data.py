@@ -289,8 +289,8 @@ REGIONS = {
         },
         {
             "name": "Jabrayil",
-            "latitude": 39.2144,
-            "longitude": 47.0072,
+            "latitude": 39.4000,
+            "longitude": 47.0261,
             "category": "city",
             "description": (
                 "A city in the Karabakh region of Azerbaijan, "
@@ -588,8 +588,8 @@ REGIONS = {
         },
         {
             "name": "Aghdara",
-            "latitude": 40.0056,
-            "longitude": 46.8967,
+            "latitude": 40.2153,
+            "longitude": 46.8128,
             "category": "city",
             "description": (
                 "A city in the Karabakh region of Azerbaijan, situated "
