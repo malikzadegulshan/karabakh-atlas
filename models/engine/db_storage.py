@@ -6,8 +6,9 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from models.base_model import Base
 from models.region import Region
 from models.city import City
+from models.user import User
 
-classes = {"Region": Region, "City": City}
+classes = {"Region": Region, "City": City, "User": User}
 
 
 class DBStorage:
