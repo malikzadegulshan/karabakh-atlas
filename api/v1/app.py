@@ -25,6 +25,14 @@ app.register_blueprint(
 )
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 
+if os.environ.get("KBA_AUTO_SEED") == "true":
+    # Off by default (local dev is unaffected); hosting platforms without
+    # guaranteed shell access to run seed_data.py manually after deploy
+    # can set this instead. get_or_create_* in seed_data.py is
+    # idempotent, so re-running it on every worker boot is harmless.
+    import seed_data
+    seed_data.seed()
+
 
 @app.route(OPENAPI_SPEC_PATH)
 def openapi_spec():
