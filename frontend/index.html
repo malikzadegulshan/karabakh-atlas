@@ -22,7 +22,15 @@
         <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
       </div>
       <div class="header-actions">
-        <button type="button" id="admin-toggle">Manage</button>
+        <div id="account-widget">
+          <button type="button" id="account-signin-toggle">Sign in</button>
+          <div id="account-status" hidden>
+            <span id="account-name"></span>
+            <button type="button" id="account-resend-verification" hidden>Verify email</button>
+            <button type="button" id="account-logout">Log out</button>
+          </div>
+        </div>
+        <button type="button" id="admin-toggle" hidden>Manage</button>
         <div id="lang-switcher">
           <button type="button" id="lang-toggle" aria-haspopup="true" aria-expanded="false">
             <span id="lang-toggle-label">EN</span>
@@ -46,6 +54,31 @@
     </div>
   </main>
 
+  <div id="account-overlay" hidden>
+    <div id="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
+      <div class="admin-panel-header">
+        <h2 id="account-title">Sign in</h2>
+        <button type="button" id="account-close" aria-label="Close">×</button>
+      </div>
+      <div id="account-message" class="admin-message" hidden></div>
+      <div class="account-tabs">
+        <button type="button" id="account-tab-login" class="account-tab active">Sign in</button>
+        <button type="button" id="account-tab-register" class="account-tab">Create account</button>
+      </div>
+      <form id="login-form" class="admin-form">
+        <input type="email" id="login-email-input" required autocomplete="username">
+        <input type="password" id="login-password-input" required autocomplete="current-password">
+        <button type="submit" id="login-form-submit">Sign in</button>
+      </form>
+      <form id="register-form" class="admin-form" hidden>
+        <input type="text" id="register-name-input" required maxlength="128" autocomplete="name">
+        <input type="email" id="register-email-input" required autocomplete="username">
+        <input type="password" id="register-password-input" required minlength="8" autocomplete="new-password">
+        <button type="submit" id="register-form-submit">Create account</button>
+      </form>
+    </div>
+  </div>
+
   <div id="admin-overlay" hidden>
     <div id="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-title">
       <div class="admin-panel-header">
@@ -54,10 +87,6 @@
       </div>
       <div id="admin-message" class="admin-message" hidden></div>
       <div class="admin-panel-body">
-        <section class="admin-section">
-          <label id="admin-api-key-label" for="admin-api-key">API key (only if the server requires one)</label>
-          <input type="password" id="admin-api-key" autocomplete="off">
-        </section>
         <section class="admin-section">
           <h3 id="admin-add-region-title">Add region</h3>
           <form id="region-form" class="admin-form">
@@ -78,6 +107,7 @@
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>
+  <script src="auth.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

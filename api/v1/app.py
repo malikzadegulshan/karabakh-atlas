@@ -1,13 +1,20 @@
 #!/usr/bin/python3
 """Starts the Flask API application for the Karabakh Atlas backend."""
 import os
+import secrets
+import sys
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 from models import storage
+from models.user import User
 from api.v1.views import app_views
+from api.v1.auth_utils import get_current_user
 
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
+# Only region/city writes go through the account gate — /auth/* has its
+# own rules (register/login must be reachable while logged out).
+ADMIN_GATED_PREFIXES = ("/api/v1/regions", "/api/v1/cities")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
 
@@ -23,7 +30,81 @@ app.register_blueprint(
     ),
     url_prefix=SWAGGER_UI_PATH,
 )
-CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
+app.secret_key = os.environ.get("KBA_SECRET_KEY")
+if not app.secret_key:
+    if os.environ.get("KBA_ENV") == "test":
+        app.secret_key = "test-only-secret-key"
+    else:
+        # Ephemeral: a new random key each process start invalidates
+        # every existing session, and with multiple worker processes
+        # (e.g. gunicorn -w 2) each one would sign with a *different*
+        # key, breaking sessions unpredictably depending on which
+        # worker handles a given request. Fine for a single local dev
+        # process; any real deployment must set KBA_SECRET_KEY.
+        app.secret_key = secrets.token_hex(32)
+        print(
+            "WARNING: KBA_SECRET_KEY is not set — using a random, "
+            "process-local secret key. Sessions will not survive a "
+            "restart and will break across multiple worker processes. "
+            "Set KBA_SECRET_KEY for anything beyond local dev.",
+            file=sys.stderr,
+        )
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.environ.get("KBA_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=(
+        os.environ.get("KBA_COOKIE_SECURE", "false").lower() == "true"
+    ),
+)
+
+# Credentialed requests (cookies) can't use a wildcard origin — browsers
+# reject that combination outright. Defaults to the local dev frontend;
+# a real deployment must set KBA_FRONTEND_ORIGIN to its actual frontend
+# URL(s) (comma-separated for more than one).
+_frontend_origins = [
+    origin.strip() for origin in os.environ.get(
+        "KBA_FRONTEND_ORIGIN", "http://localhost:8000,http://127.0.0.1:8000"
+    ).split(",") if origin.strip()
+]
+CORS(
+    app,
+    resources={r"/api/v1/*": {"origins": _frontend_origins}},
+    supports_credentials=True,
+)
+
+
+def _bootstrap_admin():
+    """Create the first admin account from KBA_ADMIN_* env vars, if set
+    and no user with that email exists yet.
+
+    These are runtime-only secrets (same convention as .env for local
+    dev, or a platform's own secret env vars in production) — never
+    committed to git, and this is idempotent so it's safe to leave set
+    across restarts.
+    """
+    email = os.environ.get("KBA_ADMIN_EMAIL")
+    password = os.environ.get("KBA_ADMIN_PASSWORD")
+    if not email or not password:
+        return
+    email = email.strip().lower()
+    for existing in storage.all(User).values():
+        if existing.email.lower() == email:
+            return
+    admin = User(
+        name=os.environ.get("KBA_ADMIN_NAME", "Admin").strip(),
+        email=email,
+        role="admin",
+        # Trusted by construction — whoever set these env vars controls
+        # the server itself, so there's no separate identity to verify.
+        email_verified=True,
+    )
+    admin.set_password(password)
+    admin.save()
+
+
+_bootstrap_admin()
 
 if os.environ.get("KBA_AUTO_SEED") == "true":
     # Off by default (local dev is unaffected); hosting platforms without
@@ -43,17 +124,20 @@ def openapi_spec():
 
 
 @app.before_request
-def require_api_key_for_writes():
-    """Reject write requests missing X-API-Key, if KBA_API_KEY is set.
-
-    Read-only GET requests are always allowed. When KBA_API_KEY isn't
-    configured (the default for local dev), writes stay open too.
+def require_admin_for_writes():
+    """Reject region/city write requests unless the session user is an
+    admin. Read-only GET requests, and every /auth/* route (which has
+    its own logged-out-friendly rules), are always allowed through.
     """
-    api_key = os.environ.get("KBA_API_KEY")
-    if not api_key or request.method not in WRITE_METHODS:
+    if request.method not in WRITE_METHODS:
         return None
-    if request.headers.get("X-API-Key") != api_key:
-        return jsonify({"error": "Unauthorized"}), 401
+    if not request.path.startswith(ADMIN_GATED_PREFIXES):
+        return None
+    user = get_current_user()
+    if user is None:
+        return jsonify({"error": "Login required"}), 401
+    if user.role != "admin":
+        return jsonify({"error": "Admin privileges required"}), 403
 
 
 @app.teardown_appcontext

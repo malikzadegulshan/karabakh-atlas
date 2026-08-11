@@ -87,6 +87,117 @@ aside.collapsed ~ #top-bar {
   background: #f1f5f9;
 }
 
+#account-widget {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#account-signin-toggle {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+#account-signin-toggle:hover {
+  background: #f1f5f9;
+}
+
+#account-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.4rem 0.4rem 0.9rem;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+#account-status[hidden] {
+  display: none;
+}
+
+#account-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1f2937;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#account-logout {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+#account-logout:hover {
+  background: #e2e8f0;
+}
+
+#account-resend-verification {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+#account-resend-verification:hover {
+  background: #fde68a;
+}
+
+#account-resend-verification:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Same [hidden] specificity issue as #account-status: an explicit
+   "display" on this ID selector would otherwise beat the [hidden]
+   attribute's default UA rule. */
+#account-resend-verification[hidden] {
+  display: none;
+}
+
+.account-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 1.25rem 0.75rem;
+}
+
+.account-tab {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.account-tab.active {
+  color: #1f2937;
+  background: #e0e7ff;
+}
+
 #lang-switcher {
   position: relative;
   flex-shrink: 0;
@@ -358,6 +469,59 @@ aside.collapsed ~ #sidebar-toggle {
   overflow-y: auto;
 }
 
+/* Account panel (sign in / register) — shares .admin-panel-header,
+   .admin-form, and .admin-message with the admin panel above. */
+
+#account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 10, 25, 0.55);
+}
+
+#account-overlay[hidden] {
+  display: none;
+}
+
+#account-panel {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+#account-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.1rem 0.4rem;
+}
+
+#account-panel .admin-form,
+#account-panel .admin-message {
+  margin: 0 1.25rem 1rem;
+}
+
+/* .admin-form's own "display: flex" otherwise beats the [hidden]
+   attribute's default UA rule (same specificity, author stylesheet
+   wins), so login-form/register-form wouldn't actually hide without
+   this override when their tab isn't active. */
+#login-form[hidden],
+#register-form[hidden] {
+  display: none;
+}
+
 .admin-message {
   margin: 0.75rem 1.25rem 0;
   padding: 0.6rem 0.8rem;
@@ -399,8 +563,7 @@ aside.collapsed ~ #sidebar-toggle {
 }
 
 .admin-form input,
-.admin-form textarea,
-#admin-api-key {
+.admin-form textarea {
   width: 100%;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
@@ -718,6 +881,16 @@ aside.collapsed ~ #sidebar-toggle {
   #admin-panel {
     max-width: 100%;
     max-height: 90vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  #account-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  #account-panel {
+    max-width: 100%;
     border-radius: 12px 12px 0 0;
   }
 

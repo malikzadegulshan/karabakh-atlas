@@ -25,8 +25,46 @@ services:
         fromDatabase:
           name: karabakh-atlas-db
           property: connectionString
-      - key: KBA_API_KEY
+      # Signs session cookies — must stay stable across restarts and be
+      # shared by every worker process, which generateValue guarantees
+      # (it's set once at provision time, not re-rolled per deploy).
+      - key: KBA_SECRET_KEY
         generateValue: true
+      # Frontend and API are separate Render subdomains, i.e. different
+      # sites — session cookies need SameSite=None (+ Secure, both
+      # served over HTTPS by Render) to survive that, and CORS needs the
+      # frontend's exact origin since credentialed requests can't use "*".
+      - key: KBA_COOKIE_SAMESITE
+        value: "None"
+      - key: KBA_COOKIE_SECURE
+        value: "true"
+      - key: KBA_FRONTEND_ORIGIN
+        value: "https://karabakh-atlas-frontend.onrender.com"
+      # Bootstraps the first admin account on boot (idempotent — safe to
+      # leave set). Fill these in via the Render dashboard's environment
+      # tab after the first deploy, not here — never commit real
+      # credentials. Once the admin account exists, these can be removed;
+      # further admins/roles can then be managed through the account
+      # system itself.
+      - key: KBA_ADMIN_EMAIL
+        sync: false
+      - key: KBA_ADMIN_PASSWORD
+        sync: false
+      - key: KBA_ADMIN_NAME
+        sync: false
+      # Sends registration verification emails via Gmail SMTP. Fill in
+      # via the dashboard, same as the admin vars above — never commit
+      # real credentials. KBA_SMTP_PASSWORD is a Gmail "App Password",
+      # not the actual account password. Left unset, verification
+      # emails just don't send (registration still works either way).
+      - key: KBA_SMTP_HOST
+        value: smtp.gmail.com
+      - key: KBA_SMTP_PORT
+        value: "587"
+      - key: KBA_SMTP_USER
+        sync: false
+      - key: KBA_SMTP_PASSWORD
+        sync: false
 
   - type: web
     name: karabakh-atlas-frontend

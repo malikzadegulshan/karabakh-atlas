@@ -1,9 +1,17 @@
 #!/usr/bin/python3
 """Shared request-body validation helpers for the API views."""
+import re
 
 MAX_NAME_LENGTH = 128
 MAX_TEXT_LENGTH = 5000
 MAX_SHORT_TEXT_LENGTH = 500
+
+# Deliberately simple (not a full RFC 5322 parser) — good enough to catch
+# typos/garbage input; the account is only ever reachable by whoever set
+# the password, so a stricter regex buys little real security here.
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_LENGTH = 128
 
 
 class ValidationError(Exception):
@@ -68,6 +76,31 @@ def optional_enum(data, field, choices):
     if data[field] not in choices:
         raise ValidationError(
             "{} must be one of: {}".format(field, ", ".join(sorted(choices))))
+
+
+def require_email(data, field="email"):
+    """Raise ValidationError unless data[field] looks like an email address."""
+    value = data.get(field)
+    if not isinstance(value, str) or not EMAIL_RE.match(value.strip()):
+        raise ValidationError("{} must be a valid email address".format(field))
+    if len(value) > 254:
+        raise ValidationError(
+            "{} must be at most 254 characters".format(field))
+
+
+def require_password(data, field="password"):
+    """Raise ValidationError unless data[field] is a usable password."""
+    value = data.get(field)
+    if not isinstance(value, str):
+        raise ValidationError("{} must be a string".format(field))
+    if len(value) < MIN_PASSWORD_LENGTH:
+        raise ValidationError(
+            "{} must be at least {} characters".format(
+                field, MIN_PASSWORD_LENGTH))
+    if len(value) > MAX_PASSWORD_LENGTH:
+        raise ValidationError(
+            "{} must be at most {} characters".format(
+                field, MAX_PASSWORD_LENGTH))
 
 
 def only_allowed_fields(data, allowed):
