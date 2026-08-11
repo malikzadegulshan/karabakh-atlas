@@ -303,6 +303,7 @@ function escapeAttr(str) {
 
 function setStatus(message, isError) {
   statusEl.textContent = message;
+  statusEl.hidden = !message;
   statusEl.classList.toggle("error", Boolean(isError));
 }
 
@@ -449,7 +450,9 @@ function renderCities(cities, { fitBounds = true } = {}) {
     return;
   }
 
-  setStatus(t("citiesLoaded")(cities.length), false);
+  // No "N cities loaded" message once there's data — the sidebar list
+  // itself already shows what's loaded.
+  setStatus("", false);
 
   const bounds = [];
   cities.forEach((city) => {
