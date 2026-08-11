@@ -1,8 +1,9 @@
 // Admin panel: create/edit/delete Regions and Cities against the API.
 // Shares globals (API_BASE, escapeHtml, t, loadCities, ...) with app.js,
-// which is loaded first on the page.
-
-const ADMIN_API_KEY_STORAGE = "kba_admin_api_key";
+// and (currentUser, adminToggleEl, ...) with auth.js, both loaded
+// earlier on the page. Write requests ride on the session cookie set by
+// auth.js's login — the server is the real enforcement point; the
+// admin-toggle button is just hidden client-side for non-admins as UX.
 
 // Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py. Display
 // labels come from TRANSLATIONS[currentLang].categories so they follow
@@ -121,12 +122,9 @@ function categoryPickerValue(picker) {
 }
 
 const adminOverlayEl = document.getElementById("admin-overlay");
-const adminToggleEl = document.getElementById("admin-toggle");
 const adminTitleEl = document.getElementById("admin-title");
 const adminCloseEl = document.getElementById("admin-close");
 const adminMessageEl = document.getElementById("admin-message");
-const adminApiKeyEl = document.getElementById("admin-api-key");
-const adminApiKeyLabelEl = document.getElementById("admin-api-key-label");
 const adminAddRegionTitleEl = document.getElementById("admin-add-region-title");
 const adminRegionsTitleEl = document.getElementById("admin-regions-title");
 const regionFormEl = document.getElementById("region-form");
@@ -135,30 +133,15 @@ const regionDescriptionInputEl = document.getElementById("region-description-inp
 const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 
-adminApiKeyEl.value = localStorage.getItem(ADMIN_API_KEY_STORAGE) || "";
-adminApiKeyEl.addEventListener("input", () => {
-  localStorage.setItem(ADMIN_API_KEY_STORAGE, adminApiKeyEl.value);
-});
-
 function applyAdminStaticTranslations() {
   adminToggleEl.textContent = t("adminToggle");
   adminTitleEl.textContent = t("adminTitle");
   adminCloseEl.setAttribute("aria-label", t("adminClose"));
-  adminApiKeyLabelEl.textContent = t("adminApiKeyLabel");
   adminAddRegionTitleEl.textContent = t("adminAddRegionTitle");
   regionFormSubmitEl.textContent = t("adminAddRegionSubmit");
   adminRegionsTitleEl.textContent = t("adminRegionsTitle");
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
-}
-
-function adminHeaders() {
-  const headers = { "Content-Type": "application/json" };
-  const key = adminApiKeyEl.value.trim();
-  if (key) {
-    headers["X-API-Key"] = key;
-  }
-  return headers;
 }
 
 function showAdminMessage(message, isError) {
@@ -238,7 +221,11 @@ function startPickingLocation(latInput, lngInput) {
 mapPickCancelEl.addEventListener("click", stopPickingLocation);
 
 async function apiRequest(method, path, body) {
-  const options = { method, headers: adminHeaders() };
+  const options = {
+    method,
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  };
   if (body !== undefined) {
     options.body = JSON.stringify(body);
   }

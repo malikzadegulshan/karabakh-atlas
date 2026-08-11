@@ -1,17 +1,36 @@
 #!/usr/bin/python3
 """Smoke tests for the API v1 views, using Flask's test client."""
 import json
-import os
 import unittest
+import uuid
 from api.v1.app import app
+from models.user import User
+
+TEST_PASSWORD = "correcthorsebattery"
 
 
 class TestAPIViews(unittest.TestCase):
     """End-to-end tests against the Flask test client."""
 
     def setUp(self):
-        """Create a test client for each test."""
+        """Create a test client, logged in as a fresh admin user.
+
+        Region/city writes require an admin session, so every test
+        below that creates/updates/deletes data rides on this login.
+        """
         self.client = app.test_client()
+        admin = User(
+            name="Test Admin",
+            email="test-admin-{}@example.com".format(uuid.uuid4()),
+            role="admin")
+        admin.set_password(TEST_PASSWORD)
+        admin.save()
+        login_resp = self.client.post(
+            "/api/v1/auth/login",
+            data=json.dumps(
+                {"email": admin.email, "password": TEST_PASSWORD}),
+            content_type="application/json")
+        self.assertEqual(login_resp.status_code, 200)
 
     def test_status(self):
         """GET /api/v1/status returns OK."""
@@ -223,34 +242,39 @@ class TestAPIViews(unittest.TestCase):
         self.assertEqual(
             json.loads(still_original.data)["name"], "Original City")
 
-    def test_write_requires_api_key_when_configured(self):
-        """Writes need X-API-Key once KBA_API_KEY is set; GET stays open."""
-        os.environ["KBA_API_KEY"] = "testkey123"
-        try:
-            no_key_resp = self.client.post(
-                "/api/v1/regions",
-                data=json.dumps({"name": "Should Fail"}),
-                content_type="application/json")
-            self.assertEqual(no_key_resp.status_code, 401)
+    def test_write_requires_login(self):
+        """Writes are rejected with no session; GET stays open regardless."""
+        anon_client = app.test_client()
+        no_login_resp = anon_client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Should Fail"}),
+            content_type="application/json")
+        self.assertEqual(no_login_resp.status_code, 401)
 
-            wrong_key_resp = self.client.post(
-                "/api/v1/regions",
-                data=json.dumps({"name": "Should Fail"}),
-                content_type="application/json",
-                headers={"X-API-Key": "wrong"})
-            self.assertEqual(wrong_key_resp.status_code, 401)
+        get_resp = anon_client.get("/api/v1/regions")
+        self.assertEqual(get_resp.status_code, 200)
 
-            with_key_resp = self.client.post(
-                "/api/v1/regions",
-                data=json.dumps({"name": "Should Succeed"}),
-                content_type="application/json",
-                headers={"X-API-Key": "testkey123"})
-            self.assertEqual(with_key_resp.status_code, 201)
+    def test_write_requires_admin_role_not_just_login(self):
+        """A logged-in non-admin user still can't write regions/cities."""
+        plain_client = app.test_client()
+        user = User(
+            name="Plain User",
+            email="plain-user-{}@example.com".format(uuid.uuid4()),
+            role="user")
+        user.set_password(TEST_PASSWORD)
+        user.save()
+        login_resp = plain_client.post(
+            "/api/v1/auth/login",
+            data=json.dumps(
+                {"email": user.email, "password": TEST_PASSWORD}),
+            content_type="application/json")
+        self.assertEqual(login_resp.status_code, 200)
 
-            get_resp = self.client.get("/api/v1/regions")
-            self.assertEqual(get_resp.status_code, 200)
-        finally:
-            del os.environ["KBA_API_KEY"]
+        resp = plain_client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Should Fail"}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 403)
 
 
 if __name__ == "__main__":

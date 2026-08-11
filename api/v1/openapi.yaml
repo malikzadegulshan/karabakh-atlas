@@ -3,18 +3,46 @@ info:
   title: Karabakh Atlas API
   description: >
     REST API serving region/city data for the Karabakh Atlas map website.
-    Write endpoints (POST/PUT/DELETE) require an X-API-Key header only
-    when the server has KBA_API_KEY configured; otherwise they are open.
+    Region/city write endpoints (POST/PUT/DELETE) require a logged-in
+    session with the "admin" role (see /auth/login). Anyone can register
+    an account via /auth/register, but new accounts get the "user" role,
+    which can read everything but not write regions/cities.
   version: "1.0"
 servers:
   - url: /api/v1
 components:
   securitySchemes:
-    ApiKeyAuth:
+    cookieAuth:
       type: apiKey
-      in: header
-      name: X-API-Key
+      in: cookie
+      name: session
+      description: >
+        Session cookie set by POST /auth/login or /auth/register. The
+        session user additionally needs the "admin" role for
+        region/city write endpoints.
   schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, admin]
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     Region:
       type: object
       properties:
@@ -199,8 +227,7 @@ paths:
     post:
       summary: Create a region
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -221,7 +248,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "401":
-          description: Missing/invalid X-API-Key (only when KBA_API_KEY is set)
+          description: Login required
+        "403":
+          description: Admin privileges required
   /regions/{region_id}:
     parameters:
       - name: region_id
@@ -243,8 +272,7 @@ paths:
     put:
       summary: Update a region
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -271,8 +299,7 @@ paths:
     delete:
       summary: Delete a region
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       responses:
         "200":
           description: Deleted
@@ -301,8 +328,7 @@ paths:
     post:
       summary: Create a city in a region
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -359,8 +385,7 @@ paths:
     put:
       summary: Update a city
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -381,10 +406,90 @@ paths:
     delete:
       summary: Delete a city
       security:
-        - ApiKeyAuth: []
-        - {}
+        - cookieAuth: []
       responses:
         "200":
           description: Deleted
         "404":
           description: Not found
+  /auth/register:
+    post:
+      summary: Create an account (role "user") and log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  maxLength: 128
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+      responses:
+        "201":
+          description: Account created; session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+        "409":
+          description: Email already registered
+  /auth/login:
+    post:
+      summary: Log in with email + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Logged in; session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+        "401":
+          description: Invalid email or password
+        "429":
+          description: Too many failed attempts — try again later
+  /auth/logout:
+    post:
+      summary: Clear the current session
+      responses:
+        "200":
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Return the current logged-in user
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: The current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not logged in

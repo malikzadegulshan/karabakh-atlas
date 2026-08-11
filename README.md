@@ -35,5 +35,20 @@ python3 -m http.server 8000
 Then open `http://localhost:8000` in a browser. The API listens on
 `http://localhost:5000` by default.
 
+## Accounts
 
-from the dashboard using the settings in `render.yaml` as a reference.
+Regions/cities can only be created, edited, or deleted by a logged-in
+admin — anyone can create a regular account from the "Sign in" button,
+but that gets the "user" role, which is read-only. To get the first
+admin account, set `KBA_ADMIN_EMAIL` and `KBA_ADMIN_PASSWORD` (and
+optionally `KBA_ADMIN_NAME`) before starting the backend — it creates
+that admin on boot if it doesn't already exist yet:
+
+```bash
+export KBA_ADMIN_EMAIL=you@example.com KBA_ADMIN_PASSWORD='choose-a-real-password'
+python3 -m api.v1.app
+```
+
+Sign in with those credentials from the site, and the "Manage" button
+appears. Further admins can then be promoted directly in the database,
+or by re-running with different `KBA_ADMIN_*` values for a second admin.
