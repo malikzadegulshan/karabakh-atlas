@@ -3,6 +3,7 @@
 import unittest
 from datetime import datetime
 from models.base_model import BaseModel
+from models.region import Region
 
 
 class TestBaseModel(unittest.TestCase):
@@ -47,7 +48,9 @@ class TestBaseModel(unittest.TestCase):
 
     def test_save_updates_updated_at(self):
         """save() refreshes updated_at to a later timestamp."""
-        obj = BaseModel()
+        # A real mapped subclass, not bare BaseModel: save() persists
+        # through storage, and BaseModel itself isn't a mapped table.
+        obj = Region(name="Save Test Region")
         old_updated_at = obj.updated_at
         obj.save()
         self.assertGreaterEqual(obj.updated_at, old_updated_at)
