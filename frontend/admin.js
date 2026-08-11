@@ -413,6 +413,35 @@ function buildNameI18nInputs(existingNameI18n) {
   return { elements, collect };
 }
 
+// Same idea as buildNameI18nInputs, but for the longer description text
+// — textareas instead of single-line inputs. English still uses the
+// main Description field as its fallback (see localizedDescription()
+// in app.js), so there's no separate "EN" textarea here either.
+function buildDescriptionI18nInputs(existingDescriptionI18n) {
+  const inputs = {};
+  const elements = NAME_I18N_LANGS.map((lang) => {
+    const textarea = document.createElement("textarea");
+    textarea.rows = 2;
+    textarea.placeholder = `${t("fieldDescription")} (${lang.toUpperCase()})`;
+    textarea.value = (existingDescriptionI18n && existingDescriptionI18n[lang]) || "";
+    inputs[lang] = textarea;
+    return textarea;
+  });
+
+  function collect() {
+    const result = {};
+    NAME_I18N_LANGS.forEach((lang) => {
+      const value = inputs[lang].value.trim();
+      if (value) {
+        result[lang] = value;
+      }
+    });
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  return { elements, collect };
+}
+
 function buildAddCityForm(region) {
   const form = document.createElement("form");
   form.className = "admin-form admin-add-city-form";
@@ -437,6 +466,12 @@ function buildAddCityForm(region) {
 
   const nameI18n = buildNameI18nInputs(null);
 
+  const descInput = document.createElement("textarea");
+  descInput.rows = 2;
+  descInput.placeholder = t("fieldDescription");
+
+  const descriptionI18n = buildDescriptionI18nInputs(null);
+
   const categoryPicker = buildCategoryPicker("city");
 
   const pickOnMapBtn = document.createElement("button");
@@ -455,6 +490,8 @@ function buildAddCityForm(region) {
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
+  form.appendChild(descInput);
+  descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(submit);
 
   form.addEventListener("submit", async (event) => {
@@ -467,10 +504,18 @@ function buildAddCityForm(region) {
       return;
     }
     submit.disabled = true;
-    const payload = { name, latitude, longitude, category: categoryPickerValue(categoryPicker) };
+    const payload = {
+      name, latitude, longitude,
+      category: categoryPickerValue(categoryPicker),
+      description: descInput.value.trim() || null,
+    };
     const nameI18nValue = nameI18n.collect();
     if (nameI18nValue) {
       payload.name_i18n = nameI18nValue;
+    }
+    const descriptionI18nValue = descriptionI18n.collect();
+    if (descriptionI18nValue) {
+      payload.description_i18n = descriptionI18nValue;
     }
     try {
       await apiRequest("POST", `/regions/${region.id}/cities`, payload);
@@ -583,6 +628,7 @@ function startEditCity(city) {
   descInput.value = city.description || "";
 
   const nameI18n = buildNameI18nInputs(city.name_i18n);
+  const descriptionI18n = buildDescriptionI18nInputs(city.description_i18n);
 
   const categoryPicker = buildCategoryPicker(city.category);
 
@@ -613,6 +659,7 @@ function startEditCity(city) {
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
   form.appendChild(descInput);
+  descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(actions);
 
   form.addEventListener("submit", async (event) => {
@@ -631,6 +678,7 @@ function startEditCity(city) {
         category: categoryPickerValue(categoryPicker),
         description: descInput.value.trim() || null,
         name_i18n: nameI18n.collect(),
+        description_i18n: descriptionI18n.collect(),
       });
       showAdminMessage(t("cityUpdated")(name), false);
       await refreshAdminData();
