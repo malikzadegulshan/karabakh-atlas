@@ -391,6 +391,15 @@ aside.collapsed ~ #sidebar-toggle {
   pointer-events: auto;
 }
 
+/* Hides the redundant label text on Streets (which already has its own
+   place labels) while keeping the marker itself attached to the map —
+   see markersLayer's comment in app.js for why that distinction matters
+   (a detached marker can't show its popup, breaking search/sidebar
+   "jump to this city"). */
+#map.hide-city-labels .city-label {
+  display: none;
+}
+
 .poi-marker-wrapper {
   background: transparent;
   border: none;

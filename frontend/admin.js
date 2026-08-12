@@ -474,6 +474,16 @@ function buildAddCityForm(region) {
 
   const categoryPicker = buildCategoryPicker("city");
 
+  const imageUrlInput = document.createElement("input");
+  imageUrlInput.type = "url";
+  imageUrlInput.placeholder = t("fieldImageUrl");
+  imageUrlInput.maxLength = 500;
+
+  const imageCreditInput = document.createElement("input");
+  imageCreditInput.type = "text";
+  imageCreditInput.placeholder = t("fieldImageCredit");
+  imageCreditInput.maxLength = 255;
+
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
   pickOnMapBtn.className = "pick-on-map";
@@ -490,6 +500,8 @@ function buildAddCityForm(region) {
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
+  form.appendChild(imageUrlInput);
+  form.appendChild(imageCreditInput);
   form.appendChild(descInput);
   descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(submit);
@@ -508,6 +520,8 @@ function buildAddCityForm(region) {
       name, latitude, longitude,
       category: categoryPickerValue(categoryPicker),
       description: descInput.value.trim() || null,
+      image_url: imageUrlInput.value.trim() || null,
+      image_credit: imageCreditInput.value.trim() || null,
     };
     const nameI18nValue = nameI18n.collect();
     if (nameI18nValue) {
@@ -632,6 +646,18 @@ function startEditCity(city) {
 
   const categoryPicker = buildCategoryPicker(city.category);
 
+  const imageUrlInput = document.createElement("input");
+  imageUrlInput.type = "url";
+  imageUrlInput.placeholder = t("fieldImageUrl");
+  imageUrlInput.maxLength = 500;
+  imageUrlInput.value = city.image_url || "";
+
+  const imageCreditInput = document.createElement("input");
+  imageCreditInput.type = "text";
+  imageCreditInput.placeholder = t("fieldImageCredit");
+  imageCreditInput.maxLength = 255;
+  imageCreditInput.value = city.image_credit || "";
+
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
   pickOnMapBtn.className = "pick-on-map";
@@ -658,6 +684,8 @@ function startEditCity(city) {
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
+  form.appendChild(imageUrlInput);
+  form.appendChild(imageCreditInput);
   form.appendChild(descInput);
   descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(actions);
@@ -677,6 +705,8 @@ function startEditCity(city) {
         name, latitude, longitude,
         category: categoryPickerValue(categoryPicker),
         description: descInput.value.trim() || null,
+        image_url: imageUrlInput.value.trim() || null,
+        image_credit: imageCreditInput.value.trim() || null,
         name_i18n: nameI18n.collect(),
         description_i18n: descriptionI18n.collect(),
       });
