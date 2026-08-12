@@ -262,6 +262,7 @@ const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
+const citiesToggleEl = document.getElementById("cities-toggle");
 const titleEl = document.getElementById("app-title");
 const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
@@ -294,6 +295,7 @@ function applyStaticTranslations() {
   titleEl.textContent = t("title");
   searchInputEl.placeholder = t("searchPlaceholder");
   placesToggleEl.textContent = t("placesToggle");
+  citiesToggleEl.textContent = t("citiesToggle");
   categoryFilterCloseEl.setAttribute("aria-label", t("adminClose"));
   updateYearLabel();
   sidebarToggleEl.setAttribute(
@@ -353,14 +355,27 @@ document.addEventListener("keydown", (event) => {
 applyStaticTranslations();
 renderCategoryFilterBar();
 
-sidebarToggleEl.addEventListener("click", () => {
-  const collapsed = sidebarEl.classList.toggle("collapsed");
+function setSidebarCollapsed(collapsed) {
+  sidebarEl.classList.toggle("collapsed", collapsed);
   sidebarToggleEl.textContent = collapsed ? "›" : "‹";
   sidebarToggleEl.setAttribute(
     "aria-label",
     collapsed ? t("sidebarOpen") : t("sidebarClose")
   );
+  citiesToggleEl.classList.toggle("active", !collapsed);
+  citiesToggleEl.setAttribute("aria-expanded", String(!collapsed));
+  // The map sits behind the sidebar's own space (it doesn't overlay it
+  // on desktop — see aside's width transition in style.css), so Leaflet
+  // needs to know its visible area changed once that transition ends.
   setTimeout(() => map.invalidateSize(), 220);
+}
+
+sidebarToggleEl.addEventListener("click", () => {
+  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
+});
+
+citiesToggleEl.addEventListener("click", () => {
+  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
 });
 
 function escapeHtml(str) {

@@ -176,6 +176,7 @@ aside.collapsed ~ #category-filter-bar {
   background: #f1f5f9;
 }
 
+#cities-toggle,
 #places-toggle {
   padding: 0.5rem 0.9rem;
   font-size: 0.82rem;
@@ -189,10 +190,12 @@ aside.collapsed ~ #category-filter-bar {
   flex-shrink: 0;
 }
 
+#cities-toggle:hover,
 #places-toggle:hover {
   background: #f1f5f9;
 }
 
+#cities-toggle.active,
 #places-toggle.active {
   color: #fff;
   background: #221539;

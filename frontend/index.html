@@ -10,18 +10,19 @@
 <body>
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
   <main>
-    <aside id="sidebar">
+    <aside id="sidebar" class="collapsed">
       <p id="status">Loading…</p>
       <ul id="city-list"></ul>
       <div id="city-detail"></div>
     </aside>
-    <button id="sidebar-toggle" aria-label="Close city list">‹</button>
+    <button id="sidebar-toggle" aria-label="Open city list">›</button>
     <div id="map"></div>
     <div id="top-bar">
       <div id="search-box">
         <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
       </div>
       <div class="header-actions">
+        <button type="button" id="cities-toggle" aria-expanded="false">Cities</button>
         <button type="button" id="places-toggle" aria-haspopup="true" aria-expanded="false">Places</button>
         <div id="account-widget">
           <button type="button" id="account-signin-toggle">Sign in</button>
