@@ -152,9 +152,62 @@ const markersLayer = L.layerGroup().addTo(map);
 
 // Points of interest (cafes, restaurants, etc.) are shown on both tile
 // layers, but only once zoomed in enough — otherwise a full set of them
-// would look chaotic at the region-wide view.
+// would look chaotic at the region-wide view. That clutter concern goes
+// away once a category filter narrows it down to just one kind of
+// place, so a filter being active bypasses the zoom gate entirely.
 const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
+let activeCategoryFilter = null;
+
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_COLORS = {
+  road: "#57534e",
+  cafe: "#b45309",
+  restaurant: "#b91c1c",
+  hotel: "#1d4ed8",
+  landmark: "#7c3aed",
+  museum: "#0f766e",
+  park: "#15803d",
+  university: "#4338ca",
+  school: "#4f46e5",
+  hospital: "#dc2626",
+  pharmacy: "#16a34a",
+  bank: "#065f46",
+  government: "#374151",
+  police: "#1e3a8a",
+  fire_station: "#c2410c",
+  mosque: "#0891b2",
+  church: "#0e7490",
+  fuel_station: "#78350f",
+  parking: "#525252",
+  shop: "#c2410c",
+  other: "#334155",
+};
+
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_ICONS = {
+  road: "🛣️",
+  cafe: "☕",
+  restaurant: "🍽️",
+  hotel: "🏨",
+  landmark: "🗿",
+  museum: "🏛️",
+  park: "🌳",
+  university: "🎓",
+  school: "📚",
+  hospital: "🏥",
+  pharmacy: "💊",
+  bank: "🏦",
+  government: "🏢",
+  police: "👮",
+  fire_station: "🚒",
+  mosque: "🕌",
+  church: "⛪",
+  fuel_station: "⛽",
+  parking: "🅿️",
+  shop: "🛍️",
+  other: "📍",
+};
 
 function updateMarkersVisibility(activeLayer) {
   const showLabels = activeLayer === satelliteLayer || activeLayer === historicalLayer;
@@ -162,7 +215,7 @@ function updateMarkersVisibility(activeLayer) {
 }
 
 function updatePoiVisibility() {
-  const shouldShow = map.getZoom() >= POI_MIN_ZOOM;
+  const shouldShow = activeCategoryFilter !== null || map.getZoom() >= POI_MIN_ZOOM;
   if (shouldShow && !map.hasLayer(poiMarkersLayer)) {
     map.addLayer(poiMarkersLayer);
   } else if (!shouldShow && map.hasLayer(poiMarkersLayer)) {
@@ -209,12 +262,33 @@ const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
+const citiesToggleEl = document.getElementById("cities-toggle");
+const weatherCityEl = document.getElementById("weather-city");
+const weatherIconEl = document.getElementById("weather-icon");
+const weatherTempEl = document.getElementById("weather-temp");
+const weatherDescEl = document.getElementById("weather-desc");
+const weatherMetaEl = document.getElementById("weather-meta");
 const titleEl = document.getElementById("app-title");
 const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
+const placesToggleEl = document.getElementById("places-toggle");
+const categoryFilterBarEl = document.getElementById("category-filter-bar");
+const categoryFilterCloseEl = document.getElementById("category-filter-close");
+const categoryFilterChipsEl = document.getElementById("category-filter-chips");
+let placesPanelOpen = false;
+
+function setPlacesPanelOpen(open) {
+  placesPanelOpen = open;
+  categoryFilterBarEl.hidden = !open;
+  placesToggleEl.classList.toggle("active", open);
+  placesToggleEl.setAttribute("aria-expanded", String(open));
+}
+
+placesToggleEl.addEventListener("click", () => setPlacesPanelOpen(!placesPanelOpen));
+categoryFilterCloseEl.addEventListener("click", () => setPlacesPanelOpen(false));
 
 function closeLangMenu() {
   langMenuEl.hidden = true;
@@ -225,6 +299,9 @@ function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
   searchInputEl.placeholder = t("searchPlaceholder");
+  placesToggleEl.textContent = t("placesToggle");
+  citiesToggleEl.textContent = t("citiesToggle");
+  categoryFilterCloseEl.setAttribute("aria-label", t("adminClose"));
   updateYearLabel();
   sidebarToggleEl.setAttribute(
     "aria-label",
@@ -253,6 +330,8 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
+  renderCategoryFilterBar();
+  renderWeatherPanel();
   // Only the labels change here, not the underlying data, so don't
   // re-fit the map to the markers — that was resetting the user's pan
   // and zoom on every language switch.
@@ -280,15 +359,29 @@ document.addEventListener("keydown", (event) => {
 });
 
 applyStaticTranslations();
+renderCategoryFilterBar();
 
-sidebarToggleEl.addEventListener("click", () => {
-  const collapsed = sidebarEl.classList.toggle("collapsed");
+function setSidebarCollapsed(collapsed) {
+  sidebarEl.classList.toggle("collapsed", collapsed);
   sidebarToggleEl.textContent = collapsed ? "›" : "‹";
   sidebarToggleEl.setAttribute(
     "aria-label",
     collapsed ? t("sidebarOpen") : t("sidebarClose")
   );
+  citiesToggleEl.classList.toggle("active", !collapsed);
+  citiesToggleEl.setAttribute("aria-expanded", String(!collapsed));
+  // The map sits behind the sidebar's own space (it doesn't overlay it
+  // on desktop — see aside's width transition in style.css), so Leaflet
+  // needs to know its visible area changed once that transition ends.
   setTimeout(() => map.invalidateSize(), 220);
+}
+
+sidebarToggleEl.addEventListener("click", () => {
+  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
+});
+
+citiesToggleEl.addEventListener("click", () => {
+  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
 });
 
 function escapeHtml(str) {
@@ -346,65 +439,145 @@ function cityInfoHtml(city) {
   return parts.join("");
 }
 
+// Open-Meteo's WMO weather codes -> icon/label. Kept in English only —
+// Open-Meteo doesn't provide localized condition text itself, and
+// translating all ~28 possible codes across 4 languages isn't worth it
+// for a single line of secondary text next to a temperature and icon.
+const WEATHER_CODES = {
+  0: { icon: "☀️", label: "Clear sky" },
+  1: { icon: "🌤️", label: "Mainly clear" },
+  2: { icon: "⛅", label: "Partly cloudy" },
+  3: { icon: "☁️", label: "Overcast" },
+  45: { icon: "🌫️", label: "Fog" },
+  48: { icon: "🌫️", label: "Depositing rime fog" },
+  51: { icon: "🌦️", label: "Light drizzle" },
+  53: { icon: "🌦️", label: "Moderate drizzle" },
+  55: { icon: "🌦️", label: "Dense drizzle" },
+  56: { icon: "🌧️", label: "Light freezing drizzle" },
+  57: { icon: "🌧️", label: "Dense freezing drizzle" },
+  61: { icon: "🌧️", label: "Slight rain" },
+  63: { icon: "🌧️", label: "Moderate rain" },
+  65: { icon: "🌧️", label: "Heavy rain" },
+  66: { icon: "🌧️", label: "Light freezing rain" },
+  67: { icon: "🌧️", label: "Heavy freezing rain" },
+  71: { icon: "🌨️", label: "Slight snow fall" },
+  73: { icon: "🌨️", label: "Moderate snow fall" },
+  75: { icon: "❄️", label: "Heavy snow fall" },
+  77: { icon: "❄️", label: "Snow grains" },
+  80: { icon: "🌦️", label: "Slight rain showers" },
+  81: { icon: "🌦️", label: "Moderate rain showers" },
+  82: { icon: "⛈️", label: "Violent rain showers" },
+  85: { icon: "🌨️", label: "Slight snow showers" },
+  86: { icon: "❄️", label: "Heavy snow showers" },
+  95: { icon: "⛈️", label: "Thunderstorm" },
+  96: { icon: "⛈️", label: "Thunderstorm, slight hail" },
+  99: { icon: "⛈️", label: "Thunderstorm, heavy hail" },
+};
+
+function weatherInfo(code) {
+  return WEATHER_CODES[code] || { icon: "🌡️", label: "—" };
+}
+
+// The city/point currently shown in the weather panel, and its last
+// successfully fetched reading — kept separately from the fetch itself
+// so a language switch can re-render (translated labels, localized
+// city name) without re-hitting the API.
+let weatherCity = null;
+let weatherCurrent = null;
+
+function renderWeatherPanel() {
+  if (!weatherCity) {
+    return;
+  }
+  weatherCityEl.textContent = localizedName(weatherCity);
+  if (!weatherCurrent) {
+    weatherIconEl.textContent = "";
+    weatherTempEl.textContent = "";
+    weatherDescEl.textContent = t("weatherLoading");
+    weatherMetaEl.textContent = "";
+    return;
+  }
+  const info = weatherInfo(weatherCurrent.weather_code);
+  weatherIconEl.textContent = info.icon;
+  weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
+  weatherDescEl.textContent = info.label;
+  weatherMetaEl.textContent =
+    `${t("weatherHumidity")}: ${weatherCurrent.relative_humidity_2m}% · ` +
+    `${t("weatherWind")}: ${Math.round(weatherCurrent.wind_speed_10m)} km/h`;
+}
+
+async function loadWeatherFor(city) {
+  weatherCity = city;
+  weatherCurrent = null;
+  renderWeatherPanel();
+  try {
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}` +
+      `&longitude=${city.longitude}&current=temperature_2m,weather_code,` +
+      `wind_speed_10m,relative_humidity_2m&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Weather API returned ${res.status}`);
+    }
+    const data = await res.json();
+    // Bail if the selection moved on to a different city while this
+    // request was in flight — don't clobber a newer selection.
+    if (weatherCity !== city) {
+      return;
+    }
+    weatherCurrent = data.current;
+    renderWeatherPanel();
+  } catch (err) {
+    if (weatherCity !== city) {
+      return;
+    }
+    weatherIconEl.textContent = "";
+    weatherTempEl.textContent = "";
+    weatherDescEl.textContent = t("weatherError");
+    weatherMetaEl.textContent = "";
+  }
+}
+
 function showCityDetail(city) {
   detailEl.innerHTML = cityInfoHtml(city);
   Array.from(listEl.children).forEach((li) => {
     li.classList.toggle("active", li.dataset.cityId === city.id);
   });
+  loadWeatherFor(city);
 }
-
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_COLORS = {
-  road: "#57534e",
-  cafe: "#b45309",
-  restaurant: "#b91c1c",
-  hotel: "#1d4ed8",
-  landmark: "#7c3aed",
-  museum: "#0f766e",
-  park: "#15803d",
-  university: "#4338ca",
-  school: "#4f46e5",
-  hospital: "#dc2626",
-  pharmacy: "#16a34a",
-  bank: "#065f46",
-  government: "#374151",
-  police: "#1e3a8a",
-  fire_station: "#c2410c",
-  mosque: "#0891b2",
-  church: "#0e7490",
-  fuel_station: "#78350f",
-  parking: "#525252",
-  shop: "#c2410c",
-  other: "#334155",
-};
-
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_ICONS = {
-  road: "🛣️",
-  cafe: "☕",
-  restaurant: "🍽️",
-  hotel: "🏨",
-  landmark: "🗿",
-  museum: "🏛️",
-  park: "🌳",
-  university: "🎓",
-  school: "📚",
-  hospital: "🏥",
-  pharmacy: "💊",
-  bank: "🏦",
-  government: "🏢",
-  police: "👮",
-  fire_station: "🚒",
-  mosque: "🕌",
-  church: "⛪",
-  fuel_station: "⛽",
-  parking: "🅿️",
-  shop: "🛍️",
-  other: "📍",
-};
 
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
+}
+
+function categoryLabel(value) {
+  return (t("categories") && t("categories")[value]) || value;
+}
+
+// Every POI category becomes a filter chip — Object.keys(POI_ICONS) is
+// already exactly that list (it excludes "city", the only non-POI
+// category), so there's nothing extra to keep in sync here beyond
+// POI_ICONS/POI_COLORS themselves.
+function renderCategoryFilterBar() {
+  categoryFilterChipsEl.innerHTML = "";
+  Object.keys(POI_ICONS).forEach((category) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "category-chip";
+    chip.classList.toggle("active", activeCategoryFilter === category);
+    chip.innerHTML =
+      `<span class="category-chip-icon">${POI_ICONS[category]}</span>` +
+      escapeHtml(categoryLabel(category));
+    chip.addEventListener("click", () => {
+      // Clicking the already-active chip clears the filter — same
+      // toggle-off gesture as Google Maps' own category chips.
+      activeCategoryFilter = activeCategoryFilter === category ? null : category;
+      renderCategoryFilterBar();
+      updatePoiVisibility();
+      applyFilterAndRender({ fitBounds: false });
+    });
+    categoryFilterChipsEl.appendChild(chip);
+  });
 }
 
 function buildMarker(city) {
@@ -525,8 +698,21 @@ function matchesSearch(city) {
   );
 }
 
+// Regular cities are unaffected by the category filter (it's a POI
+// concept — "show me the cafes", not "hide every non-cafe city"); only
+// POIs get excluded when their category doesn't match the active one.
+function matchesActiveFilters(city) {
+  if (!matchesSearch(city)) {
+    return false;
+  }
+  if (activeCategoryFilter && isPoi(city) && city.category !== activeCategoryFilter) {
+    return false;
+  }
+  return true;
+}
+
 function applyFilterAndRender(options) {
-  renderCities(lastCities.filter(matchesSearch), options);
+  renderCities(lastCities.filter(matchesActiveFilters), options);
 }
 
 searchInputEl.addEventListener("input", () => {
@@ -542,7 +728,7 @@ searchInputEl.addEventListener("keydown", (event) => {
   // Jump to the top match currently shown — same ranked order as the
   // sidebar list (and includes POIs, which the sidebar itself doesn't
   // list but the map still does).
-  const [topMatch] = lastCities.filter(matchesSearch);
+  const [topMatch] = lastCities.filter(matchesActiveFilters);
   if (!topMatch) {
     return;
   }
@@ -563,6 +749,12 @@ async function loadCities() {
     const cities = await res.json();
     lastCities = cities;
     applyFilterAndRender();
+    if (!weatherCity && cities.length > 0) {
+      // Default weather panel content before anything's been clicked —
+      // Khankendi if it's there, otherwise just whatever loaded first.
+      const defaultCity = cities.find((c) => c.name === "Khankendi") || cities[0];
+      loadWeatherFor(defaultCity);
+    }
   } catch (err) {
     setStatus(t("apiError")(API_BASE, err.message), true);
   }

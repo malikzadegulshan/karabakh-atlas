@@ -43,6 +43,95 @@ aside.collapsed ~ #top-bar {
   left: 12px;
 }
 
+/* Google-Maps-style category quick filters, floating just below the
+   search bar, opened/closed via the "Places" toggle button. The chip
+   strip itself is horizontally scrollable — the full category list
+   (cafe, restaurant, hotel, ...) is too wide to fit on one line — with
+   a fixed close button alongside it that's always reachable regardless
+   of scroll position. */
+#category-filter-bar {
+  position: absolute;
+  top: 68px;
+  left: calc(260px + 12px);
+  right: 12px;
+  z-index: 1150;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: left 0.2s ease;
+}
+
+/* .category-chip's own "display" would otherwise beat the [hidden]
+   attribute's default UA rule (author styles always win over UA
+   styles) — same issue fixed earlier for #account-status. */
+#category-filter-bar[hidden] {
+  display: none;
+}
+
+aside.collapsed ~ #category-filter-bar {
+  left: 12px;
+}
+
+#category-filter-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+#category-filter-close:hover {
+  background: #f1f5f9;
+}
+
+#category-filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  min-width: 0;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.category-chip:hover {
+  background: #f1f5f9;
+}
+
+.category-chip.active {
+  color: #fff;
+  background: #221539;
+}
+
+.category-chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 #search-box {
   flex: 1;
   max-width: 380px;
@@ -85,6 +174,31 @@ aside.collapsed ~ #top-bar {
 
 #admin-toggle:hover {
   background: #f1f5f9;
+}
+
+#cities-toggle,
+#places-toggle {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#cities-toggle:hover,
+#places-toggle:hover {
+  background: #f1f5f9;
+}
+
+#cities-toggle.active,
+#places-toggle.active {
+  color: #fff;
+  background: #221539;
 }
 
 #account-widget {
@@ -310,6 +424,50 @@ aside.collapsed {
 
 aside.collapsed ~ #sidebar-toggle {
   left: 11px;
+}
+
+#weather-panel {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+#weather-city {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.3rem;
+}
+
+#weather-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#weather-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+#weather-temp {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+#weather-desc {
+  font-size: 0.82rem;
+  color: #475569;
+  margin-top: 0.15rem;
+}
+
+#weather-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.4rem;
 }
 
 #status {
@@ -860,6 +1018,12 @@ aside.collapsed ~ #sidebar-toggle {
     left: 12px;
     right: 12px;
     flex-wrap: wrap;
+  }
+
+  #category-filter-bar,
+  aside.collapsed ~ #category-filter-bar {
+    left: 12px;
+    right: 12px;
   }
 
   #search-box {

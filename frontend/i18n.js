@@ -7,6 +7,12 @@ const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
     searchPlaceholder: "Search places…",
+    placesToggle: "Places",
+    citiesToggle: "Cities",
+    weatherLoading: "Loading weather…",
+    weatherError: "Weather unavailable",
+    weatherHumidity: "Humidity",
+    weatherWind: "Wind",
     loading: "Loading…",
     noCities:
       "Backend is reachable, but no cities have been added yet. " +
@@ -91,6 +97,12 @@ const TRANSLATIONS = {
   az: {
     title: "Qarabağ Atlası",
     searchPlaceholder: "Yer axtar…",
+    placesToggle: "Yerlər",
+    citiesToggle: "Şəhərlər",
+    weatherLoading: "Hava məlumatı yüklənir…",
+    weatherError: "Hava məlumatı əlçatan deyil",
+    weatherHumidity: "Rütubət",
+    weatherWind: "Külək",
     loading: "Yüklənir…",
     noCities:
       "Backend əlçatandır, lakin hələ heç bir şəhər əlavə edilməyib. " +
@@ -177,6 +189,12 @@ const TRANSLATIONS = {
   tr: {
     title: "Karabağ Atlası",
     searchPlaceholder: "Yer ara…",
+    placesToggle: "Yerler",
+    citiesToggle: "Şehirler",
+    weatherLoading: "Hava durumu yükleniyor…",
+    weatherError: "Hava durumu alınamadı",
+    weatherHumidity: "Nem",
+    weatherWind: "Rüzgar",
     loading: "Yükleniyor…",
     noCities:
       "Backend erişilebilir durumda, ancak henüz şehir eklenmedi. " +
@@ -261,6 +279,12 @@ const TRANSLATIONS = {
   ru: {
     title: "Атлас Карабаха",
     searchPlaceholder: "Поиск местов…",
+    placesToggle: "Места",
+    citiesToggle: "Города",
+    weatherLoading: "Загрузка погоды…",
+    weatherError: "Погода недоступна",
+    weatherHumidity: "Влажность",
+    weatherWind: "Ветер",
     loading: "Загрузка…",
     noCities:
       "Backend доступен, но зона ещё не добавлены. Используйте " +

@@ -11,6 +11,15 @@
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
   <main>
     <aside id="sidebar">
+      <div id="weather-panel">
+        <div id="weather-city"></div>
+        <div id="weather-main">
+          <span id="weather-icon"></span>
+          <span id="weather-temp"></span>
+        </div>
+        <div id="weather-desc"></div>
+        <div id="weather-meta"></div>
+      </div>
       <p id="status">Loading…</p>
       <ul id="city-list"></ul>
       <div id="city-detail"></div>
@@ -22,6 +31,8 @@
         <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
       </div>
       <div class="header-actions">
+        <button type="button" id="cities-toggle" class="active" aria-expanded="true">Cities</button>
+        <button type="button" id="places-toggle" aria-haspopup="true" aria-expanded="false">Places</button>
         <div id="account-widget">
           <button type="button" id="account-signin-toggle">Sign in</button>
           <div id="account-status" hidden>
@@ -43,6 +54,10 @@
           </div>
         </div>
       </div>
+    </div>
+    <div id="category-filter-bar" role="group" aria-label="Filter by category" hidden>
+      <button type="button" id="category-filter-close" aria-label="Close">×</button>
+      <div id="category-filter-chips"></div>
     </div>
     <div id="map-pick-banner" hidden>
       <span>Click anywhere on the map to set the location</span>
