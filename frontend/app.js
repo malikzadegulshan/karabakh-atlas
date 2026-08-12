@@ -263,6 +263,11 @@ const detailEl = document.getElementById("city-detail");
 const sidebarEl = document.getElementById("sidebar");
 const sidebarToggleEl = document.getElementById("sidebar-toggle");
 const citiesToggleEl = document.getElementById("cities-toggle");
+const weatherCityEl = document.getElementById("weather-city");
+const weatherIconEl = document.getElementById("weather-icon");
+const weatherTempEl = document.getElementById("weather-temp");
+const weatherDescEl = document.getElementById("weather-desc");
+const weatherMetaEl = document.getElementById("weather-meta");
 const titleEl = document.getElementById("app-title");
 const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
@@ -326,6 +331,7 @@ langMenuEl.addEventListener("click", (event) => {
   applyStaticTranslations();
   refreshLayerControl();
   renderCategoryFilterBar();
+  renderWeatherPanel();
   // Only the labels change here, not the underlying data, so don't
   // re-fit the map to the markers — that was resetting the user's pan
   // and zoom on every language switch.
@@ -433,11 +439,111 @@ function cityInfoHtml(city) {
   return parts.join("");
 }
 
+// Open-Meteo's WMO weather codes -> icon/label. Kept in English only —
+// Open-Meteo doesn't provide localized condition text itself, and
+// translating all ~28 possible codes across 4 languages isn't worth it
+// for a single line of secondary text next to a temperature and icon.
+const WEATHER_CODES = {
+  0: { icon: "☀️", label: "Clear sky" },
+  1: { icon: "🌤️", label: "Mainly clear" },
+  2: { icon: "⛅", label: "Partly cloudy" },
+  3: { icon: "☁️", label: "Overcast" },
+  45: { icon: "🌫️", label: "Fog" },
+  48: { icon: "🌫️", label: "Depositing rime fog" },
+  51: { icon: "🌦️", label: "Light drizzle" },
+  53: { icon: "🌦️", label: "Moderate drizzle" },
+  55: { icon: "🌦️", label: "Dense drizzle" },
+  56: { icon: "🌧️", label: "Light freezing drizzle" },
+  57: { icon: "🌧️", label: "Dense freezing drizzle" },
+  61: { icon: "🌧️", label: "Slight rain" },
+  63: { icon: "🌧️", label: "Moderate rain" },
+  65: { icon: "🌧️", label: "Heavy rain" },
+  66: { icon: "🌧️", label: "Light freezing rain" },
+  67: { icon: "🌧️", label: "Heavy freezing rain" },
+  71: { icon: "🌨️", label: "Slight snow fall" },
+  73: { icon: "🌨️", label: "Moderate snow fall" },
+  75: { icon: "❄️", label: "Heavy snow fall" },
+  77: { icon: "❄️", label: "Snow grains" },
+  80: { icon: "🌦️", label: "Slight rain showers" },
+  81: { icon: "🌦️", label: "Moderate rain showers" },
+  82: { icon: "⛈️", label: "Violent rain showers" },
+  85: { icon: "🌨️", label: "Slight snow showers" },
+  86: { icon: "❄️", label: "Heavy snow showers" },
+  95: { icon: "⛈️", label: "Thunderstorm" },
+  96: { icon: "⛈️", label: "Thunderstorm, slight hail" },
+  99: { icon: "⛈️", label: "Thunderstorm, heavy hail" },
+};
+
+function weatherInfo(code) {
+  return WEATHER_CODES[code] || { icon: "🌡️", label: "—" };
+}
+
+// The city/point currently shown in the weather panel, and its last
+// successfully fetched reading — kept separately from the fetch itself
+// so a language switch can re-render (translated labels, localized
+// city name) without re-hitting the API.
+let weatherCity = null;
+let weatherCurrent = null;
+
+function renderWeatherPanel() {
+  if (!weatherCity) {
+    return;
+  }
+  weatherCityEl.textContent = localizedName(weatherCity);
+  if (!weatherCurrent) {
+    weatherIconEl.textContent = "";
+    weatherTempEl.textContent = "";
+    weatherDescEl.textContent = t("weatherLoading");
+    weatherMetaEl.textContent = "";
+    return;
+  }
+  const info = weatherInfo(weatherCurrent.weather_code);
+  weatherIconEl.textContent = info.icon;
+  weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
+  weatherDescEl.textContent = info.label;
+  weatherMetaEl.textContent =
+    `${t("weatherHumidity")}: ${weatherCurrent.relative_humidity_2m}% · ` +
+    `${t("weatherWind")}: ${Math.round(weatherCurrent.wind_speed_10m)} km/h`;
+}
+
+async function loadWeatherFor(city) {
+  weatherCity = city;
+  weatherCurrent = null;
+  renderWeatherPanel();
+  try {
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}` +
+      `&longitude=${city.longitude}&current=temperature_2m,weather_code,` +
+      `wind_speed_10m,relative_humidity_2m&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Weather API returned ${res.status}`);
+    }
+    const data = await res.json();
+    // Bail if the selection moved on to a different city while this
+    // request was in flight — don't clobber a newer selection.
+    if (weatherCity !== city) {
+      return;
+    }
+    weatherCurrent = data.current;
+    renderWeatherPanel();
+  } catch (err) {
+    if (weatherCity !== city) {
+      return;
+    }
+    weatherIconEl.textContent = "";
+    weatherTempEl.textContent = "";
+    weatherDescEl.textContent = t("weatherError");
+    weatherMetaEl.textContent = "";
+  }
+}
+
 function showCityDetail(city) {
   detailEl.innerHTML = cityInfoHtml(city);
   Array.from(listEl.children).forEach((li) => {
     li.classList.toggle("active", li.dataset.cityId === city.id);
   });
+  loadWeatherFor(city);
 }
 
 function isPoi(city) {
@@ -643,6 +749,12 @@ async function loadCities() {
     const cities = await res.json();
     lastCities = cities;
     applyFilterAndRender();
+    if (!weatherCity && cities.length > 0) {
+      // Default weather panel content before anything's been clicked —
+      // Khankendi if it's there, otherwise just whatever loaded first.
+      const defaultCity = cities.find((c) => c.name === "Khankendi") || cities[0];
+      loadWeatherFor(defaultCity);
+    }
   } catch (err) {
     setStatus(t("apiError")(API_BASE, err.message), true);
   }
