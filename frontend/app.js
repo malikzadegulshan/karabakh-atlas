@@ -137,9 +137,18 @@ function refreshLayerControl() {
 refreshLayerControl();
 
 // Street tiles already render place-name labels on their own, so our
-// custom city-name markers would be redundant there; only show them
+// custom city-name markers would look redundant there — only show them
 // over satellite/historical imagery, which has no labels of its own.
-const markersLayer = L.layerGroup();
+//
+// This layer stays added to the map at all times (unlike poiMarkersLayer
+// below): a marker whose LayerGroup isn't on the map can't show its
+// popup at all, which would silently break "jump to this city" (from
+// the sidebar or search) on the default Streets view. Instead, the
+// "redundant on Streets" concern is handled purely visually, by hiding
+// the .city-label divIcons with CSS — that keeps every marker properly
+// attached to the map (so popups always work) without cluttering the
+// Streets view with duplicate labels.
+const markersLayer = L.layerGroup().addTo(map);
 
 // Points of interest (cafes, restaurants, etc.) are shown on both tile
 // layers, but only once zoomed in enough — otherwise a full set of them
@@ -148,13 +157,8 @@ const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
 
 function updateMarkersVisibility(activeLayer) {
-  if (activeLayer === satelliteLayer || activeLayer === historicalLayer) {
-    if (!map.hasLayer(markersLayer)) {
-      map.addLayer(markersLayer);
-    }
-  } else if (map.hasLayer(markersLayer)) {
-    map.removeLayer(markersLayer);
-  }
+  const showLabels = activeLayer === satelliteLayer || activeLayer === historicalLayer;
+  map.getContainer().classList.toggle("hide-city-labels", !showLabels);
 }
 
 function updatePoiVisibility() {
@@ -427,15 +431,44 @@ function buildMarker(city) {
     .addTo(markersLayer);
 }
 
+// city.id -> { city, marker }, rebuilt on every render — lets search
+// (and anything else) jump straight to a marker without re-deriving it
+// from the DOM.
+let cityMarkers = new Map();
+
+// Points of interest only render once zoomed in past POI_MIN_ZOOM (see
+// updatePoiVisibility), so jumping straight to one needs a zoom level
+// past that threshold or its marker/popup won't actually be on the map
+// yet. Regular cities keep the zoom level list clicks have always used.
+const POI_JUMP_ZOOM = 16;
+const CITY_JUMP_ZOOM = 12;
+
+function jumpToCity(city, marker) {
+  // animate: false avoids a real Leaflet bug: search filters as you
+  // type (via its own animated fitBounds), so hitting Enter right after
+  // typing can call setView() while that animation is still in flight —
+  // Leaflet then settles on an intermediate zoom instead of the one
+  // just requested here. An instant jump sidesteps the collision
+  // entirely, and reads as snappier for a deliberate "go here" action.
+  map.setView(
+    [city.latitude, city.longitude],
+    isPoi(city) ? POI_JUMP_ZOOM : CITY_JUMP_ZOOM,
+    { animate: false }
+  );
+  // setView's zoom change normally reaches updatePoiVisibility via the
+  // map's own "zoomend" listener, but that can land after this function
+  // returns — call it directly so a POI's layer is already on the map
+  // by the time openPopup() runs immediately below.
+  updatePoiVisibility();
+  marker.openPopup();
+  showCityDetail(city);
+}
+
 function buildListItem(city, marker) {
   const li = document.createElement("li");
   li.textContent = localizedName(city);
   li.dataset.cityId = city.id;
-  li.addEventListener("click", () => {
-    map.setView([city.latitude, city.longitude], 12);
-    marker.openPopup();
-    showCityDetail(city);
-  });
+  li.addEventListener("click", () => jumpToCity(city, marker));
   listEl.appendChild(li);
 }
 
@@ -444,6 +477,7 @@ function renderCities(cities, { fitBounds = true } = {}) {
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
   detailEl.innerHTML = "";
+  cityMarkers = new Map();
 
   if (cities.length === 0) {
     setStatus(t("noCities"), false);
@@ -459,6 +493,7 @@ function renderCities(cities, { fitBounds = true } = {}) {
     const marker = buildMarker(city);
     marker.bindPopup(cityInfoHtml(city));
     marker.on("click", () => showCityDetail(city));
+    cityMarkers.set(city.id, { city, marker });
     bounds.push([city.latitude, city.longitude]);
     // Roads and other points of interest still show up as markers on
     // the map, but only cities get a sidebar entry — the sidebar is
@@ -469,7 +504,13 @@ function renderCities(cities, { fitBounds = true } = {}) {
   });
 
   if (fitBounds) {
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+    // animate: false — this re-fits on every search keystroke, and an
+    // in-flight fitBounds animation can still be resolving when the
+    // next one (or a deliberate jumpToCity()) fires right after, which
+    // makes Leaflet settle on a stale intermediate zoom instead of
+    // whichever view was actually requested last. Instant avoids the
+    // whole class of interrupted-animation bugs.
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11, animate: false });
   }
 }
 
@@ -491,6 +532,26 @@ function applyFilterAndRender(options) {
 searchInputEl.addEventListener("input", () => {
   searchQuery = searchInputEl.value.trim();
   applyFilterAndRender();
+});
+
+searchInputEl.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !searchQuery) {
+    return;
+  }
+  event.preventDefault();
+  // Jump to the top match currently shown — same ranked order as the
+  // sidebar list (and includes POIs, which the sidebar itself doesn't
+  // list but the map still does).
+  const [topMatch] = lastCities.filter(matchesSearch);
+  if (!topMatch) {
+    return;
+  }
+  const entry = cityMarkers.get(topMatch.id);
+  if (!entry) {
+    return;
+  }
+  jumpToCity(entry.city, entry.marker);
+  searchInputEl.blur();
 });
 
 async function loadCities() {
