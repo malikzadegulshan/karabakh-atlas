@@ -689,6 +689,14 @@ aside.collapsed ~ #sidebar-toggle {
   width: auto;
 }
 
+/* Description textareas hold paragraph-length text, so they get their
+   own full-width row instead of squeezing into the same 140px cells as
+   the short inputs above. */
+.admin-add-city-form > textarea {
+  flex: 1 1 100%;
+  min-width: 200px;
+}
+
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
   align-self: center;
