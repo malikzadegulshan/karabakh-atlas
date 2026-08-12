@@ -6,6 +6,7 @@ let currentUser = null;
 
 const accountWidgetEl = document.getElementById("account-widget");
 const accountSigninToggleEl = document.getElementById("account-signin-toggle");
+const accountAvatarToggleEl = document.getElementById("account-avatar-toggle");
 const accountStatusEl = document.getElementById("account-status");
 const accountNameEl = document.getElementById("account-name");
 const accountResendEl = document.getElementById("account-resend-verification");
@@ -28,7 +29,8 @@ const registerFormSubmitEl = document.getElementById("register-form-submit");
 const adminToggleEl = document.getElementById("admin-toggle");
 
 function applyAccountStaticTranslations() {
-  accountSigninToggleEl.textContent = t("accountSignIn");
+  accountSigninToggleEl.setAttribute("aria-label", t("accountSignIn"));
+  accountSigninToggleEl.title = t("accountSignIn");
   accountLogoutEl.textContent = t("accountSignOut");
   accountTabLoginEl.textContent = t("accountSignIn");
   accountTabRegisterEl.textContent = t("accountCreateAccount");
@@ -48,16 +50,43 @@ function applyAccountStaticTranslations() {
   }
 }
 
+function closeAccountStatusPopover() {
+  accountStatusEl.hidden = true;
+  accountAvatarToggleEl.setAttribute("aria-expanded", "false");
+}
+
 function renderAccountWidget() {
   const loggedIn = Boolean(currentUser);
   accountSigninToggleEl.hidden = loggedIn;
-  accountStatusEl.hidden = !loggedIn;
+  accountAvatarToggleEl.hidden = !loggedIn;
   adminToggleEl.hidden = !loggedIn || currentUser.role !== "admin";
   accountResendEl.hidden = !loggedIn || currentUser.email_verified;
   if (loggedIn) {
+    accountAvatarToggleEl.textContent = currentUser.name.charAt(0).toUpperCase();
     accountNameEl.textContent = currentUser.name;
+  } else {
+    closeAccountStatusPopover();
   }
 }
+
+accountAvatarToggleEl.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const willOpen = accountStatusEl.hidden;
+  accountStatusEl.hidden = !willOpen;
+  accountAvatarToggleEl.setAttribute("aria-expanded", String(willOpen));
+});
+
+document.addEventListener("click", (event) => {
+  if (!accountStatusEl.hidden && !accountWidgetEl.contains(event.target)) {
+    closeAccountStatusPopover();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !accountStatusEl.hidden) {
+    closeAccountStatusPopover();
+  }
+});
 
 async function refreshCurrentUser() {
   try {

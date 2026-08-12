@@ -2,13 +2,65 @@
   box-sizing: border-box;
 }
 
+/* Color tokens — light palette by default, swapped for dark under
+   prefers-color-scheme so the whole UI follows the system setting
+   automatically (no manual toggle). */
+:root {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text: #1f2937;
+  --color-text-muted: #475569;
+  --color-text-faint: #64748b;
+  --color-accent: #221539;
+  --color-accent-hover: #33215a;
+  --color-accent-soft: #e0e7ff;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fee2e2;
+  --color-danger-border: #fecaca;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #166534;
+  --color-warn-bg: #fef3c7;
+  --color-warn-bg-hover: #fde68a;
+  --color-warn-text: #92400e;
+  --shadow-color: rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1c1e;
+    --color-bg-subtle: #232326;
+    --color-bg-muted: #2c2c2e;
+    --color-border: #3a3a3d;
+    --color-border-strong: #4b4b4f;
+    --color-text: #f1f5f9;
+    --color-text-muted: #a1a1aa;
+    --color-text-faint: #8a8a90;
+    --color-accent: #4b3272;
+    --color-accent-hover: #5c3f8c;
+    --color-accent-soft: #332255;
+    --color-danger: #f87171;
+    --color-danger-bg: #451a1a;
+    --color-danger-border: #7f1d1d;
+    --color-success-bg: #06301b;
+    --color-success-text: #4ade80;
+    --color-warn-bg: #452c06;
+    --color-warn-bg-hover: #5a3a08;
+    --color-warn-text: #fbbf24;
+    --shadow-color: rgba(0, 0, 0, 0.55);
+  }
+}
+
 body {
   margin: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: #1b1b1b;
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
 .sr-only {
@@ -23,258 +75,179 @@ body {
   border: 0;
 }
 
-/* Minimal floating header, Google-Maps style: a search box and a couple
-   of buttons floating over the map instead of a solid title bar. */
+/* Apple-Maps-style layout: a narrow persistent icon rail, a single
+   panel next to it that the rail switches between "Cities" and
+   "Places" views (search + weather stay pinned at the top of the panel
+   regardless of which view is active), and the map filling the rest —
+   a proper side-by-side flex layout, not floating overlays. */
 
-#top-bar {
-  position: absolute;
-  top: 12px;
-  left: calc(260px + 12px);
-  right: 12px;
-  z-index: 1200;
+main {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem;
-  transition: left 0.2s ease;
+  flex: 1;
+  min-height: 0;
+  position: relative;
 }
 
-aside.collapsed ~ #top-bar {
-  left: 12px;
-}
-
-/* Google-Maps-style category quick filters, floating just below the
-   search bar, opened/closed via the "Places" toggle button. The chip
-   strip itself is horizontally scrollable — the full category list
-   (cafe, restaurant, hotel, ...) is too wide to fit on one line — with
-   a fixed close button alongside it that's always reachable regardless
-   of scroll position. */
-#category-filter-bar {
-  position: absolute;
-  top: 68px;
-  left: calc(260px + 12px);
-  right: 12px;
-  z-index: 1150;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: left 0.2s ease;
-}
-
-/* .category-chip's own "display" would otherwise beat the [hidden]
-   attribute's default UA rule (author styles always win over UA
-   styles) — same issue fixed earlier for #account-status. */
-#category-filter-bar[hidden] {
-  display: none;
-}
-
-aside.collapsed ~ #category-filter-bar {
-  left: 12px;
-}
-
-#category-filter-close {
+#rail {
+  width: 48px;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  z-index: 20;
+}
+
+.rail-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1;
-  color: #1f2937;
-  background: #fff;
+  color: var(--color-text-muted);
+  background: transparent;
   border: none;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border-radius: 9px;
   cursor: pointer;
 }
 
-#category-filter-close:hover {
-  background: #f1f5f9;
+.rail-btn:hover {
+  background: var(--color-bg-muted);
 }
 
-#category-filter-chips {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  min-width: 0;
+.rail-btn.active {
+  color: #fff;
+  background: var(--color-accent);
 }
 
-.category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.rail-btn[hidden] {
+  display: none;
+}
+
+.rail-spacer {
+  flex: 1;
+}
+
+.rail-widget {
+  position: relative;
   flex-shrink: 0;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
+}
+
+#account-avatar-toggle {
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+#account-avatar-toggle:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Popovers open to the right of the rail, not below it — there's no
+   room below a 34px-tall icon button in a vertical rail. */
+#lang-menu,
+#account-status {
+  position: absolute;
+  left: calc(100% + 8px);
+  bottom: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.3rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px var(--shadow-color);
+}
+
+/* Both have their own explicit "display" (flex/flex-column), which
+   would otherwise beat the [hidden] attribute's default UA rule —
+   author styles always win over UA styles at equal specificity. */
+#lang-menu[hidden],
+#account-status[hidden] {
+  display: none;
+}
+
+#lang-menu button {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #1f2937;
-  background: #fff;
+  text-align: center;
+  color: var(--color-text);
+  background: none;
   border: none;
-  border-radius: 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.category-chip:hover {
-  background: #f1f5f9;
+#lang-menu button:hover {
+  background: var(--color-bg-muted);
 }
 
-.category-chip.active {
-  color: #fff;
-  background: #221539;
-}
-
-.category-chip-icon {
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-#search-box {
-  flex: 1;
-  max-width: 380px;
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  padding: 0.55rem 1rem;
-}
-
-#search-input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.9rem;
-  font-family: inherit;
-  color: #1f2937;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-#admin-toggle {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
+#lang-menu button.active {
   font-weight: 600;
-  color: #1f2937;
-  background: #fff;
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-#admin-toggle:hover {
-  background: #f1f5f9;
-}
-
-#cities-toggle,
-#places-toggle {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #1f2937;
-  background: #fff;
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-#cities-toggle:hover,
-#places-toggle:hover {
-  background: #f1f5f9;
-}
-
-#cities-toggle.active,
-#places-toggle.active {
-  color: #fff;
-  background: #221539;
-}
-
-#account-widget {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-#account-signin-toggle {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #1f2937;
-  background: #fff;
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-#account-signin-toggle:hover {
-  background: #f1f5f9;
+  color: var(--color-text);
+  background: var(--color-accent-soft);
 }
 
 #account-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.4rem 0.4rem 0.9rem;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-#account-status[hidden] {
-  display: none;
+  gap: 0.35rem;
+  padding: 0.6rem;
 }
 
 #account-name {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #1f2937;
-  max-width: 120px;
+  color: var(--color-text);
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 0.2rem;
 }
 
 #account-logout {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
   border: none;
-  border-radius: 16px;
+  border-radius: 6px;
   cursor: pointer;
+  text-align: left;
 }
 
 #account-logout:hover {
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 #account-resend-verification {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--color-warn-text);
+  background: var(--color-warn-bg);
   border: none;
-  border-radius: 16px;
+  border-radius: 6px;
   cursor: pointer;
+  text-align: left;
 }
 
 #account-resend-verification:hover {
-  background: #fde68a;
+  background: var(--color-warn-bg-hover);
 }
 
 #account-resend-verification:disabled {
@@ -282,9 +255,7 @@ aside.collapsed ~ #category-filter-bar {
   opacity: 0.7;
 }
 
-/* Same [hidden] specificity issue as #account-status: an explicit
-   "display" on this ID selector would otherwise beat the [hidden]
-   attribute's default UA rule. */
+/* Same [hidden] specificity issue noted above. */
 #account-resend-verification[hidden] {
   display: none;
 }
@@ -300,144 +271,145 @@ aside.collapsed ~ #category-filter-bar {
   padding: 0.5rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--color-text-faint);
+  background: var(--color-bg-muted);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .account-tab.active {
-  color: #1f2937;
-  background: #e0e7ff;
+  color: var(--color-text);
+  background: var(--color-accent-soft);
 }
 
-#lang-switcher {
-  position: relative;
-  flex-shrink: 0;
-}
-
-#lang-toggle {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #1f2937;
-  background: #fff;
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-#lang-toggle:hover,
-#lang-toggle[aria-expanded="true"] {
-  background: #f1f5f9;
-}
-
-#lang-menu {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  min-width: 64px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 0.3rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-}
-
-#lang-menu[hidden] {
-  display: none;
-}
-
-#lang-menu button {
-  padding: 0.45rem 0.7rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
-  color: #1f2937;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-#lang-menu button:hover {
-  background: #f1f5f9;
-}
-
-#lang-menu button.active {
-  font-weight: 600;
-  color: #1f2937;
-  background: #e0e7ff;
-}
-
-main {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  position: relative;
-}
-
-aside {
-  width: 260px;
+#panel {
+  width: 300px;
   flex-shrink: 0;
   min-height: 0;
-  padding: 1rem;
   overflow-y: auto;
-  overflow-x: hidden;
-  border-right: 1px solid #e2e8f0;
+  padding: 0.9rem;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
   transition: width 0.2s ease, padding 0.2s ease;
 }
 
-aside.collapsed {
+#panel.collapsed {
   width: 0;
   padding-left: 0;
   padding-right: 0;
+  overflow: hidden;
   border-right: none;
 }
 
-#sidebar-toggle {
+#panel-toggle {
   position: absolute;
   top: 50%;
-  left: 260px;
+  left: 348px;
   transform: translate(-50%, -50%);
   z-index: 1000;
   width: 22px;
   height: 46px;
   padding: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 0 6px 6px 0;
-  background: #fff;
-  color: #1f2937;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
   transition: left 0.2s ease;
 }
 
-aside.collapsed ~ #sidebar-toggle {
-  left: 11px;
+#panel.collapsed ~ #panel-toggle {
+  left: 59px;
+}
+
+#search-box {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-muted);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+#search-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--color-text);
+}
+
+.panel-view[hidden] {
+  display: none;
+}
+
+/* Category grid — Apple Maps' "Find Nearby" pattern: a colored
+   circular icon plus a label, two per row. */
+#category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.category-grid-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.category-grid-item:hover {
+  background: var(--color-bg-muted);
+}
+
+.category-grid-item.active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.category-grid-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  color: #fff;
+}
+
+.category-grid-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #weather-panel {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
 #weather-city {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 0.3rem;
 }
 
@@ -455,28 +427,28 @@ aside.collapsed ~ #sidebar-toggle {
 #weather-temp {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 #weather-desc {
   font-size: 0.82rem;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-top: 0.15rem;
 }
 
 #weather-meta {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   margin-top: 0.4rem;
 }
 
 #status {
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 #status.error {
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 #city-list {
@@ -492,18 +464,18 @@ aside.collapsed ~ #sidebar-toggle {
 }
 
 #city-list li:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 #city-list li.active {
-  background: #e0e7ff;
+  background: var(--color-accent-soft);
   font-weight: 600;
 }
 
 #city-detail {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   font-size: 0.9rem;
 }
 
@@ -512,7 +484,7 @@ aside.collapsed ~ #sidebar-toggle {
 }
 
 #city-detail .no-info {
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
 }
 
@@ -533,7 +505,7 @@ aside.collapsed ~ #sidebar-toggle {
 .image-credit {
   margin: 0.2rem 0 0;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-faint);
 }
 
 .city-label {
@@ -547,6 +519,22 @@ aside.collapsed ~ #sidebar-toggle {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   pointer-events: auto;
+}
+
+/* The city label sits directly on the (always-light) basemap tiles, not
+   the app's own dark-mode surfaces, so it intentionally keeps a fixed
+   light chip regardless of color scheme — matching the map underneath
+   rather than the surrounding chrome. */
+
+/* Leaflet popups show our own content (city name/description/image),
+   so they follow the app's theme instead of Leaflet's default white. */
+.leaflet-popup-content-wrapper {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.leaflet-popup-tip {
+  background: var(--color-bg);
 }
 
 /* Hides the redundant label text on Streets (which already has its own
@@ -600,7 +588,7 @@ aside.collapsed ~ #sidebar-toggle {
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   overflow: hidden;
@@ -611,7 +599,7 @@ aside.collapsed ~ #sidebar-toggle {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: #221539;
+  background: var(--color-accent);
   color: #fff;
   flex-shrink: 0;
 }
@@ -659,7 +647,7 @@ aside.collapsed ~ #sidebar-toggle {
   max-width: 380px;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   overflow: hidden;
@@ -694,13 +682,13 @@ aside.collapsed ~ #sidebar-toggle {
   padding: 0.6rem 0.8rem;
   border-radius: 6px;
   font-size: 0.85rem;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .admin-message.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .admin-message[hidden] {
@@ -719,7 +707,7 @@ aside.collapsed ~ #sidebar-toggle {
 .admin-section label {
   display: block;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 0.3rem;
 }
 
@@ -734,9 +722,11 @@ aside.collapsed ~ #sidebar-toggle {
   width: 100%;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   font-family: inherit;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .admin-form button,
@@ -746,7 +736,7 @@ aside.collapsed ~ #sidebar-toggle {
   font-size: 0.85rem;
   font-weight: 600;
   color: #fff;
-  background: #221539;
+  background: var(--color-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -763,12 +753,12 @@ aside.collapsed ~ #sidebar-toggle {
 }
 
 .admin-form-actions button[type="button"] {
-  background: #e2e8f0;
-  color: #1f2937;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .admin-region {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.75rem 0.9rem;
   margin-bottom: 0.75rem;
@@ -784,7 +774,7 @@ aside.collapsed ~ #sidebar-toggle {
 .admin-region-description {
   margin: 0.4rem 0 0;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .admin-actions {
@@ -797,16 +787,16 @@ aside.collapsed ~ #sidebar-toggle {
   padding: 0.25rem 0.6rem;
   font-size: 0.78rem;
   font-weight: 600;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 5px;
-  background: #fff;
-  color: #1f2937;
+  background: var(--color-bg);
+  color: var(--color-text);
   cursor: pointer;
 }
 
 .admin-actions button.danger {
-  border-color: #fecaca;
-  color: #b91c1c;
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
 }
 
 .admin-city-list {
@@ -822,12 +812,12 @@ aside.collapsed ~ #sidebar-toggle {
   gap: 0.5rem;
   padding: 0.35rem 0;
   font-size: 0.85rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-bg-muted);
 }
 
 .admin-empty {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
   margin: 0.4rem 0;
 }
@@ -867,8 +857,8 @@ aside.collapsed ~ #sidebar-toggle {
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
   align-self: center;
-  background: #e2e8f0;
-  color: #1f2937;
+  background: var(--color-border);
+  color: var(--color-text);
   white-space: nowrap;
 }
 
@@ -892,10 +882,10 @@ aside.collapsed ~ #sidebar-toggle {
   max-height: 180px;
   overflow-y: auto;
   padding: 0.25rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px var(--shadow-color);
 }
 
 .category-picker-menu[hidden] {
@@ -917,7 +907,7 @@ aside.collapsed ~ #sidebar-toggle {
   padding: 0.35rem 0.5rem;
   font-size: 0.83rem;
   font-weight: 400;
-  color: #1f2937;
+  color: var(--color-text);
   background: none;
   border: none;
   border-radius: 4px;
@@ -926,13 +916,13 @@ aside.collapsed ~ #sidebar-toggle {
 
 .category-picker-menu .category-picker-option:hover,
 .category-picker-menu .category-picker-option.active {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 .category-picker-empty {
   padding: 0.35rem 0.5rem;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
 }
 
@@ -948,7 +938,7 @@ aside.collapsed ~ #sidebar-toggle {
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.9rem;
-  background: #221539;
+  background: var(--color-accent);
   color: #fff;
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
@@ -986,12 +976,12 @@ aside.collapsed ~ #sidebar-toggle {
   align-items: center;
   gap: 0.7rem;
   padding: 0.5rem 1rem;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 #timeline[hidden] {
@@ -1010,48 +1000,35 @@ aside.collapsed ~ #sidebar-toggle {
 /* Responsive: narrow (phone/small tablet) viewports */
 
 @media (max-width: 700px) {
-  /* The mobile sidebar overlays the map instead of pushing it, so the
-     floating top bar always hugs the left edge regardless of whether
-     the sidebar is open. */
-  #top-bar,
-  aside.collapsed ~ #top-bar {
-    left: 12px;
-    right: 12px;
-    flex-wrap: wrap;
-  }
-
-  #category-filter-bar,
-  aside.collapsed ~ #category-filter-bar {
-    left: 12px;
-    right: 12px;
-  }
-
-  #search-box {
-    max-width: none;
-  }
-
-  aside {
+  /* The mobile panel overlays the map instead of pushing it, so the
+     narrow icon rail always hugs the left edge and the panel becomes
+     a full-height drawer above the map when open. */
+  #panel {
     position: absolute;
-    inset: 0 auto 0 0;
+    inset: 0 auto 0 48px;
     /* Above Leaflet's own controls (.leaflet-top/.leaflet-bottom use
        z-index: 1000), so the drawer fully covers the map when open. */
     z-index: 1050;
-    width: min(260px, 82vw);
-    background: #fff;
+    width: min(260px, 78vw);
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
   }
 
-  aside.collapsed {
+  #panel.collapsed {
     box-shadow: none;
   }
 
-  #sidebar-toggle {
-    left: min(260px, 82vw);
+  #panel-toggle {
+    left: calc(48px + min(260px, 78vw));
     z-index: 1060;
   }
 
-  aside.collapsed ~ #sidebar-toggle {
-    left: 11px;
+  #panel.collapsed ~ #panel-toggle {
+    left: 48px;
+  }
+
+  #lang-menu,
+  #account-status {
+    left: calc(100% + 4px);
   }
 
   #admin-overlay {

@@ -260,9 +260,13 @@ updateYearLabel();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
-const sidebarEl = document.getElementById("sidebar");
-const sidebarToggleEl = document.getElementById("sidebar-toggle");
-const citiesToggleEl = document.getElementById("cities-toggle");
+const panelEl = document.getElementById("panel");
+const panelToggleEl = document.getElementById("panel-toggle");
+const railCitiesEl = document.getElementById("rail-cities");
+const railPlacesEl = document.getElementById("rail-places");
+const panelViewCitiesEl = document.getElementById("panel-view-cities");
+const panelViewPlacesEl = document.getElementById("panel-view-places");
+const categoryGridEl = document.getElementById("category-grid");
 const weatherCityEl = document.getElementById("weather-city");
 const weatherIconEl = document.getElementById("weather-icon");
 const weatherTempEl = document.getElementById("weather-temp");
@@ -274,21 +278,6 @@ const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
-const placesToggleEl = document.getElementById("places-toggle");
-const categoryFilterBarEl = document.getElementById("category-filter-bar");
-const categoryFilterCloseEl = document.getElementById("category-filter-close");
-const categoryFilterChipsEl = document.getElementById("category-filter-chips");
-let placesPanelOpen = false;
-
-function setPlacesPanelOpen(open) {
-  placesPanelOpen = open;
-  categoryFilterBarEl.hidden = !open;
-  placesToggleEl.classList.toggle("active", open);
-  placesToggleEl.setAttribute("aria-expanded", String(open));
-}
-
-placesToggleEl.addEventListener("click", () => setPlacesPanelOpen(!placesPanelOpen));
-categoryFilterCloseEl.addEventListener("click", () => setPlacesPanelOpen(false));
 
 function closeLangMenu() {
   langMenuEl.hidden = true;
@@ -299,13 +288,14 @@ function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
   searchInputEl.placeholder = t("searchPlaceholder");
-  placesToggleEl.textContent = t("placesToggle");
-  citiesToggleEl.textContent = t("citiesToggle");
-  categoryFilterCloseEl.setAttribute("aria-label", t("adminClose"));
+  railCitiesEl.setAttribute("aria-label", t("citiesToggle"));
+  railCitiesEl.title = t("citiesToggle");
+  railPlacesEl.setAttribute("aria-label", t("placesToggle"));
+  railPlacesEl.title = t("placesToggle");
   updateYearLabel();
-  sidebarToggleEl.setAttribute(
+  panelToggleEl.setAttribute(
     "aria-label",
-    sidebarEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
+    panelEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
   );
   langToggleLabelEl.textContent = currentLang.toUpperCase();
   Array.from(langMenuEl.children).forEach((btn) => {
@@ -330,7 +320,7 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
-  renderCategoryFilterBar();
+  renderCategoryGrid();
   renderWeatherPanel();
   // Only the labels change here, not the underlying data, so don't
   // re-fit the map to the markers — that was resetting the user's pan
@@ -359,30 +349,46 @@ document.addEventListener("keydown", (event) => {
 });
 
 applyStaticTranslations();
-renderCategoryFilterBar();
+renderCategoryGrid();
 
-function setSidebarCollapsed(collapsed) {
-  sidebarEl.classList.toggle("collapsed", collapsed);
-  sidebarToggleEl.textContent = collapsed ? "›" : "‹";
-  sidebarToggleEl.setAttribute(
+let activePanelTab = "cities";
+
+function setPanelCollapsed(collapsed) {
+  panelEl.classList.toggle("collapsed", collapsed);
+  panelToggleEl.textContent = collapsed ? "›" : "‹";
+  panelToggleEl.setAttribute(
     "aria-label",
     collapsed ? t("sidebarOpen") : t("sidebarClose")
   );
-  citiesToggleEl.classList.toggle("active", !collapsed);
-  citiesToggleEl.setAttribute("aria-expanded", String(!collapsed));
-  // The map sits behind the sidebar's own space (it doesn't overlay it
-  // on desktop — see aside's width transition in style.css), so Leaflet
+  // The map sits beside the panel's own space (it doesn't overlay it on
+  // desktop — see #panel's width transition in style.css), so Leaflet
   // needs to know its visible area changed once that transition ends.
   setTimeout(() => map.invalidateSize(), 220);
 }
 
-sidebarToggleEl.addEventListener("click", () => {
-  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
+// Rail buttons double as tab switches (Cities/Places) and, if you click
+// the already-active tab again, a close gesture — same toggle-to-close
+// behavior the old Cities button had, just extended to two tabs sharing
+// one panel instead of each having its own independent show/hide.
+function selectPanelTab(tab) {
+  if (activePanelTab === tab && !panelEl.classList.contains("collapsed")) {
+    setPanelCollapsed(true);
+    return;
+  }
+  activePanelTab = tab;
+  railCitiesEl.classList.toggle("active", tab === "cities");
+  railPlacesEl.classList.toggle("active", tab === "places");
+  panelViewCitiesEl.hidden = tab !== "cities";
+  panelViewPlacesEl.hidden = tab !== "places";
+  setPanelCollapsed(false);
+}
+
+panelToggleEl.addEventListener("click", () => {
+  setPanelCollapsed(!panelEl.classList.contains("collapsed"));
 });
 
-citiesToggleEl.addEventListener("click", () => {
-  setSidebarCollapsed(!sidebarEl.classList.contains("collapsed"));
-});
+railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
+railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -546,6 +552,54 @@ function showCityDetail(city) {
   loadWeatherFor(city);
 }
 
+// Not true geographic distance (no latitude-scaling correction) — just
+// good enough to rank ~12 candidate cities against each other over a
+// region as small as Karabakh, which is all this needs.
+function squaredDistance(lat1, lng1, lat2, lng2) {
+  const dLat = lat1 - lat2;
+  const dLng = lng1 - lng2;
+  return dLat * dLat + dLng * dLng;
+}
+
+function nearestCityTo(lat, lng) {
+  const candidates = lastCities.filter((c) => !isPoi(c));
+  if (candidates.length === 0) {
+    return null;
+  }
+  return candidates.reduce((closest, city) =>
+    squaredDistance(lat, lng, city.latitude, city.longitude) <
+    squaredDistance(lat, lng, closest.latitude, closest.longitude)
+      ? city
+      : closest
+  );
+}
+
+let mapMoveWeatherTimer = null;
+
+// Weather follows the map: panning/zooming (once it settles — moveend,
+// not every intermediate frame) re-centers the panel on whichever known
+// city is now closest to the middle of the view. Debounced so a quick
+// drag or scroll-zoom doesn't fire a burst of API calls; only actually
+// refetches when the nearest city changes, so lingering in one area
+// doesn't either. An explicit selection (sidebar/marker click, search)
+// still wins in the moment via showCityDetail() above — this just picks
+// back up from wherever the map ends up after that.
+function scheduleWeatherUpdateForMapView() {
+  clearTimeout(mapMoveWeatherTimer);
+  mapMoveWeatherTimer = setTimeout(() => {
+    if (lastCities.length === 0) {
+      return;
+    }
+    const center = map.getCenter();
+    const candidate = nearestCityTo(center.lat, center.lng);
+    if (candidate && (!weatherCity || candidate.id !== weatherCity.id)) {
+      loadWeatherFor(candidate);
+    }
+  }, 500);
+}
+
+map.on("moveend", scheduleWeatherUpdateForMapView);
+
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
 }
@@ -554,29 +608,31 @@ function categoryLabel(value) {
   return (t("categories") && t("categories")[value]) || value;
 }
 
-// Every POI category becomes a filter chip — Object.keys(POI_ICONS) is
+// Every POI category becomes a grid entry — Object.keys(POI_ICONS) is
 // already exactly that list (it excludes "city", the only non-POI
 // category), so there's nothing extra to keep in sync here beyond
-// POI_ICONS/POI_COLORS themselves.
-function renderCategoryFilterBar() {
-  categoryFilterChipsEl.innerHTML = "";
+// POI_ICONS/POI_COLORS themselves. Mirrors Apple Maps' "Find Nearby"
+// grid: a colored circular icon plus a label, two per row.
+function renderCategoryGrid() {
+  categoryGridEl.innerHTML = "";
   Object.keys(POI_ICONS).forEach((category) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "category-chip";
-    chip.classList.toggle("active", activeCategoryFilter === category);
-    chip.innerHTML =
-      `<span class="category-chip-icon">${POI_ICONS[category]}</span>` +
-      escapeHtml(categoryLabel(category));
-    chip.addEventListener("click", () => {
-      // Clicking the already-active chip clears the filter — same
-      // toggle-off gesture as Google Maps' own category chips.
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "category-grid-item";
+    item.classList.toggle("active", activeCategoryFilter === category);
+    item.innerHTML =
+      `<span class="category-grid-icon" style="background:${POI_COLORS[category]}">` +
+      `${POI_ICONS[category]}</span>` +
+      `<span class="category-grid-label">${escapeHtml(categoryLabel(category))}</span>`;
+    item.addEventListener("click", () => {
+      // Clicking the already-active item clears the filter — same
+      // toggle-off gesture as Google Maps' own category chips had.
       activeCategoryFilter = activeCategoryFilter === category ? null : category;
-      renderCategoryFilterBar();
+      renderCategoryGrid();
       updatePoiVisibility();
       applyFilterAndRender({ fitBounds: false });
     });
-    categoryFilterChipsEl.appendChild(chip);
+    categoryGridEl.appendChild(item);
   });
 }
 

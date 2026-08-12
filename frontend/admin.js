@@ -134,7 +134,8 @@ const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 
 function applyAdminStaticTranslations() {
-  adminToggleEl.textContent = t("adminToggle");
+  adminToggleEl.setAttribute("aria-label", t("adminToggle"));
+  adminToggleEl.title = t("adminToggle");
   adminTitleEl.textContent = t("adminTitle");
   adminCloseEl.setAttribute("aria-label", t("adminClose"));
   adminAddRegionTitleEl.textContent = t("adminAddRegionTitle");
