@@ -36,4 +36,3 @@ Then open `http://localhost:8000` in a browser. The API listens on
 `http://localhost:5000` by default.
 
 
-   ```
