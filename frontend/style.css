@@ -2,13 +2,65 @@
   box-sizing: border-box;
 }
 
+/* Color tokens — light palette by default, swapped for dark under
+   prefers-color-scheme so the whole UI follows the system setting
+   automatically (no manual toggle). */
+:root {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text: #1f2937;
+  --color-text-muted: #475569;
+  --color-text-faint: #64748b;
+  --color-accent: #221539;
+  --color-accent-hover: #33215a;
+  --color-accent-soft: #e0e7ff;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fee2e2;
+  --color-danger-border: #fecaca;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #166534;
+  --color-warn-bg: #fef3c7;
+  --color-warn-bg-hover: #fde68a;
+  --color-warn-text: #92400e;
+  --shadow-color: rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1c1e;
+    --color-bg-subtle: #232326;
+    --color-bg-muted: #2c2c2e;
+    --color-border: #3a3a3d;
+    --color-border-strong: #4b4b4f;
+    --color-text: #f1f5f9;
+    --color-text-muted: #a1a1aa;
+    --color-text-faint: #8a8a90;
+    --color-accent: #4b3272;
+    --color-accent-hover: #5c3f8c;
+    --color-accent-soft: #332255;
+    --color-danger: #f87171;
+    --color-danger-bg: #451a1a;
+    --color-danger-border: #7f1d1d;
+    --color-success-bg: #06301b;
+    --color-success-text: #4ade80;
+    --color-warn-bg: #452c06;
+    --color-warn-bg-hover: #5a3a08;
+    --color-warn-text: #fbbf24;
+    --shadow-color: rgba(0, 0, 0, 0.55);
+  }
+}
+
 body {
   margin: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: #1b1b1b;
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
 .sr-only {
@@ -37,41 +89,41 @@ main {
 }
 
 #rail {
-  width: 56px;
+  width: 48px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 0;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
+  gap: 0.3rem;
+  padding: 0.6rem 0;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
   z-index: 20;
 }
 
 .rail-btn {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1rem;
   line-height: 1;
-  color: #475569;
+  color: var(--color-text-muted);
   background: transparent;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
 }
 
 .rail-btn:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 .rail-btn.active {
   color: #fff;
-  background: #221539;
+  background: var(--color-accent);
 }
 
 .rail-btn[hidden] {
@@ -89,18 +141,18 @@ main {
 
 #account-avatar-toggle {
   border-radius: 50%;
-  background: #221539;
+  background: var(--color-accent);
   color: #fff;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 #account-avatar-toggle:hover {
-  background: #33215a;
+  background: var(--color-accent-hover);
 }
 
 /* Popovers open to the right of the rail, not below it — there's no
-   room below a 40px-tall icon button in a vertical rail. */
+   room below a 34px-tall icon button in a vertical rail. */
 #lang-menu,
 #account-status {
   position: absolute;
@@ -113,10 +165,10 @@ main {
   max-height: 200px;
   overflow-y: auto;
   padding: 0.3rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 16px var(--shadow-color);
 }
 
 /* Both have their own explicit "display" (flex/flex-column), which
@@ -132,7 +184,7 @@ main {
   font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
-  color: #1f2937;
+  color: var(--color-text);
   background: none;
   border: none;
   border-radius: 4px;
@@ -141,13 +193,13 @@ main {
 }
 
 #lang-menu button:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 #lang-menu button.active {
   font-weight: 600;
-  color: #1f2937;
-  background: #e0e7ff;
+  color: var(--color-text);
+  background: var(--color-accent-soft);
 }
 
 #account-status {
@@ -158,7 +210,7 @@ main {
 #account-name {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -170,8 +222,8 @@ main {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -179,15 +231,15 @@ main {
 }
 
 #account-logout:hover {
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 #account-resend-verification {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--color-warn-text);
+  background: var(--color-warn-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -195,7 +247,7 @@ main {
 }
 
 #account-resend-verification:hover {
-  background: #fde68a;
+  background: var(--color-warn-bg-hover);
 }
 
 #account-resend-verification:disabled {
@@ -219,16 +271,16 @@ main {
   padding: 0.5rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--color-text-faint);
+  background: var(--color-bg-muted);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .account-tab.active {
-  color: #1f2937;
-  background: #e0e7ff;
+  color: var(--color-text);
+  background: var(--color-accent-soft);
 }
 
 #panel {
@@ -237,8 +289,8 @@ main {
   min-height: 0;
   overflow-y: auto;
   padding: 0.9rem;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
   transition: width 0.2s ease, padding 0.2s ease;
 }
 
@@ -253,16 +305,16 @@ main {
 #panel-toggle {
   position: absolute;
   top: 50%;
-  left: 356px;
+  left: 348px;
   transform: translate(-50%, -50%);
   z-index: 1000;
   width: 22px;
   height: 46px;
   padding: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 0 6px 6px 0;
-  background: #fff;
-  color: #1f2937;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
@@ -270,13 +322,13 @@ main {
 }
 
 #panel.collapsed ~ #panel-toggle {
-  left: 67px;
+  left: 59px;
 }
 
 #search-box {
   display: flex;
   align-items: center;
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
   border-radius: 10px;
   padding: 0.55rem 0.8rem;
   margin-bottom: 0.8rem;
@@ -289,7 +341,7 @@ main {
   background: transparent;
   font-size: 0.9rem;
   font-family: inherit;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .panel-view[hidden] {
@@ -307,36 +359,36 @@ main {
 .category-grid-item {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .category-grid-item:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 .category-grid-item.active {
-  background: #e0e7ff;
-  border-color: #221539;
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 
 .category-grid-icon {
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: #fff;
 }
 
@@ -349,15 +401,15 @@ main {
 #weather-panel {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
 #weather-city {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 0.3rem;
 }
 
@@ -375,28 +427,28 @@ main {
 #weather-temp {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 #weather-desc {
   font-size: 0.82rem;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-top: 0.15rem;
 }
 
 #weather-meta {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   margin-top: 0.4rem;
 }
 
 #status {
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 #status.error {
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 #city-list {
@@ -412,18 +464,18 @@ main {
 }
 
 #city-list li:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 #city-list li.active {
-  background: #e0e7ff;
+  background: var(--color-accent-soft);
   font-weight: 600;
 }
 
 #city-detail {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   font-size: 0.9rem;
 }
 
@@ -432,7 +484,7 @@ main {
 }
 
 #city-detail .no-info {
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
 }
 
@@ -453,7 +505,7 @@ main {
 .image-credit {
   margin: 0.2rem 0 0;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-faint);
 }
 
 .city-label {
@@ -467,6 +519,22 @@ main {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   pointer-events: auto;
+}
+
+/* The city label sits directly on the (always-light) basemap tiles, not
+   the app's own dark-mode surfaces, so it intentionally keeps a fixed
+   light chip regardless of color scheme — matching the map underneath
+   rather than the surrounding chrome. */
+
+/* Leaflet popups show our own content (city name/description/image),
+   so they follow the app's theme instead of Leaflet's default white. */
+.leaflet-popup-content-wrapper {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.leaflet-popup-tip {
+  background: var(--color-bg);
 }
 
 /* Hides the redundant label text on Streets (which already has its own
@@ -520,7 +588,7 @@ main {
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   overflow: hidden;
@@ -531,7 +599,7 @@ main {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: #221539;
+  background: var(--color-accent);
   color: #fff;
   flex-shrink: 0;
 }
@@ -579,7 +647,7 @@ main {
   max-width: 380px;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   overflow: hidden;
@@ -614,13 +682,13 @@ main {
   padding: 0.6rem 0.8rem;
   border-radius: 6px;
   font-size: 0.85rem;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .admin-message.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .admin-message[hidden] {
@@ -639,7 +707,7 @@ main {
 .admin-section label {
   display: block;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 0.3rem;
 }
 
@@ -654,9 +722,11 @@ main {
   width: 100%;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   font-family: inherit;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .admin-form button,
@@ -666,7 +736,7 @@ main {
   font-size: 0.85rem;
   font-weight: 600;
   color: #fff;
-  background: #221539;
+  background: var(--color-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -683,12 +753,12 @@ main {
 }
 
 .admin-form-actions button[type="button"] {
-  background: #e2e8f0;
-  color: #1f2937;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .admin-region {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.75rem 0.9rem;
   margin-bottom: 0.75rem;
@@ -704,7 +774,7 @@ main {
 .admin-region-description {
   margin: 0.4rem 0 0;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .admin-actions {
@@ -717,16 +787,16 @@ main {
   padding: 0.25rem 0.6rem;
   font-size: 0.78rem;
   font-weight: 600;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 5px;
-  background: #fff;
-  color: #1f2937;
+  background: var(--color-bg);
+  color: var(--color-text);
   cursor: pointer;
 }
 
 .admin-actions button.danger {
-  border-color: #fecaca;
-  color: #b91c1c;
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
 }
 
 .admin-city-list {
@@ -742,12 +812,12 @@ main {
   gap: 0.5rem;
   padding: 0.35rem 0;
   font-size: 0.85rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-bg-muted);
 }
 
 .admin-empty {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
   margin: 0.4rem 0;
 }
@@ -787,8 +857,8 @@ main {
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
   align-self: center;
-  background: #e2e8f0;
-  color: #1f2937;
+  background: var(--color-border);
+  color: var(--color-text);
   white-space: nowrap;
 }
 
@@ -812,10 +882,10 @@ main {
   max-height: 180px;
   overflow-y: auto;
   padding: 0.25rem;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px var(--shadow-color);
 }
 
 .category-picker-menu[hidden] {
@@ -837,7 +907,7 @@ main {
   padding: 0.35rem 0.5rem;
   font-size: 0.83rem;
   font-weight: 400;
-  color: #1f2937;
+  color: var(--color-text);
   background: none;
   border: none;
   border-radius: 4px;
@@ -846,13 +916,13 @@ main {
 
 .category-picker-menu .category-picker-option:hover,
 .category-picker-menu .category-picker-option.active {
-  background: #f1f5f9;
+  background: var(--color-bg-muted);
 }
 
 .category-picker-empty {
   padding: 0.35rem 0.5rem;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-faint);
   font-style: italic;
 }
 
@@ -868,7 +938,7 @@ main {
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.9rem;
-  background: #221539;
+  background: var(--color-accent);
   color: #fff;
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
@@ -906,12 +976,12 @@ main {
   align-items: center;
   gap: 0.7rem;
   padding: 0.5rem 1rem;
-  background: #fff;
+  background: var(--color-bg);
   border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 #timeline[hidden] {
@@ -933,15 +1003,6 @@ main {
   /* The mobile panel overlays the map instead of pushing it, so the
      narrow icon rail always hugs the left edge and the panel becomes
      a full-height drawer above the map when open. */
-  #rail {
-    width: 48px;
-  }
-
-  .rail-btn {
-    width: 36px;
-    height: 36px;
-  }
-
   #panel {
     position: absolute;
     inset: 0 auto 0 48px;
