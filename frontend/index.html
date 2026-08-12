@@ -22,6 +22,7 @@
         <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
       </div>
       <div class="header-actions">
+        <button type="button" id="places-toggle" aria-haspopup="true" aria-expanded="false">Places</button>
         <div id="account-widget">
           <button type="button" id="account-signin-toggle">Sign in</button>
           <div id="account-status" hidden>
@@ -44,7 +45,10 @@
         </div>
       </div>
     </div>
-    <div id="category-filter-bar" role="group" aria-label="Filter by category"></div>
+    <div id="category-filter-bar" role="group" aria-label="Filter by category" hidden>
+      <button type="button" id="category-filter-close" aria-label="Close">×</button>
+      <div id="category-filter-chips"></div>
+    </div>
     <div id="map-pick-banner" hidden>
       <span>Click anywhere on the map to set the location</span>
       <button type="button" id="map-pick-cancel">Cancel</button>

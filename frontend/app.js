@@ -268,7 +268,21 @@ const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
+const placesToggleEl = document.getElementById("places-toggle");
 const categoryFilterBarEl = document.getElementById("category-filter-bar");
+const categoryFilterCloseEl = document.getElementById("category-filter-close");
+const categoryFilterChipsEl = document.getElementById("category-filter-chips");
+let placesPanelOpen = false;
+
+function setPlacesPanelOpen(open) {
+  placesPanelOpen = open;
+  categoryFilterBarEl.hidden = !open;
+  placesToggleEl.classList.toggle("active", open);
+  placesToggleEl.setAttribute("aria-expanded", String(open));
+}
+
+placesToggleEl.addEventListener("click", () => setPlacesPanelOpen(!placesPanelOpen));
+categoryFilterCloseEl.addEventListener("click", () => setPlacesPanelOpen(false));
 
 function closeLangMenu() {
   langMenuEl.hidden = true;
@@ -279,6 +293,8 @@ function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
   searchInputEl.placeholder = t("searchPlaceholder");
+  placesToggleEl.textContent = t("placesToggle");
+  categoryFilterCloseEl.setAttribute("aria-label", t("adminClose"));
   updateYearLabel();
   sidebarToggleEl.setAttribute(
     "aria-label",
@@ -422,7 +438,7 @@ function categoryLabel(value) {
 // category), so there's nothing extra to keep in sync here beyond
 // POI_ICONS/POI_COLORS themselves.
 function renderCategoryFilterBar() {
-  categoryFilterBarEl.innerHTML = "";
+  categoryFilterChipsEl.innerHTML = "";
   Object.keys(POI_ICONS).forEach((category) => {
     const chip = document.createElement("button");
     chip.type = "button";
@@ -439,7 +455,7 @@ function renderCategoryFilterBar() {
       updatePoiVisibility();
       applyFilterAndRender({ fitBounds: false });
     });
-    categoryFilterBarEl.appendChild(chip);
+    categoryFilterChipsEl.appendChild(chip);
   });
 }
 
