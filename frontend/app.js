@@ -152,9 +152,62 @@ const markersLayer = L.layerGroup().addTo(map);
 
 // Points of interest (cafes, restaurants, etc.) are shown on both tile
 // layers, but only once zoomed in enough — otherwise a full set of them
-// would look chaotic at the region-wide view.
+// would look chaotic at the region-wide view. That clutter concern goes
+// away once a category filter narrows it down to just one kind of
+// place, so a filter being active bypasses the zoom gate entirely.
 const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
+let activeCategoryFilter = null;
+
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_COLORS = {
+  road: "#57534e",
+  cafe: "#b45309",
+  restaurant: "#b91c1c",
+  hotel: "#1d4ed8",
+  landmark: "#7c3aed",
+  museum: "#0f766e",
+  park: "#15803d",
+  university: "#4338ca",
+  school: "#4f46e5",
+  hospital: "#dc2626",
+  pharmacy: "#16a34a",
+  bank: "#065f46",
+  government: "#374151",
+  police: "#1e3a8a",
+  fire_station: "#c2410c",
+  mosque: "#0891b2",
+  church: "#0e7490",
+  fuel_station: "#78350f",
+  parking: "#525252",
+  shop: "#c2410c",
+  other: "#334155",
+};
+
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
+const POI_ICONS = {
+  road: "🛣️",
+  cafe: "☕",
+  restaurant: "🍽️",
+  hotel: "🏨",
+  landmark: "🗿",
+  museum: "🏛️",
+  park: "🌳",
+  university: "🎓",
+  school: "📚",
+  hospital: "🏥",
+  pharmacy: "💊",
+  bank: "🏦",
+  government: "🏢",
+  police: "👮",
+  fire_station: "🚒",
+  mosque: "🕌",
+  church: "⛪",
+  fuel_station: "⛽",
+  parking: "🅿️",
+  shop: "🛍️",
+  other: "📍",
+};
 
 function updateMarkersVisibility(activeLayer) {
   const showLabels = activeLayer === satelliteLayer || activeLayer === historicalLayer;
@@ -162,7 +215,7 @@ function updateMarkersVisibility(activeLayer) {
 }
 
 function updatePoiVisibility() {
-  const shouldShow = map.getZoom() >= POI_MIN_ZOOM;
+  const shouldShow = activeCategoryFilter !== null || map.getZoom() >= POI_MIN_ZOOM;
   if (shouldShow && !map.hasLayer(poiMarkersLayer)) {
     map.addLayer(poiMarkersLayer);
   } else if (!shouldShow && map.hasLayer(poiMarkersLayer)) {
@@ -215,6 +268,7 @@ const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
+const categoryFilterBarEl = document.getElementById("category-filter-bar");
 
 function closeLangMenu() {
   langMenuEl.hidden = true;
@@ -253,6 +307,7 @@ langMenuEl.addEventListener("click", (event) => {
   setStoredLang(lang);
   applyStaticTranslations();
   refreshLayerControl();
+  renderCategoryFilterBar();
   // Only the labels change here, not the underlying data, so don't
   // re-fit the map to the markers — that was resetting the user's pan
   // and zoom on every language switch.
@@ -280,6 +335,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 applyStaticTranslations();
+renderCategoryFilterBar();
 
 sidebarToggleEl.addEventListener("click", () => {
   const collapsed = sidebarEl.classList.toggle("collapsed");
@@ -353,58 +409,38 @@ function showCityDetail(city) {
   });
 }
 
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_COLORS = {
-  road: "#57534e",
-  cafe: "#b45309",
-  restaurant: "#b91c1c",
-  hotel: "#1d4ed8",
-  landmark: "#7c3aed",
-  museum: "#0f766e",
-  park: "#15803d",
-  university: "#4338ca",
-  school: "#4f46e5",
-  hospital: "#dc2626",
-  pharmacy: "#16a34a",
-  bank: "#065f46",
-  government: "#374151",
-  police: "#1e3a8a",
-  fire_station: "#c2410c",
-  mosque: "#0891b2",
-  church: "#0e7490",
-  fuel_station: "#78350f",
-  parking: "#525252",
-  shop: "#c2410c",
-  other: "#334155",
-};
-
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_ICONS = {
-  road: "🛣️",
-  cafe: "☕",
-  restaurant: "🍽️",
-  hotel: "🏨",
-  landmark: "🗿",
-  museum: "🏛️",
-  park: "🌳",
-  university: "🎓",
-  school: "📚",
-  hospital: "🏥",
-  pharmacy: "💊",
-  bank: "🏦",
-  government: "🏢",
-  police: "👮",
-  fire_station: "🚒",
-  mosque: "🕌",
-  church: "⛪",
-  fuel_station: "⛽",
-  parking: "🅿️",
-  shop: "🛍️",
-  other: "📍",
-};
-
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
+}
+
+function categoryLabel(value) {
+  return (t("categories") && t("categories")[value]) || value;
+}
+
+// Every POI category becomes a filter chip — Object.keys(POI_ICONS) is
+// already exactly that list (it excludes "city", the only non-POI
+// category), so there's nothing extra to keep in sync here beyond
+// POI_ICONS/POI_COLORS themselves.
+function renderCategoryFilterBar() {
+  categoryFilterBarEl.innerHTML = "";
+  Object.keys(POI_ICONS).forEach((category) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "category-chip";
+    chip.classList.toggle("active", activeCategoryFilter === category);
+    chip.innerHTML =
+      `<span class="category-chip-icon">${POI_ICONS[category]}</span>` +
+      escapeHtml(categoryLabel(category));
+    chip.addEventListener("click", () => {
+      // Clicking the already-active chip clears the filter — same
+      // toggle-off gesture as Google Maps' own category chips.
+      activeCategoryFilter = activeCategoryFilter === category ? null : category;
+      renderCategoryFilterBar();
+      updatePoiVisibility();
+      applyFilterAndRender({ fitBounds: false });
+    });
+    categoryFilterBarEl.appendChild(chip);
+  });
 }
 
 function buildMarker(city) {
@@ -525,8 +561,21 @@ function matchesSearch(city) {
   );
 }
 
+// Regular cities are unaffected by the category filter (it's a POI
+// concept — "show me the cafes", not "hide every non-cafe city"); only
+// POIs get excluded when their category doesn't match the active one.
+function matchesActiveFilters(city) {
+  if (!matchesSearch(city)) {
+    return false;
+  }
+  if (activeCategoryFilter && isPoi(city) && city.category !== activeCategoryFilter) {
+    return false;
+  }
+  return true;
+}
+
 function applyFilterAndRender(options) {
-  renderCities(lastCities.filter(matchesSearch), options);
+  renderCities(lastCities.filter(matchesActiveFilters), options);
 }
 
 searchInputEl.addEventListener("input", () => {
@@ -542,7 +591,7 @@ searchInputEl.addEventListener("keydown", (event) => {
   // Jump to the top match currently shown — same ranked order as the
   // sidebar list (and includes POIs, which the sidebar itself doesn't
   // list but the map still does).
-  const [topMatch] = lastCities.filter(matchesSearch);
+  const [topMatch] = lastCities.filter(matchesActiveFilters);
   if (!topMatch) {
     return;
   }

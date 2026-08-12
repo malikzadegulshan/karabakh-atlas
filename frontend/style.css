@@ -43,6 +43,57 @@ aside.collapsed ~ #top-bar {
   left: 12px;
 }
 
+/* Google-Maps-style category quick filters, floating just below the
+   search bar. Horizontally scrollable since the full category list
+   (cafe, restaurant, hotel, ...) is too wide to fit on one line. */
+#category-filter-bar {
+  position: absolute;
+  top: 68px;
+  left: calc(260px + 12px);
+  right: 12px;
+  z-index: 1150;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  transition: left 0.2s ease;
+}
+
+aside.collapsed ~ #category-filter-bar {
+  left: 12px;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.category-chip:hover {
+  background: #f1f5f9;
+}
+
+.category-chip.active {
+  color: #fff;
+  background: #221539;
+}
+
+.category-chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 #search-box {
   flex: 1;
   max-width: 380px;
@@ -860,6 +911,12 @@ aside.collapsed ~ #sidebar-toggle {
     left: 12px;
     right: 12px;
     flex-wrap: wrap;
+  }
+
+  #category-filter-bar,
+  aside.collapsed ~ #category-filter-bar {
+    left: 12px;
+    right: 12px;
   }
 
   #search-box {
