@@ -546,6 +546,54 @@ function showCityDetail(city) {
   loadWeatherFor(city);
 }
 
+// Not true geographic distance (no latitude-scaling correction) — just
+// good enough to rank ~12 candidate cities against each other over a
+// region as small as Karabakh, which is all this needs.
+function squaredDistance(lat1, lng1, lat2, lng2) {
+  const dLat = lat1 - lat2;
+  const dLng = lng1 - lng2;
+  return dLat * dLat + dLng * dLng;
+}
+
+function nearestCityTo(lat, lng) {
+  const candidates = lastCities.filter((c) => !isPoi(c));
+  if (candidates.length === 0) {
+    return null;
+  }
+  return candidates.reduce((closest, city) =>
+    squaredDistance(lat, lng, city.latitude, city.longitude) <
+    squaredDistance(lat, lng, closest.latitude, closest.longitude)
+      ? city
+      : closest
+  );
+}
+
+let mapMoveWeatherTimer = null;
+
+// Weather follows the map: panning/zooming (once it settles — moveend,
+// not every intermediate frame) re-centers the panel on whichever known
+// city is now closest to the middle of the view. Debounced so a quick
+// drag or scroll-zoom doesn't fire a burst of API calls; only actually
+// refetches when the nearest city changes, so lingering in one area
+// doesn't either. An explicit selection (sidebar/marker click, search)
+// still wins in the moment via showCityDetail() above — this just picks
+// back up from wherever the map ends up after that.
+function scheduleWeatherUpdateForMapView() {
+  clearTimeout(mapMoveWeatherTimer);
+  mapMoveWeatherTimer = setTimeout(() => {
+    if (lastCities.length === 0) {
+      return;
+    }
+    const center = map.getCenter();
+    const candidate = nearestCityTo(center.lat, center.lng);
+    if (candidate && (!weatherCity || candidate.id !== weatherCity.id)) {
+      loadWeatherFor(candidate);
+    }
+  }, 500);
+}
+
+map.on("moveend", scheduleWeatherUpdateForMapView);
+
 function isPoi(city) {
   return Boolean(city.category) && city.category !== "city";
 }
