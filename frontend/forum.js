@@ -92,11 +92,18 @@ forumComposerEl.addEventListener("submit", async (event) => {
   }
   forumSubmitEl.disabled = true;
   try {
-    await apiRequest("POST", "/forum/posts", { body, target_city_id: null });
+    const post = await apiRequest("POST", "/forum/posts", { body, target_city_id: null });
     forumBodyInputEl.value = "";
-    forumPendingNoticeEl.textContent = t("forumPendingNotice");
-    forumPendingNoticeEl.hidden = false;
-    setTimeout(() => { forumPendingNoticeEl.hidden = true; }, 6000);
+    if (post.status === "approved") {
+      // Admins are auto-approved (see api/v1/views/forum.py) — the post
+      // is already live, so refresh the list instead of telling them
+      // it's awaiting review.
+      await loadGeneralForumPosts();
+    } else {
+      forumPendingNoticeEl.textContent = t("forumPendingNotice");
+      forumPendingNoticeEl.hidden = false;
+      setTimeout(() => { forumPendingNoticeEl.hidden = true; }, 6000);
+    }
   } catch (err) {
     window.alert(err.message);
   } finally {
@@ -108,7 +115,7 @@ forumComposerEl.addEventListener("submit", async (event) => {
 // (see showCityDetail() in app.js). Built fresh every time — the detail
 // panel's whole content gets replaced (detailEl.innerHTML = ...) on
 // every city selection, so there's no persistent DOM to reuse here.
-function buildCityForumComposer(cityId) {
+function buildCityForumComposer(cityId, onApprovedPost) {
   const wrapper = document.createElement("div");
 
   if (!currentUser) {
@@ -154,10 +161,17 @@ function buildCityForumComposer(cityId) {
     }
     submit.disabled = true;
     try {
-      await apiRequest("POST", "/forum/posts", { body, target_city_id: cityId });
+      const post = await apiRequest(
+        "POST", "/forum/posts", { body, target_city_id: cityId });
       textarea.value = "";
-      notice.textContent = t("forumPendingNotice");
-      notice.hidden = false;
+      if (post.status === "approved") {
+        // Admins are auto-approved — it's already live, so refresh the
+        // list instead of telling them it's awaiting review.
+        await onApprovedPost();
+      } else {
+        notice.textContent = t("forumPendingNotice");
+        notice.hidden = false;
+      }
     } catch (err) {
       window.alert(err.message);
     } finally {
@@ -176,30 +190,33 @@ async function renderCityForumSection(container, city) {
   heading.textContent = t("forumSectionTitle");
   section.appendChild(heading);
 
-  section.appendChild(buildCityForumComposer(city.id));
-
   const list = document.createElement("ul");
   list.className = "forum-post-list";
-  section.appendChild(list);
 
-  container.appendChild(section);
-
-  try {
-    const posts = await apiRequest(
-      "GET", `/forum/posts?city_id=${encodeURIComponent(city.id)}`);
-    // The panel may have already moved on to a different city while
-    // this was in flight (detailEl.innerHTML gets replaced wholesale on
-    // every selection) — bail rather than render into a detached
-    // section. Same guard pattern as loadWeatherFor() in app.js.
-    if (!container.contains(section)) {
-      return;
-    }
-    renderForumList(list, posts, t("forumCityEmpty"));
-  } catch (err) {
-    if (container.contains(section)) {
-      renderForumList(list, [], t("forumCityEmpty"));
+  async function refreshList() {
+    try {
+      const posts = await apiRequest(
+        "GET", `/forum/posts?city_id=${encodeURIComponent(city.id)}`);
+      // The panel may have already moved on to a different city by now
+      // (detailEl.innerHTML gets replaced wholesale on every selection)
+      // — bail rather than render into a detached section. Same guard
+      // pattern as loadWeatherFor() in app.js.
+      if (!container.contains(section)) {
+        return;
+      }
+      renderForumList(list, posts, t("forumCityEmpty"));
+    } catch (err) {
+      if (container.contains(section)) {
+        renderForumList(list, [], t("forumCityEmpty"));
+      }
     }
   }
+
+  section.appendChild(buildCityForumComposer(city.id, refreshList));
+  section.appendChild(list);
+  container.appendChild(section);
+
+  await refreshList();
 }
 
 applyForumStaticTranslations();
