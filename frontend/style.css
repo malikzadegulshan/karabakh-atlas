@@ -191,8 +191,7 @@ main {
 
 /* Popovers open to the right of the rail, not below it — there's no
    room below a 34px-tall icon button in a vertical rail. */
-#lang-menu,
-#account-status {
+#lang-menu {
   position: absolute;
   left: calc(100% + 8px);
   bottom: 0;
@@ -200,6 +199,22 @@ main {
   display: flex;
   flex-direction: column;
   min-width: 50px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.3rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px var(--shadow-color);
+}
+#account-status {
+  position: absolute;
+  left: calc(100% + 8px);
+  bottom: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
   max-height: 200px;
   overflow-y: auto;
   padding: 0.3rem;
