@@ -37,6 +37,13 @@ const KBA_ICON_PATHS = {
   rail_forum: '<path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1" />',
   rail_admin: '<path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />',
   rail_account: '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />',
+  // brand mark (#brand-mark in index.html, favicon) — a Karabakh carpet
+  // medallion reduced to four points: a center diamond plus one smaller
+  // diamond at each cardinal direction, doubling as a compass rose. Filled
+  // shapes, not outlines — KBA_ICON_SVG sets fill="none" at the <svg>
+  // level for every other icon here, but each rect below carries its own
+  // fill="currentColor" so it renders solid regardless of that wrapper.
+  logo_mark: '<rect x="9" y="9" width="6" height="6" rx="1.9" fill="currentColor" transform="rotate(45 12 12)" /><rect x="10.1" y="0.8" width="3.8" height="3.8" rx="1.5" fill="currentColor" transform="rotate(45 12 2.6)" /><rect x="10.1" y="19.4" width="3.8" height="3.8" rx="1.5" fill="currentColor" transform="rotate(45 12 21.4)" /><rect x="19.4" y="10.1" width="3.8" height="3.8" rx="1.5" fill="currentColor" transform="rotate(45 21.4 12)" /><rect x="0.8" y="10.1" width="3.8" height="3.8" rx="1.5" fill="currentColor" transform="rotate(45 2.6 12)" />',
   // theme toggle (data-theme override) — same path data as weather_clear
   // above for theme_light (it's Tabler's "sun" icon in both places),
   // kept as its own named entry since the two are semantically unrelated.

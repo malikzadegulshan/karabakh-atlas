@@ -170,6 +170,22 @@ main {
   z-index: 20;
 }
 
+/* Non-interactive brand mark, sitting above the functional rail buttons.
+   Sized to match .rail-btn for column alignment, but no hover/active
+   states of its own since it doesn't do anything when clicked. */
+#brand-mark {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 .rail-btn {
   width: 34px;
   height: 34px;
