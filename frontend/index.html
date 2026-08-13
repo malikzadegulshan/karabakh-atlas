@@ -6,6 +6,24 @@
   <title>Karabakh Atlas — Dirchalish</title>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Applies a stored light/dark override (if any) before first paint,
+    // so a preference that disagrees with the OS setting doesn't flash
+    // the wrong theme for a frame — see the #theme-toggle button and
+    // scheme()/getStoredTheme() in app.js, which read/write this same
+    // "kba_theme" key and attribute.
+    (function () {
+      try {
+        var theme = localStorage.getItem("kba_theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch (err) {
+        /* localStorage unavailable (e.g. private browsing); system
+           preference alone still applies via CSS, nothing else to do */
+      }
+    })();
+  </script>
 </head>
 <body>
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
@@ -27,6 +45,7 @@
           <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
         </div>
       </div>
+      <button type="button" id="theme-toggle" class="rail-btn" data-icon="theme_light" aria-pressed="false" aria-label="Toggle dark mode"></button>
       <div id="account-widget" class="rail-widget">
         <button type="button" id="account-signin-toggle" class="rail-btn" data-icon="rail_account" aria-label="Sign in"></button>
         <button type="button" id="account-avatar-toggle" class="rail-btn" hidden aria-haspopup="true" aria-expanded="false"></button>
