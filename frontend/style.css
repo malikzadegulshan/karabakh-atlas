@@ -314,6 +314,7 @@ main {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  margin-top: 16px
 }
 
 .account-tab.active {
