@@ -14,6 +14,40 @@ function t(key) {
   return TRANSLATIONS[currentLang][key];
 }
 
+// Theme: follows the system by default, overridable and persisted via
+// the #theme-toggle rail button (localStorage key "kba_theme"). scheme()
+// is the single source of truth every color-scheme-aware render below
+// calls — it checks the override first, falling back to the live media
+// query. index.html also applies a stored override to
+// documentElement.dataset.theme synchronously in <head>, before first
+// paint, from that same key, so there's no flash of the wrong theme.
+const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function scheme() {
+  const override = document.documentElement.dataset.theme;
+  return override === "light" || override === "dark"
+    ? override
+    : (darkModeQuery.matches ? "dark" : "light");
+}
+
+function getStoredTheme() {
+  try {
+    return localStorage.getItem("kba_theme");
+  } catch (err) {
+    return null;
+  }
+}
+
+function setStoredTheme(theme) {
+  try {
+    localStorage.setItem("kba_theme", theme);
+  } catch (err) {
+    /* localStorage unavailable (e.g. private browsing); the override
+       still applies for this page load via dataset.theme, it just
+       won't persist across reloads */
+  }
+}
+
 // Zoom control moves to the bottom-right (Leaflet's default top-left spot
 // would sit right under the floating search bar/buttons).
 const map = L.map("map", { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -32,9 +66,7 @@ const STREET_TILE_URLS = {
 };
 
 const streetLayer = L.tileLayer(
-  STREET_TILE_URLS[window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light"],
+  STREET_TILE_URLS[scheme()],
   {
     maxZoom: 19,
     subdomains: "abcd",
@@ -221,12 +253,6 @@ const POI_TONE_RAMP = {
 const POI_GLYPH = { light: "#ffffff", dark: "#18181b" };
 const POI_RING = { light: "#ffffff", dark: "#2c2c2e" };
 
-const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-function scheme() {
-  return darkModeQuery.matches ? "dark" : "light";
-}
-
 function poiToneColor(category) {
   const tier = POI_TONES[category] !== undefined
     ? POI_TONES[category]
@@ -305,6 +331,7 @@ const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
 const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
+const themeToggleEl = document.getElementById("theme-toggle");
 
 function closeLangMenu() {
   langMenuEl.hidden = true;
@@ -321,6 +348,8 @@ function applyStaticTranslations() {
   railPlacesEl.title = t("placesToggle");
   railForumEl.setAttribute("aria-label", t("forumToggle"));
   railForumEl.title = t("forumToggle");
+  themeToggleEl.setAttribute("aria-label", t("themeToggle"));
+  themeToggleEl.title = t("themeToggle");
   updateYearLabel();
   panelToggleEl.setAttribute(
     "aria-label",
@@ -408,7 +437,29 @@ function applyColorScheme() {
 
 darkModeQuery.addEventListener("change", applyColorScheme);
 
+// Sun/moon reflects the *current* effective theme (like the lang-toggle
+// showing the active language code, not the one you'd switch to) —
+// aria-pressed carries the same state for assistive tech, since the
+// icon swap alone isn't announced.
+function updateThemeToggleIcon() {
+  const dark = scheme() === "dark";
+  themeToggleEl.dataset.icon = dark ? "theme_dark" : "theme_light";
+  themeToggleEl.innerHTML = KBA_ICON_SVG(themeToggleEl.dataset.icon, 19);
+  themeToggleEl.setAttribute("aria-pressed", String(dark));
+}
+
+function toggleTheme() {
+  const next = scheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  setStoredTheme(next);
+  updateThemeToggleIcon();
+  applyColorScheme();
+}
+
+themeToggleEl.addEventListener("click", toggleTheme);
+
 hydrateStaticIcons();
+updateThemeToggleIcon();
 applyStaticTranslations();
 renderCategoryGrid();
 

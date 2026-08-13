@@ -42,7 +42,15 @@
 
 /* Color tokens — light palette by default, swapped for dark under
    prefers-color-scheme so the whole UI follows the system setting
-   automatically (no manual toggle). */
+   automatically. The #theme-toggle button (app.js) can also force a
+   scheme explicitly via [data-theme] on <html>, overriding the system
+   setting in either direction:
+     - [data-theme="light"] suppresses the prefers-color-scheme block
+       below (the :not() guard) so an explicit light choice sticks even
+       when the OS is in dark mode.
+     - [data-theme="dark"] repeats the same dark tokens unconditionally,
+       so an explicit dark choice applies even when the OS is in light
+       mode (prefers-color-scheme: dark wouldn't otherwise match). */
 :root {
   --color-bg: #ffffff;
   --color-bg-subtle: #f8fafc;
@@ -67,7 +75,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg: #1c1c1e;
     --color-bg-subtle: #232326;
     --color-bg-muted: #2c2c2e;
@@ -89,6 +97,29 @@
     --color-warn-text: #fbbf24;
     --shadow-color: rgba(0, 0, 0, 0.55);
   }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #1c1c1e;
+  --color-bg-subtle: #232326;
+  --color-bg-muted: #2c2c2e;
+  --color-border: #3a3a3d;
+  --color-border-strong: #4b4b4f;
+  --color-text: #f1f5f9;
+  --color-text-muted: #a1a1aa;
+  --color-text-faint: #8a8a90;
+  --color-accent: #4b3272;
+  --color-accent-hover: #5c3f8c;
+  --color-accent-soft: #332255;
+  --color-danger: #f87171;
+  --color-danger-bg: #451a1a;
+  --color-danger-border: #7f1d1d;
+  --color-success-bg: #06301b;
+  --color-success-text: #4ade80;
+  --color-warn-bg: #452c06;
+  --color-warn-bg-hover: #5a3a08;
+  --color-warn-text: #fbbf24;
+  --shadow-color: rgba(0, 0, 0, 0.55);
 }
 
 body {
@@ -702,10 +733,15 @@ main {
    now ships a dark variant too (STREET_TILE_URLS in app.js), so the chip
    has to darken with it — a white chip on Dark Matter tiles glares. */
 @media (prefers-color-scheme: dark) {
-  .city-label {
+  :root:not([data-theme="light"]) .city-label {
     color: #f1f5f9;
     background: rgba(28, 28, 30, 0.85);
   }
+}
+
+:root[data-theme="dark"] .city-label {
+  color: #f1f5f9;
+  background: rgba(28, 28, 30, 0.85);
 }
 
 /* Hides the redundant label text on Streets (which already has its own
@@ -761,7 +797,7 @@ main {
 }
 
 @media (prefers-color-scheme: dark) {
-  .poi-marker-label {
+  :root:not([data-theme="light"]) .poi-marker-label {
     color: #f1f5f9;
     text-shadow:
       -1px -1px 0 rgba(28, 28, 30, 0.9),
@@ -770,6 +806,16 @@ main {
        1px  1px 0 rgba(28, 28, 30, 0.9),
        0    0    3px rgba(28, 28, 30, 0.9);
   }
+}
+
+:root[data-theme="dark"] .poi-marker-label {
+  color: #f1f5f9;
+  text-shadow:
+    -1px -1px 0 rgba(28, 28, 30, 0.9),
+     1px -1px 0 rgba(28, 28, 30, 0.9),
+    -1px  1px 0 rgba(28, 28, 30, 0.9),
+     1px  1px 0 rgba(28, 28, 30, 0.9),
+     0    0    3px rgba(28, 28, 30, 0.9);
 }
 
 /* Inline icons from vendor/icons/icons.js. display: block drops the
