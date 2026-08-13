@@ -61,7 +61,7 @@ app.config.update(
 
 # Credentialed requests (cookies) can't use a wildcard origin — browsers
 # reject that combination outright. Defaults to the local dev frontend;
-# a real deployment must set KBA_FRONTEND_ORIGIN to its actual frontend
+# a real deployment must set KBA_FRONTEND_ORIGIN to its actual frontend.
 # URL(s) (comma-separated for more than one).
 _frontend_origins = [
     origin.strip() for origin in os.environ.get(

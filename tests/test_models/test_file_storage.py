@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Unit tests for models.engine.file_storage.FileStorage."""
+"""Unit tests for the models.engine.file_storage.FileStorage."""
 import unittest
 from models import storage
 from models.region import Region
