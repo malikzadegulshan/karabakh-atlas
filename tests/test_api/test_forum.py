@@ -74,6 +74,28 @@ class TestForumViews(unittest.TestCase):
         self.assertEqual(body["status"], "pending")
         self.assertEqual(body["author_id"], self.user_id)
 
+    def test_admin_post_is_auto_approved(self):
+        """An admin's own post skips the moderation queue entirely."""
+        resp = self._create_post(client=self.admin_client, body="Admin opinion")
+        self.assertEqual(resp.status_code, 201)
+        body = json.loads(resp.data)
+        self.assertEqual(body["status"], "approved")
+        self.assertEqual(body["moderated_by"], self.admin_id)
+        self.assertIsNotNone(body["moderated_at"])
+
+        public_bodies = [
+            p["body"] for p in
+            json.loads(self.client.get("/api/v1/forum/posts").data)]
+        self.assertIn("Admin opinion", public_bodies)
+
+    def test_admin_posting_is_not_rate_limited(self):
+        """An admin can post past the regular per-account rate limit."""
+        limit = auth_utils.forum_post_limiter.max_attempts
+        last_status = None
+        for _ in range(limit + 2):
+            last_status = self._create_post(client=self.admin_client).status_code
+        self.assertEqual(last_status, 201)
+
     def test_create_rejects_empty_body(self):
         """A blank/whitespace-only body is rejected."""
         resp = self._create_post(body="   ")

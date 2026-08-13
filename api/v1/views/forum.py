@@ -72,10 +72,14 @@ def _sorted_newest_first(posts):
 @app_views.route("/forum/posts", methods=["POST"])
 @login_required
 def create_forum_post():
-    """Submit a new opinion. Always starts out "pending" — never visible
-    to anyone but its author and admins until a moderator approves it."""
+    """Submit a new opinion. Starts out "pending" — never visible to
+    anyone but its author and admins until a moderator approves it —
+    except for admins themselves, who are implicitly trusted moderators
+    and so are auto-approved and exempt from the rate limit below;
+    everyone else still goes through the queue."""
     user = get_current_user()
-    if forum_post_limiter.is_limited(user.id):
+    is_admin = user.role == "admin"
+    if not is_admin and forum_post_limiter.is_limited(user.id):
         return jsonify({
             "error": "Too many posts submitted recently. Try again later.",
         }), 429
@@ -96,13 +100,17 @@ def create_forum_post():
         if storage.all(City).get("City.{}".format(target_city_id)) is None:
             abort(400, description="target_city_id does not exist")
 
-    forum_post_limiter.record(user.id)
+    if not is_admin:
+        forum_post_limiter.record(user.id)
     post = ForumPost(
         author_id=user.id,
         target_city_id=target_city_id,
         body=data["body"].strip(),
-        status="pending",
+        status="approved" if is_admin else "pending",
     )
+    if is_admin:
+        post.moderated_by = user.id
+        post.moderated_at = datetime.utcnow()
     post.save()
     return jsonify(_serialize(post)), 201
 

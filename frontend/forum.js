@@ -12,12 +12,25 @@
 // user text. Every place this file puts one on the page goes through
 // escapeHtml() first — never innerHTML with a raw body.
 
+const forumGeneralSectionEl = document.getElementById("forum-general-section");
 const forumComposerEl = document.getElementById("forum-composer");
 const forumBodyInputEl = document.getElementById("forum-body-input");
 const forumSubmitEl = document.getElementById("forum-submit");
 const forumSigninPromptEl = document.getElementById("forum-signin-prompt");
 const forumPendingNoticeEl = document.getElementById("forum-pending-notice");
 const forumListEl = document.getElementById("forum-list");
+
+// A selected city/POI's own "Community opinions" widget already covers
+// that place, so showing the general (Karabakh-wide) composer/list at
+// the same time just reads as repetitive — hide it whenever a place is
+// currently selected (i.e. #city-detail, a permanent sibling of every
+// panel tab, has something in it), and bring it back once nothing's
+// selected. Called on every tab switch and every place selection/
+// deselection, so it can't go stale.
+function updateForumGeneralVisibility() {
+  const placeSelected = Boolean(detailEl.firstElementChild);
+  forumGeneralSectionEl.hidden = placeSelected;
+}
 
 function applyForumStaticTranslations() {
   forumBodyInputEl.placeholder = t("forumComposerPlaceholder");
@@ -44,7 +57,10 @@ function forumDateLabel(isoString) {
   return new Date(isoString).toLocaleString(currentLang);
 }
 
-function renderForumList(container, posts, emptyMessage) {
+// onDeleted is called (and should re-fetch/re-render) after a
+// successful delete — both call sites below already have a natural
+// "reload this list" function to pass in.
+function renderForumList(container, posts, emptyMessage, onDeleted) {
   container.innerHTML = "";
   if (posts.length === 0) {
     const empty = document.createElement("p");
@@ -63,6 +79,31 @@ function renderForumList(container, posts, emptyMessage) {
     author.textContent = post.author_name || "?";
     meta.appendChild(author);
     meta.appendChild(document.createTextNode(" · " + forumDateLabel(post.created_at)));
+
+    // The API itself is the real enforcement point (author-or-admin,
+    // see DELETE /forum/posts/<id>) — this button is just hidden
+    // client-side for anyone it wouldn't work for.
+    const canDelete = currentUser &&
+      (currentUser.role === "admin" || currentUser.id === post.author_id);
+    if (canDelete) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "forum-post-delete";
+      deleteBtn.textContent = t("adminDelete");
+      deleteBtn.addEventListener("click", async () => {
+        if (!window.confirm(t("confirmDeleteForumPost"))) {
+          return;
+        }
+        try {
+          await apiRequest("DELETE", `/forum/posts/${post.id}`);
+          await onDeleted();
+        } catch (err) {
+          window.alert(err.message);
+        }
+      });
+      meta.appendChild(deleteBtn);
+    }
+
     li.appendChild(meta);
 
     const body = document.createElement("p");
@@ -76,11 +117,12 @@ function renderForumList(container, posts, emptyMessage) {
 
 async function loadGeneralForumPosts() {
   updateForumComposerVisibility();
+  updateForumGeneralVisibility();
   try {
     const posts = await apiRequest("GET", "/forum/posts");
-    renderForumList(forumListEl, posts, t("forumEmpty"));
+    renderForumList(forumListEl, posts, t("forumEmpty"), loadGeneralForumPosts);
   } catch (err) {
-    renderForumList(forumListEl, [], t("forumEmpty"));
+    renderForumList(forumListEl, [], t("forumEmpty"), loadGeneralForumPosts);
   }
 }
 
@@ -92,11 +134,18 @@ forumComposerEl.addEventListener("submit", async (event) => {
   }
   forumSubmitEl.disabled = true;
   try {
-    await apiRequest("POST", "/forum/posts", { body, target_city_id: null });
+    const post = await apiRequest("POST", "/forum/posts", { body, target_city_id: null });
     forumBodyInputEl.value = "";
-    forumPendingNoticeEl.textContent = t("forumPendingNotice");
-    forumPendingNoticeEl.hidden = false;
-    setTimeout(() => { forumPendingNoticeEl.hidden = true; }, 6000);
+    if (post.status === "approved") {
+      // Admins are auto-approved (see api/v1/views/forum.py) — the post
+      // is already live, so refresh the list instead of telling them
+      // it's awaiting review.
+      await loadGeneralForumPosts();
+    } else {
+      forumPendingNoticeEl.textContent = t("forumPendingNotice");
+      forumPendingNoticeEl.hidden = false;
+      setTimeout(() => { forumPendingNoticeEl.hidden = true; }, 6000);
+    }
   } catch (err) {
     window.alert(err.message);
   } finally {
@@ -108,7 +157,7 @@ forumComposerEl.addEventListener("submit", async (event) => {
 // (see showCityDetail() in app.js). Built fresh every time — the detail
 // panel's whole content gets replaced (detailEl.innerHTML = ...) on
 // every city selection, so there's no persistent DOM to reuse here.
-function buildCityForumComposer(cityId) {
+function buildCityForumComposer(cityId, onApprovedPost) {
   const wrapper = document.createElement("div");
 
   if (!currentUser) {
@@ -154,10 +203,17 @@ function buildCityForumComposer(cityId) {
     }
     submit.disabled = true;
     try {
-      await apiRequest("POST", "/forum/posts", { body, target_city_id: cityId });
+      const post = await apiRequest(
+        "POST", "/forum/posts", { body, target_city_id: cityId });
       textarea.value = "";
-      notice.textContent = t("forumPendingNotice");
-      notice.hidden = false;
+      if (post.status === "approved") {
+        // Admins are auto-approved — it's already live, so refresh the
+        // list instead of telling them it's awaiting review.
+        await onApprovedPost();
+      } else {
+        notice.textContent = t("forumPendingNotice");
+        notice.hidden = false;
+      }
     } catch (err) {
       window.alert(err.message);
     } finally {
@@ -176,30 +232,34 @@ async function renderCityForumSection(container, city) {
   heading.textContent = t("forumSectionTitle");
   section.appendChild(heading);
 
-  section.appendChild(buildCityForumComposer(city.id));
-
   const list = document.createElement("ul");
   list.className = "forum-post-list";
-  section.appendChild(list);
 
-  container.appendChild(section);
-
-  try {
-    const posts = await apiRequest(
-      "GET", `/forum/posts?city_id=${encodeURIComponent(city.id)}`);
-    // The panel may have already moved on to a different city while
-    // this was in flight (detailEl.innerHTML gets replaced wholesale on
-    // every selection) — bail rather than render into a detached
-    // section. Same guard pattern as loadWeatherFor() in app.js.
-    if (!container.contains(section)) {
-      return;
-    }
-    renderForumList(list, posts, t("forumCityEmpty"));
-  } catch (err) {
-    if (container.contains(section)) {
-      renderForumList(list, [], t("forumCityEmpty"));
+  async function refreshList() {
+    try {
+      const posts = await apiRequest(
+        "GET", `/forum/posts?city_id=${encodeURIComponent(city.id)}`);
+      // The panel may have already moved on to a different city by now
+      // (detailEl.innerHTML gets replaced wholesale on every selection)
+      // — bail rather than render into a detached section. Same guard
+      // pattern as loadWeatherFor() in app.js.
+      if (!container.contains(section)) {
+        return;
+      }
+      renderForumList(list, posts, t("forumCityEmpty"), refreshList);
+    } catch (err) {
+      if (container.contains(section)) {
+        renderForumList(list, [], t("forumCityEmpty"), refreshList);
+      }
     }
   }
+
+  section.appendChild(buildCityForumComposer(city.id, refreshList));
+  section.appendChild(list);
+  container.appendChild(section);
+
+  updateForumGeneralVisibility();
+  await refreshList();
 }
 
 applyForumStaticTranslations();

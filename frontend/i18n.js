@@ -67,6 +67,7 @@ const TRANSLATIONS = {
     confirmDeleteRegion: (name) =>
       `Delete region "${name}" and all its cities? This can't be undone.`,
     confirmDeleteCity: (name) => `Delete "${name}"? This can't be undone.`,
+    confirmDeleteForumPost: "Delete this post? This can't be undone.",
     mapPickInstruction: "Click anywhere on the map to set the location",
     mapPickCancel: "Cancel",
     forumToggle: "Forum",
@@ -174,6 +175,7 @@ const TRANSLATIONS = {
       `"${name}" bölgəsi və onun bütün şəhərləri silinsin? Bu geri qaytarıla bilməz.`,
     confirmDeleteCity: (name) =>
       `"${name}" silinsin? Bu geri qaytarıla bilməz.`,
+    confirmDeleteForumPost: "Bu paylaşım silinsin? Bu geri qaytarıla bilməz.",
     mapPickInstruction: "Yeri təyin etmək üçün xəritəyə klikləyin",
     mapPickCancel: "Ləğv et",
     forumToggle: "Forum",
@@ -279,6 +281,7 @@ const TRANSLATIONS = {
     confirmDeleteRegion: (name) =>
       `"${name}" bölgesi ve tüm şehirleri silinsin mi? Bu geri alınamaz.`,
     confirmDeleteCity: (name) => `"${name}" silinsin mi? Bu geri alınamaz.`,
+    confirmDeleteForumPost: "Bu gönderi silinsin mi? Bu geri alınamaz.",
     mapPickInstruction: "Konumu ayarlamak için haritaya tıklayın",
     mapPickCancel: "İptal",
     forumToggle: "Forum",
@@ -384,6 +387,7 @@ const TRANSLATIONS = {
     confirmDeleteRegion: (name) =>
       `Удалить регион «${name}» и все его города? Это нельзя отменить.`,
     confirmDeleteCity: (name) => `Удалить «${name}»? Это нельзя отменить.`,
+    confirmDeleteForumPost: "Удалить этот пост? Это нельзя отменить.",
     mapPickInstruction: "Нажмите на карту, чтобы указать местоположение",
     mapPickCancel: "Отмена",
     forumToggle: "Форум",

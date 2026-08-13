@@ -501,6 +501,9 @@ main {
 }
 
 .forum-post-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
   font-size: 0.78rem;
   color: var(--color-text-faint);
   margin-bottom: 0.2rem;
@@ -508,6 +511,22 @@ main {
 
 .forum-post-meta strong {
   color: var(--color-text-muted);
+}
+
+.forum-post-delete {
+  margin-left: auto;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  background: none;
+  border: 1px solid var(--color-danger-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.forum-post-delete:hover {
+  background: var(--color-danger-bg);
 }
 
 .forum-post-body {
@@ -823,6 +842,36 @@ main {
 }
 
 .admin-message[hidden] {
+  display: none;
+}
+
+/* Admin panel tabs — same visual pattern as .account-tabs/.account-tab,
+   just without their side margins (the admin panel body already has
+   its own padding, so an extra 1.25rem here would double it up). */
+.admin-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+
+.admin-tab {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  background: var(--color-bg-muted);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-tab.active {
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+}
+
+.admin-view[hidden] {
   display: none;
 }
 

@@ -731,6 +731,13 @@ function renderCities(cities, { fitBounds = true } = {}) {
   listEl.innerHTML = "";
   detailEl.innerHTML = "";
   cityMarkers = new Map();
+  // A re-render (search, filter, reload) implicitly clears whatever
+  // place was selected — bring the general forum section back if it
+  // was hidden for that selection. See the comment on the same pattern
+  // in selectPanelTab() above.
+  if (typeof updateForumGeneralVisibility === "function") {
+    updateForumGeneralVisibility();
+  }
 
   if (cities.length === 0) {
     setStatus(t("noCities"), false);
