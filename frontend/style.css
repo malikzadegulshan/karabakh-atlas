@@ -413,6 +413,15 @@ main {
   border-right: none;
 }
 
+/* A little extra room for the place-detail view's hero photo and
+   contact buttons — same transition as the collapse above, just a
+   different target width. #panel-toggle's own left offset (below) has
+   to move with it, since that offset is just this width plus a
+   constant (48px rail + a few px border/centering). */
+#panel.panel-detail-open {
+  width: 380px;
+}
+
 #panel-toggle {
   position: absolute;
   top: 50%;
@@ -432,6 +441,10 @@ main {
   transition: left 0.2s ease;
 }
 
+#panel.panel-detail-open ~ #panel-toggle {
+  left: 431px;
+}
+
 #panel.collapsed ~ #panel-toggle {
   left: 59px;
 }
@@ -443,6 +456,15 @@ main {
   border-radius: 10px;
   padding: 0.55rem 0.8rem;
   margin-bottom: 0.8rem;
+}
+
+/* #search-box's own "display: flex" otherwise beats the [hidden]
+   attribute's default UA rule (same specificity issue called out
+   elsewhere in this file for #lang-menu, #forum-composer, etc.) — without
+   this, openDetailView() hiding it during a place selection wouldn't
+   actually work. */
+#search-box[hidden] {
+  display: none;
 }
 
 #search-input {
@@ -695,34 +717,122 @@ main {
   font-weight: 600;
 }
 
-#city-detail {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.9rem;
+/* Place-detail view (#detail-view) — replaces search/weather/the active
+   tab entirely while a city or POI is selected, Apple-Maps-style, rather
+   than stacking underneath them. See openDetailView()/closeDetailView()
+   in app.js. */
+#detail-view {
+  display: flex;
+  flex-direction: column;
 }
 
-#city-detail:empty {
+#detail-view[hidden] {
   display: none;
 }
 
-#city-detail .no-info {
+.detail-back-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.7rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.detail-back-btn:hover {
+  background: var(--color-border);
+}
+
+#city-detail {
+  font-size: 0.9rem;
+}
+
+/* Bleeds out to the panel's own edges (negative margin matching #panel's
+   own padding) so the hero photo runs edge-to-edge instead of sitting in
+   a padded box like everything else in the sidebar. */
+.detail-hero {
+  margin: -0.9rem -0.9rem 0.9rem;
+}
+
+.detail-hero img {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.detail-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.detail-alt-names {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--color-text-faint);
+}
+
+.detail-subtitle {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.detail-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-accent);
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.detail-action-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.detail-about {
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-about h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.detail-about p {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.detail-about .no-info {
   color: var(--color-text-faint);
   font-style: italic;
 }
 
 #map {
   flex: 1;
-}
-
-.popup-image {
-  display: block;
-  width: 100%;
-  max-width: 220px;
-  max-height: 150px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin: 0.4rem 0;
 }
 
 .image-credit {
@@ -1321,6 +1431,19 @@ main {
 
   #panel.collapsed {
     box-shadow: none;
+  }
+
+  /* Same specificity as the desktop-only panel-detail-open rules above
+     (no media guard there), so these need to appear after them in the
+     stylesheet to win at this width — screen space is already tight on
+     mobile, so the detail view reuses the normal drawer width instead
+     of widening further. */
+  #panel.panel-detail-open {
+    width: min(260px, 78vw);
+  }
+
+  #panel.panel-detail-open ~ #panel-toggle {
+    left: calc(48px + min(260px, 78vw));
   }
 
   #panel-toggle {

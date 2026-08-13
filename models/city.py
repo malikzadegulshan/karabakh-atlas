@@ -18,6 +18,8 @@ class City(BaseModel, Base):
     alt_names = Column(String(255), nullable=True)
     image_url = Column(String(500), nullable=True)
     image_credit = Column(String(255), nullable=True)
+    phone = Column(String(30), nullable=True)
+    website = Column(String(500), nullable=True)
     # "city" for regular cities (map label + sidebar entry); anything else
     # (cafe/restaurant/hotel/...) is a user-added point of interest,
     # rendered as a small marker only when zoomed in.

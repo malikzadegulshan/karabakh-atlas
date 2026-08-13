@@ -12,25 +12,12 @@
 // user text. Every place this file puts one on the page goes through
 // escapeHtml() first — never innerHTML with a raw body.
 
-const forumGeneralSectionEl = document.getElementById("forum-general-section");
 const forumComposerEl = document.getElementById("forum-composer");
 const forumBodyInputEl = document.getElementById("forum-body-input");
 const forumSubmitEl = document.getElementById("forum-submit");
 const forumSigninPromptEl = document.getElementById("forum-signin-prompt");
 const forumPendingNoticeEl = document.getElementById("forum-pending-notice");
 const forumListEl = document.getElementById("forum-list");
-
-// A selected city/POI's own "Community opinions" widget already covers
-// that place, so showing the general (Karabakh-wide) composer/list at
-// the same time just reads as repetitive — hide it whenever a place is
-// currently selected (i.e. #city-detail, a permanent sibling of every
-// panel tab, has something in it), and bring it back once nothing's
-// selected. Called on every tab switch and every place selection/
-// deselection, so it can't go stale.
-function updateForumGeneralVisibility() {
-  const placeSelected = Boolean(detailEl.firstElementChild);
-  forumGeneralSectionEl.hidden = placeSelected;
-}
 
 function applyForumStaticTranslations() {
   forumBodyInputEl.placeholder = t("forumComposerPlaceholder");
@@ -117,7 +104,6 @@ function renderForumList(container, posts, emptyMessage, onDeleted) {
 
 async function loadGeneralForumPosts() {
   updateForumComposerVisibility();
-  updateForumGeneralVisibility();
   try {
     const posts = await apiRequest("GET", "/forum/posts");
     renderForumList(forumListEl, posts, t("forumEmpty"), loadGeneralForumPosts);
@@ -258,7 +244,6 @@ async function renderCityForumSection(container, city) {
   section.appendChild(list);
   container.appendChild(section);
 
-  updateForumGeneralVisibility();
   await refreshList();
 }
 

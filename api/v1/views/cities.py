@@ -28,8 +28,8 @@ CITY_CATEGORIES = {
 
 CITY_FIELDS = {
     "name", "latitude", "longitude", "description", "alt_names",
-    "image_url", "image_credit", "name_i18n", "description_i18n",
-    "category",
+    "image_url", "image_credit", "phone", "website", "name_i18n",
+    "description_i18n", "category",
 }
 
 
@@ -46,6 +46,8 @@ def _validate_city_data(data, *, require_required_fields):
     optional_string(data, "alt_names", max_length=255)
     optional_string(data, "image_url", max_length=500)
     optional_string(data, "image_credit", max_length=255)
+    optional_string(data, "phone", max_length=30)
+    optional_string(data, "website", max_length=500)
     optional_i18n_dict(data, "name_i18n")
     optional_i18n_dict(data, "description_i18n")
     optional_enum(data, "category", CITY_CATEGORIES)
