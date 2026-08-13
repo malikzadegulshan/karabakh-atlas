@@ -743,21 +743,32 @@ main {
 /* Same "follows the map, not the chrome" reasoning as .city-label
    above — including its dark-map chip below, since Streets now has a
    dark variant too (STREET_TILE_URLS in app.js). */
+/* Outlined text instead of a filled chip: the outline is the stack of
+   text-shadows (more reliably cross-browser than -webkit-text-stroke at
+   this font size), colored opposite the fill so it reads on either a
+   light or dark basemap without needing a background box at all. */
 .poi-marker-label {
   white-space: nowrap;
-  padding: 2px 6px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #1f2937;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  text-shadow:
+    -1px -1px 0 rgba(255, 255, 255, 0.9),
+     1px -1px 0 rgba(255, 255, 255, 0.9),
+    -1px  1px 0 rgba(255, 255, 255, 0.9),
+     1px  1px 0 rgba(255, 255, 255, 0.9),
+     0    0    3px rgba(255, 255, 255, 0.9);
 }
 
 @media (prefers-color-scheme: dark) {
   .poi-marker-label {
     color: #f1f5f9;
-    background: rgba(28, 28, 30, 0.85);
+    text-shadow:
+      -1px -1px 0 rgba(28, 28, 30, 0.9),
+       1px -1px 0 rgba(28, 28, 30, 0.9),
+      -1px  1px 0 rgba(28, 28, 30, 0.9),
+       1px  1px 0 rgba(28, 28, 30, 0.9),
+       0    0    3px rgba(28, 28, 30, 0.9);
   }
 }
 
