@@ -628,7 +628,10 @@ function buildDetailCardHtml(city) {
     `<p class="detail-subtitle">${escapeHtml(categoryLabel(city.category))}</p>`
   );
 
-  if (city.phone || city.website) {
+  // Contact buttons are a point-of-interest thing, not a plain-city
+  // thing — isPoi() is the same "category !== 'city'" check the admin
+  // forms use to hide the phone/website inputs in the first place.
+  if (isPoi(city) && (city.phone || city.website)) {
     parts.push('<div class="detail-actions">');
     if (city.phone) {
       parts.push(
