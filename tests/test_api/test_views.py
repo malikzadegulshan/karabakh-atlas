@@ -110,6 +110,40 @@ class TestAPIViews(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(json.loads(response.data)["category"], "cafe")
 
+    def test_create_city_accepts_phone_and_website(self):
+        """POST .../cities accepts and stores phone/website."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "phone": "+994 12 345 6789",
+                "website": "https://example.com",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        body = json.loads(response.data)
+        self.assertEqual(body["phone"], "+994 12 345 6789")
+        self.assertEqual(body["website"], "https://example.com")
+
+    def test_create_city_rejects_oversized_phone(self):
+        """POST .../cities with a too-long phone is rejected with 400."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "phone": "1" * 31,
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
     def test_create_city_accepts_road_category(self):
         """POST .../cities accepts the "road" category."""
         region = json.loads(self.client.post(

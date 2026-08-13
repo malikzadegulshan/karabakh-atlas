@@ -100,6 +100,12 @@ components:
         image_credit:
           type: string
           nullable: true
+        phone:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
         category:
           type: string
           description: >
@@ -155,6 +161,12 @@ components:
           type: string
           nullable: true
         image_credit:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        website:
           type: string
           nullable: true
         category:

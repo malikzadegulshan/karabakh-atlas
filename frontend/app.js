@@ -311,6 +311,10 @@ updateYearLabel();
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
+const detailViewEl = document.getElementById("detail-view");
+const detailBackEl = document.getElementById("detail-back");
+const searchBoxEl = document.getElementById("search-box");
+const weatherPanelEl = document.getElementById("weather-panel");
 const panelEl = document.getElementById("panel");
 const panelToggleEl = document.getElementById("panel-toggle");
 const railCitiesEl = document.getElementById("rail-cities");
@@ -350,6 +354,8 @@ function applyStaticTranslations() {
   railForumEl.title = t("forumToggle");
   themeToggleEl.setAttribute("aria-label", t("themeToggle"));
   themeToggleEl.title = t("themeToggle");
+  detailBackEl.setAttribute("aria-label", t("detailBack"));
+  detailBackEl.title = t("detailBack");
   updateYearLabel();
   panelToggleEl.setAttribute(
     "aria-label",
@@ -478,15 +484,15 @@ function setPanelCollapsed(collapsed) {
   setTimeout(() => map.invalidateSize(), 220);
 }
 
-// Rail buttons double as tab switches (Cities/Places) and, if you click
-// the already-active tab again, a close gesture — same toggle-to-close
-// behavior the old Cities button had, just extended to two tabs sharing
-// one panel instead of each having its own independent show/hide.
-function selectPanelTab(tab) {
-  if (activePanelTab === tab && !panelEl.classList.contains("collapsed")) {
-    setPanelCollapsed(true);
-    return;
-  }
+// A selected city/POI takes over the whole panel (#detail-view) in place
+// of search/weather/whichever tab was showing — see openDetailView() /
+// closeDetailView() below — so "is a place currently selected" is just
+// whether that wrapper is visible.
+function isPlaceSelected() {
+  return !detailViewEl.hidden;
+}
+
+function activateTab(tab) {
   activePanelTab = tab;
   railCitiesEl.classList.toggle("active", tab === "cities");
   railPlacesEl.classList.toggle("active", tab === "places");
@@ -506,39 +512,65 @@ function selectPanelTab(tab) {
   setPanelCollapsed(false);
 }
 
+// Rail buttons double as tab switches (Cities/Places/Forum) and, if you
+// click the already-active tab again, a close gesture — same
+// toggle-to-close behavior the old Cities button had. Clicking any rail
+// tab while a place detail is open is a "go back, then switch" gesture
+// instead: closeDetailView() restores the panel first, so the requested
+// tab has something to show rather than staying hidden behind the
+// now-closed detail view.
+function selectPanelTab(tab) {
+  if (isPlaceSelected()) {
+    closeDetailView();
+    activateTab(tab);
+    return;
+  }
+  if (activePanelTab === tab && !panelEl.classList.contains("collapsed")) {
+    setPanelCollapsed(true);
+    return;
+  }
+  activateTab(tab);
+}
+
 panelToggleEl.addEventListener("click", () => {
   setPanelCollapsed(!panelEl.classList.contains("collapsed"));
 });
 
-// Deselects whatever city/POI is currently shown in #city-detail (and,
-// via updateForumGeneralVisibility(), brings the general forum section
-// back if it was hidden for that selection).
-function clearSelectedPlace() {
+// Replaces search/weather/the active tab with the place-detail view —
+// called from showCityDetail() below. Mirrors Apple Maps: selecting a
+// place is a drill-down, not another section stacked into the same view.
+function openDetailView() {
+  searchBoxEl.hidden = true;
+  weatherPanelEl.hidden = true;
+  panelViewCitiesEl.hidden = true;
+  panelViewPlacesEl.hidden = true;
+  panelViewForumEl.hidden = true;
+  detailViewEl.hidden = false;
+  panelEl.classList.add("panel-detail-open");
+  // A marker click should always reveal its detail card, even if the
+  // sidebar was manually collapsed at the time.
+  setPanelCollapsed(false);
+}
+
+// Reverses openDetailView() and clears whatever place was shown, putting
+// back whichever tab was active before the place was selected.
+function closeDetailView() {
+  detailViewEl.hidden = true;
   detailEl.innerHTML = "";
   Array.from(listEl.children).forEach((li) => li.classList.remove("active"));
-  if (typeof updateForumGeneralVisibility === "function") {
-    updateForumGeneralVisibility();
-  }
+  panelEl.classList.remove("panel-detail-open");
+  searchBoxEl.hidden = false;
+  weatherPanelEl.hidden = false;
+  panelViewCitiesEl.hidden = activePanelTab !== "cities";
+  panelViewPlacesEl.hidden = activePanelTab !== "places";
+  panelViewForumEl.hidden = activePanelTab !== "forum";
 }
+
+detailBackEl.addEventListener("click", closeDetailView);
 
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
-railForumEl.addEventListener("click", () => {
-  // A selected place's own forum widget hides the general one (see
-  // updateForumGeneralVisibility() in forum.js) — clicking Forum again
-  // while that's the case is a "go back to the general forum" gesture,
-  // not the usual toggle-to-close. Toggle-to-close still applies once
-  // there's nothing left to go back from (already at the general view).
-  const placeSelected = Boolean(detailEl.firstElementChild);
-  if (activePanelTab === "forum" && !panelEl.classList.contains("collapsed") && placeSelected) {
-    clearSelectedPlace();
-    if (typeof loadGeneralForumPosts === "function") {
-      loadGeneralForumPosts();
-    }
-    return;
-  }
-  selectPanelTab("forum");
-});
+railForumEl.addEventListener("click", () => selectPanelTab("forum"));
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -571,19 +603,56 @@ function localizedDescription(city) {
   );
 }
 
-function cityInfoHtml(city) {
+// Builds the Apple-Maps-style place card shown in #city-detail once
+// openDetailView() has taken over the panel: hero image, name/category,
+// Call/Website contact buttons (only the ones the place actually has),
+// then an About section. The community-opinions widget is appended
+// separately by renderCityForumSection() (forum.js) — see showCityDetail().
+function buildDetailCardHtml(city) {
   const name = localizedName(city);
   const description = localizedDescription(city);
-  const parts = [`<strong>${escapeHtml(name)}</strong>`];
-  if (city.alt_names) {
-    parts.push(`<br><em>${escapeHtml(city.alt_names)}</em>`);
-  }
+  const parts = [];
+
   if (city.image_url) {
     parts.push(
-      `<img class="popup-image" src="${escapeAttr(city.image_url)}" ` +
-        `alt="${escapeAttr(name)}">`
+      `<div class="detail-hero"><img src="${escapeAttr(city.image_url)}" ` +
+        `alt="${escapeAttr(name)}"></div>`
     );
   }
+
+  parts.push(`<h2 class="detail-title">${escapeHtml(name)}</h2>`);
+  if (city.alt_names) {
+    parts.push(`<p class="detail-alt-names">${escapeHtml(city.alt_names)}</p>`);
+  }
+  parts.push(
+    `<p class="detail-subtitle">${escapeHtml(categoryLabel(city.category))}</p>`
+  );
+
+  // Contact buttons are a point-of-interest thing, not a plain-city
+  // thing — isPoi() is the same "category !== 'city'" check the admin
+  // forms use to hide the phone/website inputs in the first place.
+  if (isPoi(city) && (city.phone || city.website)) {
+    parts.push('<div class="detail-actions">');
+    if (city.phone) {
+      parts.push(
+        `<a class="detail-action-btn" href="tel:${escapeAttr(city.phone)}">` +
+          KBA_ICON_SVG("detail_call", 16) +
+          `<span>${escapeHtml(t("detailCall"))}</span></a>`
+      );
+    }
+    if (city.website) {
+      parts.push(
+        `<a class="detail-action-btn" href="${escapeAttr(city.website)}" ` +
+          'target="_blank" rel="noopener noreferrer">' +
+          KBA_ICON_SVG("detail_website", 16) +
+          `<span>${escapeHtml(t("detailWebsite"))}</span></a>`
+      );
+    }
+    parts.push("</div>");
+  }
+
+  parts.push('<div class="detail-about">');
+  parts.push(`<h3>${escapeHtml(t("detailAbout"))}</h3>`);
   if (description) {
     parts.push(`<p>${escapeHtml(description)}</p>`);
   } else {
@@ -592,6 +661,8 @@ function cityInfoHtml(city) {
   if (city.image_credit) {
     parts.push(`<p class="image-credit">${escapeHtml(city.image_credit)}</p>`);
   }
+  parts.push("</div>");
+
   return parts.join("");
 }
 
@@ -700,11 +771,15 @@ async function loadWeatherFor(city) {
 }
 
 function showCityDetail(city) {
-  detailEl.innerHTML = cityInfoHtml(city);
+  openDetailView();
+  detailEl.innerHTML = buildDetailCardHtml(city);
   Array.from(listEl.children).forEach((li) => {
     li.classList.toggle("active", li.dataset.cityId === city.id);
   });
-  loadWeatherFor(city);
+  // Weather panel is hidden for the duration of the detail view (see
+  // openDetailView()), so there's nothing to fetch it for right now —
+  // it picks back up from the map's own position via
+  // scheduleWeatherUpdateForMapView() once the place is closed.
   // forum.js owns the per-place opinions widget — see the comment on
   // the same pattern in selectPanelTab() above.
   if (typeof renderCityForumSection === "function") {
@@ -872,15 +947,11 @@ function renderCities(cities, { fitBounds = true } = {}) {
   markersLayer.clearLayers();
   poiMarkersLayer.clearLayers();
   listEl.innerHTML = "";
-  detailEl.innerHTML = "";
   cityMarkers = new Map();
   // A re-render (search, filter, reload) implicitly clears whatever
-  // place was selected — bring the general forum section back if it
-  // was hidden for that selection. See the comment on the same pattern
-  // in selectPanelTab() above.
-  if (typeof updateForumGeneralVisibility === "function") {
-    updateForumGeneralVisibility();
-  }
+  // place was selected. Safe to call even when nothing was open — it
+  // just re-confirms the panel is showing the active tab.
+  closeDetailView();
 
   if (cities.length === 0) {
     setStatus(t("noCities"), false);

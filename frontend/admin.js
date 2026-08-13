@@ -21,7 +21,10 @@ function categoryLabel(value) {
 
 // A searchable combobox for picking a category — plain <select> gets
 // unwieldy once there are 20+ categories, so this filters as you type.
-function buildCategoryPicker(selectedValue) {
+// `onChange`, if given, fires with the new value whenever a selection is
+// made (not on every keystroke) — used to show/hide the phone/website
+// fields, which only apply to points of interest, not plain cities.
+function buildCategoryPicker(selectedValue, onChange) {
   const initialValue = CITY_CATEGORY_VALUES.includes(selectedValue)
     ? selectedValue
     : CITY_CATEGORY_VALUES[0];
@@ -71,6 +74,9 @@ function buildCategoryPicker(selectedValue) {
         wrapper.dataset.value = value;
         input.value = categoryLabel(value);
         menu.hidden = true;
+        if (onChange) {
+          onChange(value);
+        }
       });
       menu.appendChild(option);
     });
@@ -570,8 +576,6 @@ function buildAddCityForm(region) {
 
   const descriptionI18n = buildDescriptionI18nInputs(null);
 
-  const categoryPicker = buildCategoryPicker("city");
-
   const imageUrlInput = document.createElement("input");
   imageUrlInput.type = "url";
   imageUrlInput.placeholder = t("fieldImageUrl");
@@ -581,6 +585,27 @@ function buildAddCityForm(region) {
   imageCreditInput.type = "text";
   imageCreditInput.placeholder = t("fieldImageCredit");
   imageCreditInput.maxLength = 255;
+
+  // Phone/website only apply to points of interest, not plain cities —
+  // hidden whenever the category picker is on "city", starting here
+  // since that's this form's default category.
+  const phoneInput = document.createElement("input");
+  phoneInput.type = "tel";
+  phoneInput.placeholder = t("fieldPhone");
+  phoneInput.maxLength = 30;
+  phoneInput.hidden = true;
+
+  const websiteInput = document.createElement("input");
+  websiteInput.type = "url";
+  websiteInput.placeholder = t("fieldWebsite");
+  websiteInput.maxLength = 500;
+  websiteInput.hidden = true;
+
+  const categoryPicker = buildCategoryPicker("city", (value) => {
+    const isCity = value === "city";
+    phoneInput.hidden = isCity;
+    websiteInput.hidden = isCity;
+  });
 
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
@@ -600,6 +625,8 @@ function buildAddCityForm(region) {
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
   form.appendChild(imageCreditInput);
+  form.appendChild(phoneInput);
+  form.appendChild(websiteInput);
   form.appendChild(descInput);
   descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(submit);
@@ -614,12 +641,17 @@ function buildAddCityForm(region) {
       return;
     }
     submit.disabled = true;
+    const category = categoryPickerValue(categoryPicker);
     const payload = {
-      name, latitude, longitude,
-      category: categoryPickerValue(categoryPicker),
+      name, latitude, longitude, category,
       description: descInput.value.trim() || null,
       image_url: imageUrlInput.value.trim() || null,
       image_credit: imageCreditInput.value.trim() || null,
+      // Cities don't get a contact section in the detail view, so don't
+      // save contact info for them either — even if the fields still
+      // hold text from before the category was switched to "city".
+      phone: category === "city" ? null : (phoneInput.value.trim() || null),
+      website: category === "city" ? null : (websiteInput.value.trim() || null),
     };
     const nameI18nValue = nameI18n.collect();
     if (nameI18nValue) {
@@ -742,8 +774,6 @@ function startEditCity(city) {
   const nameI18n = buildNameI18nInputs(city.name_i18n);
   const descriptionI18n = buildDescriptionI18nInputs(city.description_i18n);
 
-  const categoryPicker = buildCategoryPicker(city.category);
-
   const imageUrlInput = document.createElement("input");
   imageUrlInput.type = "url";
   imageUrlInput.placeholder = t("fieldImageUrl");
@@ -755,6 +785,28 @@ function startEditCity(city) {
   imageCreditInput.placeholder = t("fieldImageCredit");
   imageCreditInput.maxLength = 255;
   imageCreditInput.value = city.image_credit || "";
+
+  // Phone/website only apply to points of interest, not plain cities —
+  // hidden whenever the category picker is on "city".
+  const phoneInput = document.createElement("input");
+  phoneInput.type = "tel";
+  phoneInput.placeholder = t("fieldPhone");
+  phoneInput.maxLength = 30;
+  phoneInput.value = city.phone || "";
+  phoneInput.hidden = city.category === "city";
+
+  const websiteInput = document.createElement("input");
+  websiteInput.type = "url";
+  websiteInput.placeholder = t("fieldWebsite");
+  websiteInput.maxLength = 500;
+  websiteInput.value = city.website || "";
+  websiteInput.hidden = city.category === "city";
+
+  const categoryPicker = buildCategoryPicker(city.category, (value) => {
+    const isCity = value === "city";
+    phoneInput.hidden = isCity;
+    websiteInput.hidden = isCity;
+  });
 
   const pickOnMapBtn = document.createElement("button");
   pickOnMapBtn.type = "button";
@@ -784,6 +836,8 @@ function startEditCity(city) {
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
   form.appendChild(imageCreditInput);
+  form.appendChild(phoneInput);
+  form.appendChild(websiteInput);
   form.appendChild(descInput);
   descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(actions);
@@ -798,13 +852,19 @@ function startEditCity(city) {
       return;
     }
     saveBtn.disabled = true;
+    const category = categoryPickerValue(categoryPicker);
     try {
       await apiRequest("PUT", `/cities/${city.id}`, {
-        name, latitude, longitude,
-        category: categoryPickerValue(categoryPicker),
+        name, latitude, longitude, category,
         description: descInput.value.trim() || null,
         image_url: imageUrlInput.value.trim() || null,
         image_credit: imageCreditInput.value.trim() || null,
+        // Cities don't get a contact section in the detail view, so
+        // don't save contact info for them either — even if the fields
+        // still hold text from before the category was switched to
+        // "city".
+        phone: category === "city" ? null : (phoneInput.value.trim() || null),
+        website: category === "city" ? null : (websiteInput.value.trim() || null),
         name_i18n: nameI18n.collect(),
         description_i18n: descriptionI18n.collect(),
       });
