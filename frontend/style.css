@@ -429,6 +429,8 @@ main {
   border-color: var(--color-accent);
 }
 
+/* Background and glyph color come from renderCategoryGrid() in app.js,
+   so the sidebar swatches use the same tone ramp as the map markers. */
 .category-grid-icon {
   width: 22px;
   height: 22px;
@@ -437,8 +439,6 @@ main {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.75rem;
-  color: #fff;
 }
 
 .category-grid-label {
@@ -682,10 +682,16 @@ main {
   pointer-events: auto;
 }
 
-/* The city label sits directly on the (always-light) basemap tiles, not
-   the app's own dark-mode surfaces, so it intentionally keeps a fixed
-   light chip regardless of color scheme — matching the map underneath
-   rather than the surrounding chrome. */
+/* The city label sits directly on the basemap tiles rather than on the
+   app's own surfaces, so it follows the *map*, not the chrome. Streets
+   now ships a dark variant too (STREET_TILE_URLS in app.js), so the chip
+   has to darken with it — a white chip on Dark Matter tiles glares. */
+@media (prefers-color-scheme: dark) {
+  .city-label {
+    color: #f1f5f9;
+    background: rgba(28, 28, 30, 0.85);
+  }
+}
 
 /* Leaflet popups show our own content (city name/description/image),
    so they follow the app's theme instead of Leaflet's default white. */
@@ -718,12 +724,19 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  line-height: 1;
-  border: 2px solid #fff;
+  /* Both the fill and the ring color are set inline by buildMarker() in
+     app.js, which reads them off the active color scheme's tone ramp. */
+  border: 2px solid;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
+}
+
+/* Inline icons from vendor/icons/icons.js. display: block drops the
+   baseline gap an inline SVG leaves inside a flex parent, which would
+   otherwise push every glyph a pixel off-center in its circle. */
+.kba-icon {
+  display: block;
 }
 
 /* Admin panel */
