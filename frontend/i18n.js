@@ -202,7 +202,7 @@ const TRANSLATIONS = {
     forumSignInPrompt: "Fikrinizi bildirmək üçün daxil olun",
     forumPendingNotice:
       "Təşəkkürlər! Paylaşımınız ictimai görünməzdən əvvəl yoxlanılır.",
-    forumEmpty: "Hələ heç bir fikir bölüşülməyib — ilk olun!",
+    forumEmpty: "Hələ heç bir fikir bölüşülməyib — ilk siz olun!",
     forumCityEmpty: "Bu yer haqqında hələ fikir yoxdur.",
     detailBack: "Geri",
     detailAbout: "Haqqında",
