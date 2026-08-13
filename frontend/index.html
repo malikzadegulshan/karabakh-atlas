@@ -13,6 +13,7 @@
     <nav id="rail">
       <button type="button" id="rail-cities" class="rail-btn active" aria-label="Cities">🏙️</button>
       <button type="button" id="rail-places" class="rail-btn" aria-label="Places">🔍</button>
+      <button type="button" id="rail-forum" class="rail-btn" aria-label="Forum">💬</button>
       <div class="rail-spacer"></div>
       <button type="button" id="admin-toggle" class="rail-btn" hidden aria-label="Manage">⚙️</button>
       <div id="lang-switcher" class="rail-widget">
@@ -60,6 +61,16 @@
 
         <div id="panel-view-places" class="panel-view" hidden>
           <div id="category-grid"></div>
+        </div>
+
+        <div id="panel-view-forum" class="panel-view" hidden>
+          <form id="forum-composer" class="admin-form">
+            <textarea id="forum-body-input" rows="3" maxlength="2000"></textarea>
+            <button type="submit" id="forum-submit">Post</button>
+          </form>
+          <button type="button" id="forum-signin-prompt" hidden>Sign in to share your opinion</button>
+          <p id="forum-pending-notice" hidden></p>
+          <ul id="forum-list"></ul>
         </div>
 
         <div id="city-detail"></div>
@@ -124,6 +135,10 @@
           <h3 id="admin-regions-title">Regions &amp; cities</h3>
           <div id="admin-regions-list"></div>
         </section>
+        <section class="admin-section">
+          <h3 id="admin-forum-title">Forum moderation</h3>
+          <div id="admin-forum-list"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -134,5 +149,6 @@
   <script src="app.js"></script>
   <script src="auth.js"></script>
   <script src="admin.js"></script>
+  <script src="forum.js"></script>
 </body>
 </html>

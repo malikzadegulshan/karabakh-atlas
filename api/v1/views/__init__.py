@@ -8,3 +8,4 @@ from api.v1.views.index import *  # noqa: E402,F401,F403
 from api.v1.views.regions import *  # noqa: E402,F401,F403
 from api.v1.views.cities import *  # noqa: E402,F401,F403
 from api.v1.views.auth import *  # noqa: E402,F401,F403
+from api.v1.views.forum import *  # noqa: E402,F401,F403

@@ -2,6 +2,8 @@
 """Defines the City class, a point of interest shown on the map."""
 from models.base_model import BaseModel, Base
 from sqlalchemy import Column, String, Float, Text, ForeignKey, JSON
+from sqlalchemy.orm import relationship
+import models
 
 
 class City(BaseModel, Base):
@@ -26,3 +28,23 @@ class City(BaseModel, Base):
     # translation is missing for the requested language.
     name_i18n = Column(JSON, nullable=True)
     description_i18n = Column(JSON, nullable=True)
+
+    # Declared purely so DBStorage's flush knows forum_posts rows must be
+    # deleted before their referenced cities row — without this,
+    # SQLAlchemy has no way to know that dependency (it isn't inferred
+    # from a bare ForeignKey column alone) and can emit the DELETE
+    # statements in the wrong order, violating the FK constraint. The
+    # views still do the actual cascading delete explicitly (see
+    # delete_city/delete_region in api/v1/views/) since FileStorage has
+    # no ORM cascade mechanism at all — this relationship is a
+    # correctness fix for DBStorage's statement ordering, not a
+    # replacement for that manual cleanup.
+    if models.storage_t == "db":
+        forum_posts = relationship("ForumPost", cascade="all, delete-orphan")
+    else:
+        @property
+        def forum_posts(self):
+            """Return ForumPost instances that target this city (FileStorage)."""
+            from models.forum_post import ForumPost
+            return [p for p in models.storage.all(ForumPost).values()
+                    if p.target_city_id == self.id]

@@ -436,6 +436,99 @@ main {
   white-space: nowrap;
 }
 
+/* Forum: the general-opinions tab (#forum-composer/#forum-list) and the
+   per-city widget appended into #city-detail (#city-forum) share these
+   rules — same post-card look in both places. */
+#forum-composer textarea {
+  resize: vertical;
+}
+
+/* .admin-form's own "display: flex" otherwise beats the [hidden]
+   attribute's default UA rule (same specificity, author stylesheet
+   wins) — same issue already called out for #login-form/#register-form
+   above. */
+#forum-composer[hidden] {
+  display: none;
+}
+
+.forum-signin-btn {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.forum-signin-btn:hover {
+  background: var(--color-border);
+}
+
+#forum-pending-notice,
+.forum-pending-notice {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  border-radius: 6px;
+}
+
+#forum-pending-notice[hidden],
+.forum-pending-notice[hidden] {
+  display: none;
+}
+
+#forum-list,
+.forum-post-list {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+}
+
+.forum-post {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.forum-post:first-child {
+  border-top: none;
+}
+
+.forum-post-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+  margin-bottom: 0.2rem;
+}
+
+.forum-post-meta strong {
+  color: var(--color-text-muted);
+}
+
+.forum-post-body {
+  margin: 0;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+#city-forum {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+#city-forum h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
 #weather-panel {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
