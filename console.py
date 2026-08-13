@@ -10,7 +10,7 @@ classes = {"Region": Region, "City": City}
 
 
 class KBACommand(cmd.Cmd):
-    """Interactive shell to create/inspect/update/delete stored objects."""
+    """Interactive shell to create/inspect/update/delete the stored objects."""
 
     prompt = "(kba) "
 
