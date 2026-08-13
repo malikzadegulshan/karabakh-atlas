@@ -11,11 +11,11 @@
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
   <main>
     <nav id="rail">
-      <button type="button" id="rail-cities" class="rail-btn active" aria-label="Cities">🏙️</button>
-      <button type="button" id="rail-places" class="rail-btn" aria-label="Places">🔍</button>
-      <button type="button" id="rail-forum" class="rail-btn" aria-label="Forum">💬</button>
+      <button type="button" id="rail-cities" class="rail-btn active" data-icon="rail_cities" aria-label="Cities"></button>
+      <button type="button" id="rail-places" class="rail-btn" data-icon="rail_places" aria-label="Places"></button>
+      <button type="button" id="rail-forum" class="rail-btn" data-icon="rail_forum" aria-label="Forum"></button>
       <div class="rail-spacer"></div>
-      <button type="button" id="admin-toggle" class="rail-btn" hidden aria-label="Manage">⚙️</button>
+      <button type="button" id="admin-toggle" class="rail-btn" hidden data-icon="rail_admin" aria-label="Manage"></button>
       <div id="lang-switcher" class="rail-widget">
         <button type="button" id="lang-toggle" class="rail-btn" aria-haspopup="true" aria-expanded="false">
           <span id="lang-toggle-label">EN</span>
@@ -28,7 +28,7 @@
         </div>
       </div>
       <div id="account-widget" class="rail-widget">
-        <button type="button" id="account-signin-toggle" class="rail-btn" aria-label="Sign in">👤</button>
+        <button type="button" id="account-signin-toggle" class="rail-btn" data-icon="rail_account" aria-label="Sign in"></button>
         <button type="button" id="account-avatar-toggle" class="rail-btn" hidden aria-haspopup="true" aria-expanded="false"></button>
         <div id="account-status" role="menu" hidden>
           <span id="account-name"></span>
@@ -144,6 +144,7 @@
   </div>
 
   <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/icons/icons.js"></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>

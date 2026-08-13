@@ -19,12 +19,22 @@ function t(key) {
 const map = L.map("map", { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
-// CartoDB Positron: a clean, free/keyless basemap with place labels but
-// no baked-in amenity icons (cafe/restaurant/etc.), so our own
-// points-of-interest markers stay legible instead of competing with
-// icons we can't control.
+// CartoDB Positron / Dark Matter: a clean, free/keyless basemap with
+// place labels but no baked-in amenity icons (cafe/restaurant/etc.), so
+// our own points-of-interest markers stay legible instead of competing
+// with icons we can't control. Two variants of the same basemap, picked
+// to match the app's color scheme — otherwise a dark UI would sit next
+// to a glaring white map. Swapped at runtime via setUrl(), see
+// applyColorScheme() below.
+const STREET_TILE_URLS = {
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+};
+
 const streetLayer = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  STREET_TILE_URLS[window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light"],
   {
     maxZoom: 19,
     subdomains: "abcd",
@@ -159,55 +169,70 @@ const POI_MIN_ZOOM = 14;
 const poiMarkersLayer = L.layerGroup();
 let activeCategoryFilter = null;
 
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_COLORS = {
-  road: "#57534e",
-  cafe: "#b45309",
-  restaurant: "#b91c1c",
-  hotel: "#1d4ed8",
-  landmark: "#7c3aed",
-  museum: "#0f766e",
-  park: "#15803d",
-  university: "#4338ca",
-  school: "#4f46e5",
-  hospital: "#dc2626",
-  pharmacy: "#16a34a",
-  bank: "#065f46",
-  government: "#374151",
-  police: "#1e3a8a",
-  fire_station: "#c2410c",
-  mosque: "#0891b2",
-  church: "#0e7490",
-  fuel_station: "#78350f",
-  parking: "#525252",
-  shop: "#c2410c",
-  other: "#334155",
+// Which of the four grays each category's marker uses. Replaces the old
+// one-hue-per-category palette: a single flat black would make 21 kinds
+// of place indistinguishable on the map, so the tones are grouped by
+// what a place is *for* — the darkest reads as "most urgent" instead of
+// being an arbitrary color.
+//
+// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py. This
+// object doubles as the list of POI categories (its keys are exactly
+// the non-"city" ones), and each key is also its icon's name in
+// KBA_ICON_PATHS — so adding a category means adding it here and in
+// vendor/icons/icons.js, nowhere else.
+const POI_TONES = {
+  // Civic and emergency
+  hospital: 0,
+  police: 0,
+  fire_station: 0,
+  government: 0,
+  // Culture and education
+  museum: 1,
+  landmark: 1,
+  mosque: 1,
+  church: 1,
+  university: 1,
+  school: 1,
+  // Everyday services
+  bank: 2,
+  pharmacy: 2,
+  fuel_station: 2,
+  parking: 2,
+  road: 2,
+  // Leisure
+  cafe: 3,
+  restaurant: 3,
+  hotel: 3,
+  shop: 3,
+  park: 3,
+  other: 3,
 };
 
-// Keep in sync with CITY_CATEGORIES in api/v1/views/cities.py.
-const POI_ICONS = {
-  road: "🛣️",
-  cafe: "☕",
-  restaurant: "🍽️",
-  hotel: "🏨",
-  landmark: "🗿",
-  museum: "🏛️",
-  park: "🌳",
-  university: "🎓",
-  school: "📚",
-  hospital: "🏥",
-  pharmacy: "💊",
-  bank: "🏦",
-  government: "🏢",
-  police: "👮",
-  fire_station: "🚒",
-  mosque: "🕌",
-  church: "⛪",
-  fuel_station: "⛽",
-  parking: "🅿️",
-  shop: "🛍️",
-  other: "📍",
+// The ramp flips wholesale between color schemes: dark circles read on
+// the light basemap, light circles on the dark one. Both directions
+// keep every tone at 4.5:1 or better against its own glyph color below.
+const POI_TONE_RAMP = {
+  light: ["#18181b", "#3f3f46", "#52525b", "#71717a"],
+  dark: ["#fafafa", "#d4d4d8", "#b4b4ba", "#96969c"],
 };
+
+// Glyph drawn inside the circle, and the ring separating it from the
+// map underneath — both are the ramp's opposite end.
+const POI_GLYPH = { light: "#ffffff", dark: "#18181b" };
+const POI_RING = { light: "#ffffff", dark: "#2c2c2e" };
+
+const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function scheme() {
+  return darkModeQuery.matches ? "dark" : "light";
+}
+
+function poiToneColor(category) {
+  const tier = POI_TONES[category] !== undefined
+    ? POI_TONES[category]
+    : POI_TONES.other;
+  return POI_TONE_RAMP[scheme()][tier];
+}
 
 function updateMarkersVisibility(activeLayer) {
   const showLabels = activeLayer === satelliteLayer || activeLayer === historicalLayer;
@@ -355,6 +380,35 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+// Fills every [data-icon] element in the static HTML with its inline
+// SVG, so index.html names an icon once and never carries path data.
+// Icons inherit currentColor, which is what lets .rail-btn.active flip
+// them to white through CSS alone.
+function hydrateStaticIcons() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = KBA_ICON_SVG(el.dataset.icon, 19);
+  });
+}
+
+// Everything that has to change when the system flips between light and
+// dark: the basemap, and the marker/grid tones drawn on top of it. The
+// app's own chrome needs nothing here — style.css already swaps its
+// color tokens under prefers-color-scheme.
+//
+// Markers can't be restyled in place (their color is baked into each
+// divIcon's HTML at build time), so this re-renders them — without
+// re-fitting the map, which would throw away the user's current pan and
+// zoom for what is only a repaint.
+function applyColorScheme() {
+  streetLayer.setUrl(STREET_TILE_URLS[scheme()]);
+  renderCategoryGrid();
+  applyFilterAndRender({ fitBounds: false });
+  renderWeatherPanel();
+}
+
+darkModeQuery.addEventListener("change", applyColorScheme);
+
+hydrateStaticIcons();
 applyStaticTranslations();
 renderCategoryGrid();
 
@@ -468,39 +522,44 @@ function cityInfoHtml(city) {
 // Open-Meteo doesn't provide localized condition text itself, and
 // translating all ~28 possible codes across 4 languages isn't worth it
 // for a single line of secondary text next to a temperature and icon.
+//
+// `icon` names an entry in KBA_ICON_PATHS. Several codes deliberately
+// share one icon — the label beside it already carries the detail (a
+// separate glyph for "moderate" vs. "dense drizzle" would be a
+// distinction no one could read at 20px).
 const WEATHER_CODES = {
-  0: { icon: "☀️", label: "Clear sky" },
-  1: { icon: "🌤️", label: "Mainly clear" },
-  2: { icon: "⛅", label: "Partly cloudy" },
-  3: { icon: "☁️", label: "Overcast" },
-  45: { icon: "🌫️", label: "Fog" },
-  48: { icon: "🌫️", label: "Depositing rime fog" },
-  51: { icon: "🌦️", label: "Light drizzle" },
-  53: { icon: "🌦️", label: "Moderate drizzle" },
-  55: { icon: "🌦️", label: "Dense drizzle" },
-  56: { icon: "🌧️", label: "Light freezing drizzle" },
-  57: { icon: "🌧️", label: "Dense freezing drizzle" },
-  61: { icon: "🌧️", label: "Slight rain" },
-  63: { icon: "🌧️", label: "Moderate rain" },
-  65: { icon: "🌧️", label: "Heavy rain" },
-  66: { icon: "🌧️", label: "Light freezing rain" },
-  67: { icon: "🌧️", label: "Heavy freezing rain" },
-  71: { icon: "🌨️", label: "Slight snow fall" },
-  73: { icon: "🌨️", label: "Moderate snow fall" },
-  75: { icon: "❄️", label: "Heavy snow fall" },
-  77: { icon: "❄️", label: "Snow grains" },
-  80: { icon: "🌦️", label: "Slight rain showers" },
-  81: { icon: "🌦️", label: "Moderate rain showers" },
-  82: { icon: "⛈️", label: "Violent rain showers" },
-  85: { icon: "🌨️", label: "Slight snow showers" },
-  86: { icon: "❄️", label: "Heavy snow showers" },
-  95: { icon: "⛈️", label: "Thunderstorm" },
-  96: { icon: "⛈️", label: "Thunderstorm, slight hail" },
-  99: { icon: "⛈️", label: "Thunderstorm, heavy hail" },
+  0: { icon: "weather_clear", label: "Clear sky" },
+  1: { icon: "weather_clear", label: "Mainly clear" },
+  2: { icon: "weather_cloudy", label: "Partly cloudy" },
+  3: { icon: "weather_cloudy", label: "Overcast" },
+  45: { icon: "weather_fog", label: "Fog" },
+  48: { icon: "weather_fog", label: "Depositing rime fog" },
+  51: { icon: "weather_rain", label: "Light drizzle" },
+  53: { icon: "weather_rain", label: "Moderate drizzle" },
+  55: { icon: "weather_rain", label: "Dense drizzle" },
+  56: { icon: "weather_rain", label: "Light freezing drizzle" },
+  57: { icon: "weather_rain", label: "Dense freezing drizzle" },
+  61: { icon: "weather_rain", label: "Slight rain" },
+  63: { icon: "weather_rain", label: "Moderate rain" },
+  65: { icon: "weather_rain", label: "Heavy rain" },
+  66: { icon: "weather_rain", label: "Light freezing rain" },
+  67: { icon: "weather_rain", label: "Heavy freezing rain" },
+  71: { icon: "weather_snow", label: "Slight snow fall" },
+  73: { icon: "weather_snow", label: "Moderate snow fall" },
+  75: { icon: "weather_snow", label: "Heavy snow fall" },
+  77: { icon: "weather_grains", label: "Snow grains" },
+  80: { icon: "weather_rain", label: "Slight rain showers" },
+  81: { icon: "weather_rain", label: "Moderate rain showers" },
+  82: { icon: "weather_storm", label: "Violent rain showers" },
+  85: { icon: "weather_snow", label: "Slight snow showers" },
+  86: { icon: "weather_snow", label: "Heavy snow showers" },
+  95: { icon: "weather_storm", label: "Thunderstorm" },
+  96: { icon: "weather_storm", label: "Thunderstorm, slight hail" },
+  99: { icon: "weather_storm", label: "Thunderstorm, heavy hail" },
 };
 
 function weatherInfo(code) {
-  return WEATHER_CODES[code] || { icon: "🌡️", label: "—" };
+  return WEATHER_CODES[code] || { icon: "weather_unknown", label: "—" };
 }
 
 // The city/point currently shown in the weather panel, and its last
@@ -516,14 +575,14 @@ function renderWeatherPanel() {
   }
   weatherCityEl.textContent = localizedName(weatherCity);
   if (!weatherCurrent) {
-    weatherIconEl.textContent = "";
+    weatherIconEl.innerHTML = "";
     weatherTempEl.textContent = "";
     weatherDescEl.textContent = t("weatherLoading");
     weatherMetaEl.textContent = "";
     return;
   }
   const info = weatherInfo(weatherCurrent.weather_code);
-  weatherIconEl.textContent = info.icon;
+  weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 26);
   weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
   weatherDescEl.textContent = info.label;
   weatherMetaEl.textContent =
@@ -556,7 +615,7 @@ async function loadWeatherFor(city) {
     if (weatherCity !== city) {
       return;
     }
-    weatherIconEl.textContent = "";
+    weatherIconEl.innerHTML = "";
     weatherTempEl.textContent = "";
     weatherDescEl.textContent = t("weatherError");
     weatherMetaEl.textContent = "";
@@ -632,21 +691,21 @@ function categoryLabel(value) {
   return (t("categories") && t("categories")[value]) || value;
 }
 
-// Every POI category becomes a grid entry — Object.keys(POI_ICONS) is
+// Every POI category becomes a grid entry — Object.keys(POI_TONES) is
 // already exactly that list (it excludes "city", the only non-POI
 // category), so there's nothing extra to keep in sync here beyond
-// POI_ICONS/POI_COLORS themselves. Mirrors Apple Maps' "Find Nearby"
-// grid: a colored circular icon plus a label, two per row.
+// POI_TONES itself. Mirrors Apple Maps' "Find Nearby" grid: a circular
+// icon plus a label, two per row.
 function renderCategoryGrid() {
   categoryGridEl.innerHTML = "";
-  Object.keys(POI_ICONS).forEach((category) => {
+  Object.keys(POI_TONES).forEach((category) => {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "category-grid-item";
     item.classList.toggle("active", activeCategoryFilter === category);
     item.innerHTML =
-      `<span class="category-grid-icon" style="background:${POI_COLORS[category]}">` +
-      `${POI_ICONS[category]}</span>` +
+      `<span class="category-grid-icon" style="background:${poiToneColor(category)}">` +
+      `${KBA_ICON_SVG(category, 14, POI_GLYPH[scheme()])}</span>` +
       `<span class="category-grid-label">${escapeHtml(categoryLabel(category))}</span>`;
     item.addEventListener("click", () => {
       // Clicking the already-active item clears the filter — same
@@ -665,8 +724,9 @@ function buildMarker(city) {
     const badgeIcon = L.divIcon({
       className: "poi-marker-wrapper",
       html:
-        `<div class="poi-marker" style="background:${POI_COLORS[city.category] || POI_COLORS.other}">` +
-        `${POI_ICONS[city.category] || POI_ICONS.other}</div>`,
+        `<div class="poi-marker" style="background:${poiToneColor(city.category)};` +
+        `border-color:${POI_RING[scheme()]}">` +
+        `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>`,
       iconSize: [26, 26],
       iconAnchor: [13, 13],
     });
