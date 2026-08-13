@@ -708,17 +708,6 @@ main {
   }
 }
 
-/* Leaflet popups show our own content (city name/description/image),
-   so they follow the app's theme instead of Leaflet's default white. */
-.leaflet-popup-content-wrapper {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.leaflet-popup-tip {
-  background: var(--color-bg);
-}
-
 /* Hides the redundant label text on Streets (which already has its own
    place labels) while keeping the marker itself attached to the map —
    see markersLayer's comment in app.js for why that distinction matters
@@ -729,13 +718,18 @@ main {
 }
 
 .poi-marker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   background: transparent;
   border: none;
+  cursor: pointer;
 }
 
 .poi-marker {
   width: 26px;
   height: 26px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -744,7 +738,38 @@ main {
   border: 2px solid;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  cursor: pointer;
+}
+
+/* Same "follows the map, not the chrome" reasoning as .city-label
+   above — including its dark-map chip below, since Streets now has a
+   dark variant too (STREET_TILE_URLS in app.js). */
+/* Outlined text instead of a filled chip: the outline is the stack of
+   text-shadows (more reliably cross-browser than -webkit-text-stroke at
+   this font size), colored opposite the fill so it reads on either a
+   light or dark basemap without needing a background box at all. */
+.poi-marker-label {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-shadow:
+    -1px -1px 0 rgba(255, 255, 255, 0.9),
+     1px -1px 0 rgba(255, 255, 255, 0.9),
+    -1px  1px 0 rgba(255, 255, 255, 0.9),
+     1px  1px 0 rgba(255, 255, 255, 0.9),
+     0    0    3px rgba(255, 255, 255, 0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+  .poi-marker-label {
+    color: #f1f5f9;
+    text-shadow:
+      -1px -1px 0 rgba(28, 28, 30, 0.9),
+       1px -1px 0 rgba(28, 28, 30, 0.9),
+      -1px  1px 0 rgba(28, 28, 30, 0.9),
+       1px  1px 0 rgba(28, 28, 30, 0.9),
+       0    0    3px rgba(28, 28, 30, 0.9);
+  }
 }
 
 /* Inline icons from vendor/icons/icons.js. display: block drops the

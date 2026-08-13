@@ -53,10 +53,19 @@ const KBA_ICON_PATHS = {
 // inherited text color so CSS alone can theme an icon.
 function KBA_ICON_SVG(name, size, stroke) {
   const paths = KBA_ICON_PATHS[name] || KBA_ICON_PATHS.other;
+  // Both go straight into unescaped SVG attributes below. Every current
+  // call site only ever passes fixed color/number constants, never
+  // anything database- or user-derived — but validate anyway, so a
+  // future call site that breaks that assumption gets a safe fallback
+  // instead of an attribute-breakout injection.
+  const safeStroke = /^(#[0-9a-fA-F]{3,8}|currentColor)$/.test(stroke)
+    ? stroke
+    : "currentColor";
+  const safeSize = Number.isFinite(Number(size)) ? Number(size) : 24;
   return (
-    '<svg class="kba-icon" width="' + size + '" height="' + size +
+    '<svg class="kba-icon" width="' + safeSize + '" height="' + safeSize +
     '" viewBox="0 0 24 24" fill="none" stroke="' +
-    (stroke || "currentColor") +
+    safeStroke +
     '" stroke-width="1.9" stroke-linecap="round" ' +
     'stroke-linejoin="round" aria-hidden="true">' + paths + "</svg>"
   );
