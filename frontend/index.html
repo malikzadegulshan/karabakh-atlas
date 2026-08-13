@@ -64,13 +64,15 @@
         </div>
 
         <div id="panel-view-forum" class="panel-view" hidden>
-          <form id="forum-composer" class="admin-form">
-            <textarea id="forum-body-input" rows="3" maxlength="2000"></textarea>
-            <button type="submit" id="forum-submit">Post</button>
-          </form>
-          <button type="button" id="forum-signin-prompt" hidden>Sign in to share your opinion</button>
-          <p id="forum-pending-notice" hidden></p>
-          <ul id="forum-list"></ul>
+          <div id="forum-general-section">
+            <form id="forum-composer" class="admin-form">
+              <textarea id="forum-body-input" rows="3" maxlength="2000"></textarea>
+              <button type="submit" id="forum-submit">Post</button>
+            </form>
+            <button type="button" id="forum-signin-prompt" hidden>Sign in to share your opinion</button>
+            <p id="forum-pending-notice" hidden></p>
+            <ul id="forum-list"></ul>
+          </div>
         </div>
 
         <div id="city-detail"></div>
@@ -123,22 +125,32 @@
       </div>
       <div id="admin-message" class="admin-message" hidden></div>
       <div class="admin-panel-body">
-        <section class="admin-section">
-          <h3 id="admin-add-region-title">Add region</h3>
-          <form id="region-form" class="admin-form">
-            <input type="text" id="region-name-input" required maxlength="128">
-            <textarea id="region-description-input" rows="2"></textarea>
-            <button type="submit" id="region-form-submit">Add region</button>
-          </form>
-        </section>
-        <section class="admin-section">
-          <h3 id="admin-regions-title">Regions &amp; cities</h3>
-          <div id="admin-regions-list"></div>
-        </section>
-        <section class="admin-section">
-          <h3 id="admin-forum-title">Forum moderation</h3>
-          <div id="admin-forum-list"></div>
-        </section>
+        <div class="admin-tabs">
+          <button type="button" id="admin-tab-data" class="admin-tab active">Regions &amp; cities</button>
+          <button type="button" id="admin-tab-forum" class="admin-tab">Forum moderation</button>
+        </div>
+
+        <div id="admin-view-data" class="admin-view">
+          <section class="admin-section">
+            <h3 id="admin-add-region-title">Add region</h3>
+            <form id="region-form" class="admin-form">
+              <input type="text" id="region-name-input" required maxlength="128">
+              <textarea id="region-description-input" rows="2"></textarea>
+              <button type="submit" id="region-form-submit">Add region</button>
+            </form>
+          </section>
+          <section class="admin-section">
+            <h3 id="admin-regions-title">Regions &amp; cities</h3>
+            <div id="admin-regions-list"></div>
+          </section>
+        </div>
+
+        <div id="admin-view-forum" class="admin-view" hidden>
+          <section class="admin-section">
+            <h3 id="admin-forum-title">Forum moderation</h3>
+            <div id="admin-forum-list"></div>
+          </section>
+        </div>
       </div>
     </div>
   </div>

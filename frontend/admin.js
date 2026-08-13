@@ -134,6 +134,10 @@ const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 const adminForumTitleEl = document.getElementById("admin-forum-title");
 const adminForumListEl = document.getElementById("admin-forum-list");
+const adminTabDataEl = document.getElementById("admin-tab-data");
+const adminTabForumEl = document.getElementById("admin-tab-forum");
+const adminViewDataEl = document.getElementById("admin-view-data");
+const adminViewForumEl = document.getElementById("admin-view-forum");
 
 function applyAdminStaticTranslations() {
   adminToggleEl.setAttribute("aria-label", t("adminToggle"));
@@ -146,7 +150,21 @@ function applyAdminStaticTranslations() {
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
   adminForumTitleEl.textContent = t("adminForumTitle");
+  adminTabDataEl.textContent = t("adminRegionsTitle");
+  adminTabForumEl.textContent = t("adminForumTitle");
 }
+
+// Two tabs sharing the same modal, same pattern as the sign-in/register
+// tabs in auth.js (.active class + hidden toggling).
+function selectAdminTab(tab) {
+  adminTabDataEl.classList.toggle("active", tab === "data");
+  adminTabForumEl.classList.toggle("active", tab === "forum");
+  adminViewDataEl.hidden = tab !== "data";
+  adminViewForumEl.hidden = tab !== "forum";
+}
+
+adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
+adminTabForumEl.addEventListener("click", () => selectAdminTab("forum"));
 
 function showAdminMessage(message, isError) {
   adminMessageEl.textContent = message;
@@ -163,6 +181,7 @@ function openAdminPanel() {
   adminOverlayEl.hidden = false;
   clearAdminMessage();
   applyAdminStaticTranslations();
+  selectAdminTab("data");
   refreshAdminData();
 }
 
