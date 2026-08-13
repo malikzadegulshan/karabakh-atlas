@@ -357,7 +357,7 @@ function buildAdminForumCard(post) {
   headerRow.appendChild(actions);
   card.appendChild(headerRow);
 
-  // textContent, not innerHTML — this is unmoderated user-submitted
+  // textContent, not innerHTML — this is unmoderated user-submitted.
   // text, rendered here in the admin's own browser before it's ever
   // approved, so it must never be interpreted as HTML.
   const body = document.createElement("p");

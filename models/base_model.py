@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Defines BaseModel, the parent class of every model in this project."""
+"""Defines the BaseModel, the parent class of every model in this project."""
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime
