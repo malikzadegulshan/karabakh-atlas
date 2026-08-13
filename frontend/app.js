@@ -747,13 +747,20 @@ function renderCategoryGrid() {
 
 function buildMarker(city) {
   if (isPoi(city)) {
+    const name = localizedName(city);
+    // iconSize: null (like the city label below) lets the wrapper size
+    // itself to its content instead of clipping the name — POI markers
+    // already only render once zoomed in (or a category filter is
+    // active; see updatePoiVisibility), the same point most other map
+    // apps start showing place names.
     const badgeIcon = L.divIcon({
       className: "poi-marker-wrapper",
       html:
         `<div class="poi-marker" style="background:${poiToneColor(city.category)};` +
         `border-color:${POI_RING[scheme()]}">` +
-        `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>`,
-      iconSize: [26, 26],
+        `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>` +
+        `<span class="poi-marker-label">${escapeHtml(name)}</span>`,
+      iconSize: null,
       iconAnchor: [13, 13],
     });
     return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
@@ -796,10 +803,9 @@ function jumpToCity(city, marker) {
   );
   // setView's zoom change normally reaches updatePoiVisibility via the
   // map's own "zoomend" listener, but that can land after this function
-  // returns — call it directly so a POI's layer is already on the map
-  // by the time openPopup() runs immediately below.
+  // returns — call it directly so a POI's marker/label is already on
+  // the map by the time showCityDetail() below scrolls it into view.
   updatePoiVisibility();
-  marker.openPopup();
   showCityDetail(city);
 }
 
@@ -837,7 +843,9 @@ function renderCities(cities, { fitBounds = true } = {}) {
   const bounds = [];
   cities.forEach((city) => {
     const marker = buildMarker(city);
-    marker.bindPopup(cityInfoHtml(city));
+    // No map popup — clicking a marker shows its info in the sidebar
+    // (#city-detail) instead, via showCityDetail() below, so a second
+    // "info card" floating on the map itself would just be redundant.
     marker.on("click", () => showCityDetail(city));
     cityMarkers.set(city.id, { city, marker });
     bounds.push([city.latitude, city.longitude]);
