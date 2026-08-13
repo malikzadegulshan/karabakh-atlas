@@ -177,6 +177,62 @@ components:
           nullable: true
           additionalProperties:
             type: string
+    ForumPost:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        author_id:
+          type: string
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        target_city_id:
+          type: string
+          nullable: true
+          description: >
+            The city/POI this opinion is about, or null for a general
+            opinion about Karabakh as a whole.
+        target_city_name:
+          type: string
+          nullable: true
+          readOnly: true
+        body:
+          type: string
+          maxLength: 2000
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          readOnly: true
+        moderated_by:
+          type: string
+          nullable: true
+          readOnly: true
+        moderated_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    ForumPostInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          maxLength: 2000
+        target_city_id:
+          type: string
+          nullable: true
     Error:
       type: object
       properties:
@@ -493,3 +549,120 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Not logged in
+  /forum/posts:
+    get:
+      summary: List forum posts
+      description: >
+        Defaults to only "approved" posts. ?mine=true (requires login)
+        returns the caller's own posts regardless of status. ?status=
+        (pending/approved/rejected) is only honored for an admin
+        caller — anyone else's request for it silently falls back to
+        approved-only, so unmoderated content never leaks.
+      parameters:
+        - name: city_id
+          in: query
+          description: >
+            Only posts about this city/POI. Omit for general
+            (target_city_id is null) opinions about Karabakh overall.
+          schema:
+            type: string
+        - name: mine
+          in: query
+          schema:
+            type: boolean
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: List of forum posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ForumPost"
+        "401":
+          description: mine=true without a session
+    post:
+      summary: Submit an opinion (always starts "pending")
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForumPostInput"
+      responses:
+        "201":
+          description: Post created, pending moderation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForumPost"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "429":
+          description: Too many posts submitted recently — try again later
+  /forum/posts/{post_id}:
+    parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete a post (its own author, or any admin)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Login required
+        "403":
+          description: Not allowed to delete this post
+        "404":
+          description: Not found
+  /forum/posts/{post_id}/status:
+    parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Approve or reject a post (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected]
+      responses:
+        "200":
+          description: Post moderated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForumPost"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: Not found

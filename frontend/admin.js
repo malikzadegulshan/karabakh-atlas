@@ -132,6 +132,8 @@ const regionNameInputEl = document.getElementById("region-name-input");
 const regionDescriptionInputEl = document.getElementById("region-description-input");
 const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
+const adminForumTitleEl = document.getElementById("admin-forum-title");
+const adminForumListEl = document.getElementById("admin-forum-list");
 
 function applyAdminStaticTranslations() {
   adminToggleEl.setAttribute("aria-label", t("adminToggle"));
@@ -143,6 +145,7 @@ function applyAdminStaticTranslations() {
   adminRegionsTitleEl.textContent = t("adminRegionsTitle");
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
+  adminForumTitleEl.textContent = t("adminForumTitle");
 }
 
 function showAdminMessage(message, isError) {
@@ -276,6 +279,81 @@ async function refreshAdminData() {
     renderAdminRegions(regions, cities);
   } catch (err) {
     adminRegionsListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+  await refreshAdminForumQueue();
+}
+
+async function refreshAdminForumQueue() {
+  adminForumListEl.textContent = t("adminLoading");
+  try {
+    const posts = await apiRequest("GET", "/forum/posts?status=pending");
+    renderAdminForumQueue(posts);
+  } catch (err) {
+    adminForumListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminForumQueue(posts) {
+  adminForumListEl.innerHTML = "";
+  if (posts.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminForumEmpty");
+    adminForumListEl.appendChild(empty);
+    return;
+  }
+  posts.forEach((post) => adminForumListEl.appendChild(buildAdminForumCard(post)));
+}
+
+function buildAdminForumCard(post) {
+  const card = document.createElement("div");
+  card.className = "admin-region admin-forum-card";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+
+  const meta = document.createElement("strong");
+  const about = post.target_city_name || t("forumGeneralLabel");
+  meta.textContent = `${post.author_name || "?"} — ${t("forumAbout")(about)}`;
+  headerRow.appendChild(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+
+  const approveBtn = document.createElement("button");
+  approveBtn.type = "button";
+  approveBtn.textContent = t("adminApprove");
+  approveBtn.addEventListener("click", () => moderateForumPost(post, "approved"));
+
+  const rejectBtn = document.createElement("button");
+  rejectBtn.type = "button";
+  rejectBtn.className = "danger";
+  rejectBtn.textContent = t("adminReject");
+  rejectBtn.addEventListener("click", () => moderateForumPost(post, "rejected"));
+
+  actions.appendChild(approveBtn);
+  actions.appendChild(rejectBtn);
+  headerRow.appendChild(actions);
+  card.appendChild(headerRow);
+
+  // textContent, not innerHTML — this is unmoderated user-submitted
+  // text, rendered here in the admin's own browser before it's ever
+  // approved, so it must never be interpreted as HTML.
+  const body = document.createElement("p");
+  body.className = "admin-region-description";
+  body.textContent = post.body;
+  card.appendChild(body);
+
+  return card;
+}
+
+async function moderateForumPost(post, status) {
+  try {
+    await apiRequest("PUT", `/forum/posts/${post.id}/status`, { status });
+    await refreshAdminForumQueue();
+  } catch (err) {
     showAdminMessage(err.message, true);
   }
 }

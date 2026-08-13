@@ -46,6 +46,10 @@ class RateLimiter:
 
 login_limiter = RateLimiter(max_attempts=5, window_seconds=300)
 resend_verification_limiter = RateLimiter(max_attempts=3, window_seconds=3600)
+# Blunts a single account flooding the moderation queue with spam —
+# generous enough for genuine back-and-forth use, tight enough that
+# scripting registrations-then-posts doesn't scale.
+forum_post_limiter = RateLimiter(max_attempts=5, window_seconds=600)
 
 # Kept as module-level names for backward compatibility with existing
 # call sites/tests.

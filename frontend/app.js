@@ -264,8 +264,10 @@ const panelEl = document.getElementById("panel");
 const panelToggleEl = document.getElementById("panel-toggle");
 const railCitiesEl = document.getElementById("rail-cities");
 const railPlacesEl = document.getElementById("rail-places");
+const railForumEl = document.getElementById("rail-forum");
 const panelViewCitiesEl = document.getElementById("panel-view-cities");
 const panelViewPlacesEl = document.getElementById("panel-view-places");
+const panelViewForumEl = document.getElementById("panel-view-forum");
 const categoryGridEl = document.getElementById("category-grid");
 const weatherCityEl = document.getElementById("weather-city");
 const weatherIconEl = document.getElementById("weather-icon");
@@ -292,6 +294,8 @@ function applyStaticTranslations() {
   railCitiesEl.title = t("citiesToggle");
   railPlacesEl.setAttribute("aria-label", t("placesToggle"));
   railPlacesEl.title = t("placesToggle");
+  railForumEl.setAttribute("aria-label", t("forumToggle"));
+  railForumEl.title = t("forumToggle");
   updateYearLabel();
   panelToggleEl.setAttribute(
     "aria-label",
@@ -333,6 +337,9 @@ langMenuEl.addEventListener("click", (event) => {
   // "Manage" button in sync here.
   if (typeof applyAdminStaticTranslations === "function") {
     applyAdminStaticTranslations();
+  }
+  if (typeof applyForumStaticTranslations === "function") {
+    applyForumStaticTranslations();
   }
 });
 
@@ -378,8 +385,19 @@ function selectPanelTab(tab) {
   activePanelTab = tab;
   railCitiesEl.classList.toggle("active", tab === "cities");
   railPlacesEl.classList.toggle("active", tab === "places");
+  railForumEl.classList.toggle("active", tab === "forum");
   panelViewCitiesEl.hidden = tab !== "cities";
   panelViewPlacesEl.hidden = tab !== "places";
+  panelViewForumEl.hidden = tab !== "forum";
+  // forum.js (loaded after this file) owns the general-opinions list —
+  // defensive check for the same reason applyAdminStaticTranslations()
+  // gets one below: script load order guarantees it exists by the time
+  // any of this actually runs (nothing calls selectPanelTab() until
+  // after every <script> tag has executed), but staying defensive here
+  // costs nothing and matches the existing convention.
+  if (tab === "forum" && typeof loadGeneralForumPosts === "function") {
+    loadGeneralForumPosts();
+  }
   setPanelCollapsed(false);
 }
 
@@ -389,6 +407,7 @@ panelToggleEl.addEventListener("click", () => {
 
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
+railForumEl.addEventListener("click", () => selectPanelTab("forum"));
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -550,6 +569,11 @@ function showCityDetail(city) {
     li.classList.toggle("active", li.dataset.cityId === city.id);
   });
   loadWeatherFor(city);
+  // forum.js owns the per-place opinions widget — see the comment on
+  // the same pattern in selectPanelTab() above.
+  if (typeof renderCityForumSection === "function") {
+    renderCityForumSection(detailEl, city);
+  }
 }
 
 // Not true geographic distance (no latitude-scaling correction) — just

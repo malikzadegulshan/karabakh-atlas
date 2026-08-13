@@ -2,6 +2,44 @@
   box-sizing: border-box;
 }
 
+/* Roboto Flex — self-hosted (like Leaflet in vendor/) rather than linked
+   from Google Fonts' CDN, so the page has no external font dependency.
+   It's a variable font: one file covers the whole weight range, so
+   font-weight: 600/700 etc. elsewhere in this file render correctly
+   without needing separate bold/regular files. Subset to the scripts
+   this site actually uses (Latin, Latin Extended for az/tr diacritics,
+   Cyrillic for ru) instead of the full multi-script file Google serves. */
+@font-face {
+  font-family: "Roboto Flex";
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("vendor/fonts/roboto-flex-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+2000-206F, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Roboto Flex";
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("vendor/fonts/roboto-flex-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Roboto Flex";
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("vendor/fonts/roboto-flex-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
 /* Color tokens — light palette by default, swapped for dark under
    prefers-color-scheme so the whole UI follows the system setting
    automatically (no manual toggle). */
@@ -58,7 +96,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Roboto Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--color-text);
   background: var(--color-bg);
 }
@@ -396,6 +434,99 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Forum: the general-opinions tab (#forum-composer/#forum-list) and the
+   per-city widget appended into #city-detail (#city-forum) share these
+   rules — same post-card look in both places. */
+#forum-composer textarea {
+  resize: vertical;
+}
+
+/* .admin-form's own "display: flex" otherwise beats the [hidden]
+   attribute's default UA rule (same specificity, author stylesheet
+   wins) — same issue already called out for #login-form/#register-form
+   above. */
+#forum-composer[hidden] {
+  display: none;
+}
+
+.forum-signin-btn {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.forum-signin-btn:hover {
+  background: var(--color-border);
+}
+
+#forum-pending-notice,
+.forum-pending-notice {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  border-radius: 6px;
+}
+
+#forum-pending-notice[hidden],
+.forum-pending-notice[hidden] {
+  display: none;
+}
+
+#forum-list,
+.forum-post-list {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+}
+
+.forum-post {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.forum-post:first-child {
+  border-top: none;
+}
+
+.forum-post-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+  margin-bottom: 0.2rem;
+}
+
+.forum-post-meta strong {
+  color: var(--color-text-muted);
+}
+
+.forum-post-body {
+  margin: 0;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+#city-forum {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+#city-forum h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
 }
 
 #weather-panel {
