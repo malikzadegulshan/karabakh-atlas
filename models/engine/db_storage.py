@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 """Defines DBStorage, a PostgreSQL-backed persistence engine."""
 import os
-from sqlalchemy import create_engine
+import sys
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models.base_model import Base
 from models.region import Region
@@ -73,10 +74,52 @@ class DBStorage:
             self.__session.delete(obj)
 
     def reload(self):
-        """Create all tables and open a new scoped session."""
+        """Create all tables, add any columns a model has gained since
+        the table was first created, and open a new scoped session."""
         Base.metadata.create_all(self.__engine)
+        self._sync_missing_columns()
         factory = sessionmaker(bind=self.__engine, expire_on_commit=False)
         self.__session = scoped_session(factory)
+
+    def _sync_missing_columns(self):
+        """Add columns a model declares but an existing table doesn't
+        have yet — e.g. after a deploy adds a field to City without a
+        migration ever running against this database.
+
+        create_all() above only creates whole tables that don't exist;
+        it never alters ones that do, so this is the only thing that
+        catches that gap. Strictly additive (ADD COLUMN only, nothing
+        ever dropped or changed) and best-effort per column — one
+        column failing (e.g. NOT NULL with no default against a
+        populated table) is logged and skipped rather than blocking
+        every other table/column, or the app, from starting.
+        """
+        inspector = inspect(self.__engine)
+        for table in Base.metadata.sorted_tables:
+            if not inspector.has_table(table.name):
+                continue
+            existing = {col["name"] for col in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                ddl_type = column.type.compile(dialect=self.__engine.dialect)
+                try:
+                    with self.__engine.begin() as conn:
+                        conn.execute(text(
+                            'ALTER TABLE "{}" ADD COLUMN "{}" {}'.format(
+                                table.name, column.name, ddl_type)
+                        ))
+                    print(
+                        "Added missing column {}.{}".format(
+                            table.name, column.name),
+                        file=sys.stderr,
+                    )
+                except Exception as error:
+                    print(
+                        "WARNING: could not add column {}.{}: {}".format(
+                            table.name, column.name, error),
+                        file=sys.stderr,
+                    )
 
     def close(self):
         """Close the current session."""
