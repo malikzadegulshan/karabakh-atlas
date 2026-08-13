@@ -844,6 +844,69 @@ main {
   flex: 1;
 }
 
+/* Leaflet's built-in zoom/layers/attribution controls (vendor/leaflet/
+   leaflet.css) ship hardcoded white/black colors with no awareness of
+   this app's theme at all — left alone, they sit on the dark map as
+   glaring white boxes. #map as a prefix beats every one of Leaflet's
+   own selectors on specificity (an ID always outweighs any number of
+   classes), so these apply cleanly with no !important needed. */
+#map .leaflet-bar {
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+#map .leaflet-bar a {
+  background-color: var(--color-bg);
+  border-bottom-color: var(--color-border);
+  color: var(--color-text);
+}
+
+#map .leaflet-bar a:hover,
+#map .leaflet-bar a:focus {
+  background-color: var(--color-bg-muted);
+}
+
+#map .leaflet-bar a.leaflet-disabled {
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-faint);
+}
+
+#map .leaflet-control-layers {
+  box-shadow: 0 2px 8px var(--shadow-color);
+  background: var(--color-bg);
+}
+
+#map .leaflet-control-layers-expanded {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+#map .leaflet-control-layers-separator {
+  border-top-color: var(--color-border);
+}
+
+#map .leaflet-control-attribution {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-faint);
+}
+
+#map .leaflet-control-attribution a {
+  color: var(--color-text-muted);
+}
+
+/* The layers-toggle icon itself is a bundled raster image (dark lines
+   on a transparent ground) — inverting it is the only way to make it
+   read against the now-dark control background above, short of
+   shipping a second icon asset. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #map .leaflet-control-layers-toggle {
+    filter: invert(1);
+  }
+}
+
+:root[data-theme="dark"] #map .leaflet-control-layers-toggle {
+  filter: invert(1);
+}
+
 .image-credit {
   margin: 0.2rem 0 0;
   font-size: 0.75rem;
