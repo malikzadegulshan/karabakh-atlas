@@ -37,6 +37,10 @@ const TRANSLATIONS = {
     accountResendVerification: "Verify email",
     accountVerificationSent: "Sent!",
     accountVerifySuccess: "Email verified — thanks!",
+    accountTermsLink: "Terms",
+    accountPrivacyLink: "Privacy Policy",
+    accountLegalNote: (termsLink, privacyLink) =>
+      `By creating an account, you agree to our ${termsLink} and ${privacyLink}.`,
     adminAddRegionTitle: "Add region",
     adminAddRegionSubmit: "Add region",
     adminRegionsTitle: "Regions & cities",
@@ -144,6 +148,10 @@ const TRANSLATIONS = {
     accountResendVerification: "E-poçtu təsdiqlə",
     accountVerificationSent: "Göndərildi!",
     accountVerifySuccess: "E-poçt təsdiqləndi — təşəkkürlər!",
+    accountTermsLink: "Şərtlər",
+    accountPrivacyLink: "Məxfilik Siyasəti",
+    accountLegalNote: (termsLink, privacyLink) =>
+      `Hesab yaratmaqla siz bizim ${termsLink} və ${privacyLink} qəbul edirsiniz.`,
     adminAddRegionTitle: "Bölgə əlavə et",
     adminAddRegionSubmit: "Bölgə əlavə et",
     adminRegionsTitle: "Bölgələr və şəhərlər",
@@ -251,6 +259,10 @@ const TRANSLATIONS = {
     accountResendVerification: "E-postayı doğrula",
     accountVerificationSent: "Gönderildi!",
     accountVerifySuccess: "E-posta doğrulandı — teşekkürler!",
+    accountTermsLink: "Şartlar",
+    accountPrivacyLink: "Gizlilik Politikası",
+    accountLegalNote: (termsLink, privacyLink) =>
+      `Hesap oluşturarak ${termsLink} ve ${privacyLink} kabul etmiş olursunuz.`,
     adminAddRegionTitle: "Bölge ekle",
     adminAddRegionSubmit: "Bölge ekle",
     adminRegionsTitle: "Bölgeler ve şehirler",
@@ -357,6 +369,10 @@ const TRANSLATIONS = {
     accountResendVerification: "Подтвердить эл. почту",
     accountVerificationSent: "Отправлено!",
     accountVerifySuccess: "Эл. почта подтверждена — спасибо!",
+    accountTermsLink: "Условия использования",
+    accountPrivacyLink: "Политику конфиденциальности",
+    accountLegalNote: (termsLink, privacyLink) =>
+      `Создавая аккаунт, вы соглашаетесь с нашими ${termsLink} и ${privacyLink}.`,
     adminAddRegionTitle: "Добавить регион",
     adminAddRegionSubmit: "Добавить регион",
     adminRegionsTitle: "Регионы и города",

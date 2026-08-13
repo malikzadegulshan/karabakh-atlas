@@ -26,6 +26,7 @@ const registerNameInputEl = document.getElementById("register-name-input");
 const registerEmailInputEl = document.getElementById("register-email-input");
 const registerPasswordInputEl = document.getElementById("register-password-input");
 const registerFormSubmitEl = document.getElementById("register-form-submit");
+const accountLegalNoteEl = document.getElementById("account-legal-note");
 const adminToggleEl = document.getElementById("admin-toggle");
 
 function applyAccountStaticTranslations() {
@@ -45,6 +46,12 @@ function applyAccountStaticTranslations() {
     ? t("accountSignIn")
     : t("accountCreateAccount");
   accountResendEl.textContent = t("accountResendVerification");
+  // The link hrefs are static, app-controlled markup (not user input),
+  // built here rather than as plain translated strings so each
+  // language can phrase the sentence naturally around them.
+  const termsLink = `<a href="terms.html" target="_blank" rel="noopener">${t("accountTermsLink")}</a>`;
+  const privacyLink = `<a href="privacy.html" target="_blank" rel="noopener">${t("accountPrivacyLink")}</a>`;
+  accountLegalNoteEl.innerHTML = t("accountLegalNote")(termsLink, privacyLink);
   if (currentUser) {
     accountNameEl.textContent = currentUser.name;
   }
