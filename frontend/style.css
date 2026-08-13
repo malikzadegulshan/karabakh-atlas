@@ -405,21 +405,25 @@ main {
   transition: width 0.2s ease, padding 0.2s ease;
 }
 
+/* A little extra room for the place-detail view's hero photo and
+   contact buttons — same transition as the collapse below, just a
+   different target width. #panel-toggle's own left offset (below) has
+   to move with it, since that offset is just this width plus a
+   constant (48px rail + a few px border/centering). Declared before
+   #panel.collapsed so that if both classes ever end up on #panel at
+   once (collapsing while a place detail is open), the collapse — same
+   specificity, later in the cascade — wins and the panel actually
+   goes to 0 instead of the two rules fighting over the width. */
+#panel.panel-detail-open {
+  width: 380px;
+}
+
 #panel.collapsed {
   width: 0;
   padding-left: 0;
   padding-right: 0;
   overflow: hidden;
   border-right: none;
-}
-
-/* A little extra room for the place-detail view's hero photo and
-   contact buttons — same transition as the collapse above, just a
-   different target width. #panel-toggle's own left offset (below) has
-   to move with it, since that offset is just this width plus a
-   constant (48px rail + a few px border/centering). */
-#panel.panel-detail-open {
-  width: 380px;
 }
 
 #panel-toggle {
@@ -441,6 +445,10 @@ main {
   transition: left 0.2s ease;
 }
 
+/* Same ordering reasoning as above — collapsed's toggle position has
+   to win over panel-detail-open's whenever both classes are present,
+   or the toggle button ends up somewhere that doesn't match the
+   panel's actual (collapsed) width. */
 #panel.panel-detail-open ~ #panel-toggle {
   left: 431px;
 }
@@ -1430,10 +1438,6 @@ main {
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
   }
 
-  #panel.collapsed {
-    box-shadow: none;
-  }
-
   /* Same specificity as the desktop-only panel-detail-open rules above
      (no media guard there), so these need to appear after them in the
      stylesheet to win at this width — screen space is already tight on
@@ -1441,6 +1445,17 @@ main {
      of widening further. */
   #panel.panel-detail-open {
     width: min(260px, 78vw);
+  }
+
+  /* ...and #panel.collapsed (width, this time, not just position) has
+     to come after that panel-detail-open override in turn, for the
+     same "collapsed always wins if both classes are present" reason
+     as the base rules above — otherwise collapsing while a place
+     detail is open would win the specificity fight here but not
+     above, leaving the panel visually stuck at the drawer width. */
+  #panel.collapsed {
+    width: 0;
+    box-shadow: none;
   }
 
   #panel.panel-detail-open ~ #panel-toggle {
