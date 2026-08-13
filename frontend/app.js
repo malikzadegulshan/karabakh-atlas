@@ -405,9 +405,35 @@ panelToggleEl.addEventListener("click", () => {
   setPanelCollapsed(!panelEl.classList.contains("collapsed"));
 });
 
+// Deselects whatever city/POI is currently shown in #city-detail (and,
+// via updateForumGeneralVisibility(), brings the general forum section
+// back if it was hidden for that selection).
+function clearSelectedPlace() {
+  detailEl.innerHTML = "";
+  Array.from(listEl.children).forEach((li) => li.classList.remove("active"));
+  if (typeof updateForumGeneralVisibility === "function") {
+    updateForumGeneralVisibility();
+  }
+}
+
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
-railForumEl.addEventListener("click", () => selectPanelTab("forum"));
+railForumEl.addEventListener("click", () => {
+  // A selected place's own forum widget hides the general one (see
+  // updateForumGeneralVisibility() in forum.js) — clicking Forum again
+  // while that's the case is a "go back to the general forum" gesture,
+  // not the usual toggle-to-close. Toggle-to-close still applies once
+  // there's nothing left to go back from (already at the general view).
+  const placeSelected = Boolean(detailEl.firstElementChild);
+  if (activePanelTab === "forum" && !panelEl.classList.contains("collapsed") && placeSelected) {
+    clearSelectedPlace();
+    if (typeof loadGeneralForumPosts === "function") {
+      loadGeneralForumPosts();
+    }
+    return;
+  }
+  selectPanelTab("forum");
+});
 
 function escapeHtml(str) {
   const div = document.createElement("div");
