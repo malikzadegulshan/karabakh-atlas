@@ -199,7 +199,7 @@ main {
   z-index: 1200;
   display: flex;
   flex-direction: column;
-  min-width: 140px;
+  min-width: 50px;
   max-height: 200px;
   overflow-y: auto;
   padding: 0.3rem;
