@@ -180,7 +180,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-accent);
+  color: #764cb7;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--color-border);
