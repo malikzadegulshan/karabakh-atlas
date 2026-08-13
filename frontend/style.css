@@ -321,6 +321,16 @@ main {
   background: var(--color-accent-soft);
 }
 
+#account-legal-note {
+  margin: -0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
+}
+
+#account-legal-note a {
+  color: var(--color-accent);
+}
+
 #panel {
   width: 320px;
   flex-shrink: 0;
@@ -1267,4 +1277,65 @@ main {
   #year-slider {
     width: 100%;
   }
+}
+
+/* Standalone legal pages (privacy.html / terms.html). They link this
+   same stylesheet for color tokens/fonts/dark-mode, but need normal
+   document flow to scroll — not the app shell's 100vh flex layout the
+   base body rule above is built for. */
+body.legal-page-body {
+  height: auto;
+  min-height: 100vh;
+  display: block;
+}
+
+.legal-page {
+  /* Overrides the app shell's "main { display: flex; ... }" rule above
+     — both this page and index.html link the same stylesheet, and a
+     bare-element selector like that one applies to any <main> on any
+     page that loads it, not just the app shell's. Without this, every
+     direct child here (h1, p, ul, ...) lays out as a flex row instead
+     of stacking normally. */
+  display: block;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+  line-height: 1.6;
+}
+
+.legal-back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.legal-back-link:hover {
+  text-decoration: underline;
+}
+
+.legal-page h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.8rem;
+}
+
+.legal-page h2 {
+  margin: 2rem 0 0.6rem;
+  font-size: 1.15rem;
+}
+
+.legal-updated {
+  color: var(--color-text-faint);
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
+}
+
+.legal-page ul {
+  padding-left: 1.3rem;
+}
+
+.legal-page a {
+  color: var(--color-accent);
 }
