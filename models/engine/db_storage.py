@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Defines DBStorage, a PostgreSQL-backed persistence engine."""
+import logging
 import os
-import sys
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models.base_model import Base
@@ -13,6 +13,8 @@ from models.forum_post import ForumPost
 classes = {
     "Region": Region, "City": City, "User": User, "ForumPost": ForumPost,
 }
+
+logger = logging.getLogger(__name__)
 
 
 def _db_url():
@@ -118,16 +120,13 @@ class DBStorage:
                             "ALTER TABLE {} ADD COLUMN {} {}".format(
                                 qualified_table, qualified_column, ddl_type)
                         ))
-                    print(
-                        "Added missing column {}.{}".format(
-                            table.name, column.name),
-                        file=sys.stderr,
+                    logger.info(
+                        "Added missing column %s.%s", table.name, column.name
                     )
                 except Exception as error:
-                    print(
-                        "WARNING: could not add column {}.{}: {}".format(
-                            table.name, column.name, error),
-                        file=sys.stderr,
+                    logger.warning(
+                        "Could not add column %s.%s: %s",
+                        table.name, column.name, error,
                     )
 
     def close(self):

@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 """Starts the Flask API application for the Karabakh Atlas backend."""
+import logging
 import os
 import secrets
-import sys
+import time
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -17,6 +18,18 @@ WRITE_METHODS = {"POST", "PUT", "DELETE"}
 ADMIN_GATED_PREFIXES = ("/api/v1/regions", "/api/v1/cities")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
+
+# Configures the root logger, so every module's own
+# logging.getLogger(__name__) (mailer.py, db_storage.py, this file)
+# shares one format/destination without importing this Flask app —
+# models/engine code in particular shouldn't depend on the web layer.
+# Render (and any other stdout/stderr-collecting host) captures this
+# directly; nothing extra is needed to ship logs there.
+logging.basicConfig(
+    level=os.environ.get("KBA_LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -43,12 +56,11 @@ if not app.secret_key:
         # worker handles a given request. Fine for a single local dev
         # process; any real deployment must set KBA_SECRET_KEY.
         app.secret_key = secrets.token_hex(32)
-        print(
-            "WARNING: KBA_SECRET_KEY is not set — using a random, "
-            "process-local secret key. Sessions will not survive a "
-            "restart and will break across multiple worker processes. "
-            "Set KBA_SECRET_KEY for anything beyond local dev.",
-            file=sys.stderr,
+        logger.warning(
+            "KBA_SECRET_KEY is not set — using a random, process-local "
+            "secret key. Sessions will not survive a restart and will "
+            "break across multiple worker processes. Set KBA_SECRET_KEY "
+            "for anything beyond local dev."
         )
 
 app.config.update(
@@ -124,6 +136,11 @@ def openapi_spec():
 
 
 @app.before_request
+def _start_request_timer():
+    request._kba_start_time = time.monotonic()
+
+
+@app.before_request
 def require_admin_for_writes():
     """Reject region/city write requests unless the session user is an
     admin. Read-only GET requests, and every /auth/* route (which has
@@ -169,6 +186,22 @@ def set_security_headers(response):
         "img-src 'self' data:; "
         "frame-ancestors 'none'; "
         "base-uri 'none'"
+    )
+    return response
+
+
+@app.after_request
+def log_request(response):
+    """One line per request: method, path, status, and time taken.
+
+    Runs after set_security_headers above (after_request hooks fire in
+    reverse registration order) but that ordering doesn't matter here —
+    this only reads the response status, it doesn't touch headers.
+    """
+    duration_ms = (time.monotonic() - request._kba_start_time) * 1000
+    logger.info(
+        "%s %s %s %.1fms",
+        request.method, request.path, response.status_code, duration_ms,
     )
     return response
 
