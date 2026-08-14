@@ -874,6 +874,23 @@ main {
 
 #map {
   flex: 1;
+  /* Isolates Leaflet's internal panes (tile/marker/popup panes go up
+     to z-index: 700+, in vendor/leaflet/leaflet.css) inside their own
+     stacking context. Without this, .leaflet-container sits at
+     position: relative with z-index: auto — which does NOT create a
+     stacking context — so those pane z-indexes escape #map entirely
+     and compare directly against #rail's z-index: 20 in the parent
+     flex container. 200+ beats 20, so as soon as real tiles are
+     loaded, every one of them paints above the entire rail — including
+     #lang-menu/#account-status, regardless of their own z-index: 1200,
+     since that value is already capped by #rail's stacking context
+     before it's ever compared against anything outside #rail.
+     Reproduced and confirmed by serving real tiles to a local build
+     (this sandbox's own tests never loaded real tiles otherwise, since
+     the actual tile hosts are network-blocked here — which is exactly
+     why this never showed up in testing until diagnosed directly). */
+  position: relative;
+  z-index: 0;
 }
 
 /* Leaflet's built-in zoom/layers/attribution controls (vendor/leaflet/
