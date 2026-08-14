@@ -392,7 +392,13 @@ main {
   cursor: pointer;
 }
 
-.account-legal-checkbox input {
+.account-legal-checkbox input[type="checkbox"] {
+  /* .admin-form input { width: 100% } (below, in source order) ties
+     this selector on specificity, so a plain "input" selector here
+     loses that tie-break and the checkbox silently stays full-width,
+     squeezing the label text into a sliver. The [type="checkbox"]
+     attribute bumps specificity enough to actually win. */
+  width: auto;
   flex-shrink: 0;
   margin-top: 0.15rem;
 }
