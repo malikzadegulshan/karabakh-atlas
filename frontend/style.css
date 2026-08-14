@@ -578,15 +578,19 @@ main {
   margin-bottom: 0.6rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-text);
-  background: var(--color-bg-muted);
-  border: 1px dashed var(--color-border-strong);
+  /* Matches .admin-form button's fill/no-border treatment — this is the
+     most-seen call to action in the app (forum tab + every place detail
+     with opinions), so it should read as a button, not as another muted
+     info card sitting next to the weather widget. */
+  color: #fff;
+  background: var(--color-accent);
+  border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .forum-signin-btn:hover {
-  background: var(--color-border);
+  background: var(--color-accent-hover);
 }
 
 #forum-pending-notice,
@@ -925,7 +929,11 @@ main {
   filter: invert(1);
 }
 
-.image-credit {
+/* .detail-about p (above) sets color: var(--color-text) at the same
+   "class + element" specificity as a bare ".image-credit" would — the
+   extra .detail-about qualifier here is what actually wins the tie, so
+   the muted color takes effect instead of silently losing to it. */
+.detail-about .image-credit {
   margin: 0.2rem 0 0;
   font-size: 0.75rem;
   color: var(--color-text-faint);

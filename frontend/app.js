@@ -790,6 +790,18 @@ async function loadWeatherFor(city) {
 function showCityDetail(city) {
   openDetailView();
   detailEl.innerHTML = buildDetailCardHtml(city);
+  // A city's photo is an externally-hosted URL an admin typed in, not
+  // something this app controls the availability of — if it 404s or
+  // times out, hide the hero block entirely rather than leave the
+  // browser's bare broken-image glyph sitting in it.
+  const heroImg = detailEl.querySelector(".detail-hero img");
+  if (heroImg) {
+    heroImg.addEventListener(
+      "error",
+      () => { heroImg.closest(".detail-hero").hidden = true; },
+      { once: true }
+    );
+  }
   Array.from(listEl.children).forEach((li) => {
     li.classList.toggle("active", li.dataset.cityId === city.id);
   });
