@@ -237,11 +237,23 @@ main {
 }
 
 /* Popovers open to the right of the rail, not below it — there's no
-   room below a 34px-tall icon button in a vertical rail. */
+   room below a 34px-tall icon button in a vertical rail.
+
+   position: fixed with left/bottom set inline by JS (positionPopover()
+   in app.js), not position: absolute anchored to .rail-widget. A
+   Firefox user reported these completely failing to render — hidden
+   became false, the computed rect/z-index/opacity/visibility all
+   looked correct, elementFromPoint even confirmed the popover was the
+   topmost hit at its own coordinates, and yet nothing painted, on a
+   fully updated deploy with hardware acceleration and extensions both
+   ruled out. Never reproduced in Chromium here, so this couldn't be
+   verified as the actual fix — but position: fixed removes the
+   dependency on .rail-widget (a flex item) as the containing block
+   for an absolutely-positioned descendant, which is the more unusual
+   part of the original setup and the more likely thing for a browser
+   engine to mishandle. */
 #lang-menu {
-  position: absolute;
-  left: calc(100% + 8px);
-  bottom: 0;
+  position: fixed;
   z-index: 1200;
   display: flex;
   flex-direction: column;
@@ -255,9 +267,7 @@ main {
   box-shadow: 0 6px 16px var(--shadow-color);
 }
 #account-status {
-  position: absolute;
-  left: calc(100% + 8px);
-  bottom: 0;
+  position: fixed;
   z-index: 1200;
   display: flex;
   flex-direction: column;
@@ -1558,11 +1568,6 @@ main {
 
   #panel.collapsed ~ #panel-toggle {
     left: 48px;
-  }
-
-  #lang-menu,
-  #account-status {
-    left: calc(100% + 4px);
   }
 
   #admin-overlay {

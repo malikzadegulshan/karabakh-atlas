@@ -337,6 +337,17 @@ const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
 const themeToggleEl = document.getElementById("theme-toggle");
 
+// Positions a rail popover (#lang-menu, auth.js's #account-status) to
+// the right of its toggle button, bottom-aligned — in viewport pixels,
+// since both are position: fixed rather than position: absolute
+// anchored to their .rail-widget parent. See the comment on #lang-menu
+// in style.css for why they're built this way.
+function positionPopover(toggleEl, popoverEl) {
+  const rect = toggleEl.getBoundingClientRect();
+  popoverEl.style.left = `${rect.right + 8}px`;
+  popoverEl.style.bottom = `${window.innerHeight - rect.bottom}px`;
+}
+
 function closeLangMenu() {
   langMenuEl.hidden = true;
   langToggleEl.setAttribute("aria-expanded", "false");
@@ -370,6 +381,9 @@ function applyStaticTranslations() {
 langToggleEl.addEventListener("click", (event) => {
   event.stopPropagation();
   const willOpen = langMenuEl.hidden;
+  if (willOpen) {
+    positionPopover(langToggleEl, langMenuEl);
+  }
   langMenuEl.hidden = !willOpen;
   langToggleEl.setAttribute("aria-expanded", String(willOpen));
 });

@@ -79,6 +79,9 @@ function renderAccountWidget() {
 accountAvatarToggleEl.addEventListener("click", (event) => {
   event.stopPropagation();
   const willOpen = accountStatusEl.hidden;
+  if (willOpen) {
+    positionPopover(accountAvatarToggleEl, accountStatusEl);
+  }
   accountStatusEl.hidden = !willOpen;
   accountAvatarToggleEl.setAttribute("aria-expanded", String(willOpen));
 });
