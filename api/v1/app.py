@@ -231,6 +231,16 @@ def payload_too_large(error):
     return jsonify({"error": "Payload too large"}), 413
 
 
+@app.errorhandler(500)
+def internal_error(error):
+    """Return a generic JSON 500 instead of Flask's default HTML page —
+    no exception detail goes to the client. Flask already logs the real
+    traceback server-side on its own before this handler ever runs, so
+    nothing extra needs to be captured here.
+    """
+    return jsonify({"error": "Internal server error"}), 500
+
+
 if __name__ == "__main__":
     host = os.environ.get("KBA_API_HOST", "0.0.0.0")
     port = int(os.environ.get("KBA_API_PORT", "5000"))

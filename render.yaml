@@ -72,6 +72,12 @@ services:
     staticPublishPath: frontend
     buildCommand: ""
     envVars: []
+    # frontend/404.html is served automatically for any unmatched path —
+    # the standard static-host convention (GitHub Pages/Netlify/Render
+    # all follow it) so a stale link or typo shows this app's own page
+    # instead of Render's default not-found page. Not verifiable from a
+    # sandbox with no access to real Render infrastructure — confirm
+    # after deploying by visiting a nonexistent path.
     # X-Frame-Options/frame-ancestors specifically can't be set via a
     # <meta> tag (only a real HTTP header), so it's here rather than in
     # index.html alongside the rest of the CSP. The other two are
