@@ -141,7 +141,10 @@
         <input type="text" id="register-name-input" required maxlength="128" autocomplete="name">
         <input type="email" id="register-email-input" required autocomplete="username">
         <input type="password" id="register-password-input" required minlength="8" autocomplete="new-password">
-        <p id="account-legal-note"></p>
+        <label class="account-legal-checkbox">
+          <input type="checkbox" id="register-legal-checkbox" required>
+          <span id="account-legal-note"></span>
+        </label>
         <button type="submit" id="register-form-submit">Create account</button>
       </form>
     </div>
