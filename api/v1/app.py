@@ -140,6 +140,39 @@ def require_admin_for_writes():
         return jsonify({"error": "Admin privileges required"}), 403
 
 
+@app.after_request
+def set_security_headers(response):
+    """Attach standard defense-in-depth headers to every response.
+
+    None of these are a substitute for actually validating input (see
+    optional_url() in api/v1/validation.py) — they're a second layer,
+    e.g. so a future rendering bug can't be leveraged past this API's
+    own HTML surface (currently just the self-hosted Swagger UI at
+    /api/docs; this file itself only ever returns JSON).
+    """
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        # This header is set on every response, including the JSON ones
+        # (script-src is inert there regardless — a browser never
+        # executes a JSON response body as script no matter what this
+        # header says). The 'unsafe-inline' below only actually matters
+        # on /api/docs: flask-swagger-ui's bundled template bootstraps
+        # itself with an inline <script>, and that page is static
+        # vendored boilerplate, not rendering any request data — so
+        # permitting inline script there isn't reopening the XSS class
+        # this policy exists to backstop everywhere else.
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'none'"
+    )
+    return response
+
+
 @app.teardown_appcontext
 def teardown_storage(exception):
     """Close the storage session at the end of each request."""

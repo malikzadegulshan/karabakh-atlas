@@ -24,6 +24,7 @@ class TestForumViews(unittest.TestCase):
         (self.admin_client, logged in) — most tests only need one."""
         auth_utils.forum_post_limiter._attempts.clear()
         auth_utils.login_limiter._attempts.clear()
+        auth_utils.register_limiter._attempts.clear()
 
         self.client = app.test_client()
         self.user_email = _unique_email()

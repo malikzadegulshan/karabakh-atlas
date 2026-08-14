@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- This page loads no scripts and fetches nothing — the strictest
+       version of the policy on index.html. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'none';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self';
+    connect-src 'none';
+    font-src 'self';
+    object-src 'none';
+    base-uri 'none';
+    form-action 'none'
+  ">
   <title>Terms &amp; Conditions — Karabakh Atlas</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />

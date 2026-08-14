@@ -586,6 +586,23 @@ function escapeAttr(str) {
     .replace(/>/g, "&gt;");
 }
 
+// escapeAttr() above only stops a value from breaking OUT of an
+// attribute string — it says nothing about what scheme the value uses,
+// so a "javascript:" URL passes straight through it. The backend
+// rejects that scheme on write (see optional_url() in
+// api/v1/validation.py), but this check runs again here as a second,
+// independent layer: it also catches any record written before that
+// validation existed, and doesn't depend on every future write path
+// remembering to call the backend validator correctly.
+function isSafeUrl(value) {
+  try {
+    const scheme = new URL(value, window.location.href).protocol;
+    return scheme === "http:" || scheme === "https:";
+  } catch (err) {
+    return false;
+  }
+}
+
 function setStatus(message, isError) {
   statusEl.textContent = message;
   statusEl.hidden = !message;
@@ -613,7 +630,7 @@ function buildDetailCardHtml(city) {
   const description = localizedDescription(city);
   const parts = [];
 
-  if (city.image_url) {
+  if (city.image_url && isSafeUrl(city.image_url)) {
     parts.push(
       `<div class="detail-hero"><img src="${escapeAttr(city.image_url)}" ` +
         `alt="${escapeAttr(name)}"></div>`
@@ -640,7 +657,7 @@ function buildDetailCardHtml(city) {
           `<span>${escapeHtml(t("detailCall"))}</span></a>`
       );
     }
-    if (city.website) {
+    if (city.website && isSafeUrl(city.website)) {
       parts.push(
         `<a class="detail-action-btn" href="${escapeAttr(city.website)}" ` +
           'target="_blank" rel="noopener noreferrer">' +

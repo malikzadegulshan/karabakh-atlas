@@ -72,3 +72,21 @@ services:
     staticPublishPath: frontend
     buildCommand: ""
     envVars: []
+    # X-Frame-Options/frame-ancestors specifically can't be set via a
+    # <meta> tag (only a real HTTP header), so it's here rather than in
+    # index.html alongside the rest of the CSP. The other two are
+    # redundant with what a browser already infers, but cheap and
+    # standard to make explicit. Verify these actually come back after
+    # deploying (e.g. `curl -I`) — if Render's header syntax has moved
+    # on from this, the same effect can be set by hand from the
+    # dashboard's Headers tab for this service.
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

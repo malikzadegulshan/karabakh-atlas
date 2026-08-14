@@ -3,30 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- X-Frame-Options/frame-ancestors need a real HTTP header (see
+       render.yaml) — a <meta> CSP can't set those, only the directives
+       below. connect-src lists every origin app.js actually fetches
+       from: the weather API, this app's own backend (both the deployed
+       one and local dev), and Esri's Wayback release config for the
+       historical-imagery layer. img-src stays broad (any https origin)
+       because city photos are arbitrary admin-supplied URLs, and the
+       historical/satellite map tile hosts are resolved at runtime from
+       that same Esri config rather than being a fixed domain. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data:;
+    connect-src 'self' https://api.open-meteo.com https://karabakh-atlas-api.onrender.com http://localhost:5000 https://s3-us-west-2.amazonaws.com;
+    font-src 'self';
+    object-src 'none';
+    base-uri 'none';
+    form-action 'self'
+  ">
   <title>Dirchalish - Atlas of Karabakh</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
-  <script>
-    // Applies a stored light/dark override (if any) before first paint,
-    // so a preference that disagrees with the OS setting doesn't flash
-    // the wrong theme for a frame — see the #theme-toggle button and
-    // scheme()/getStoredTheme() in app.js, which read/write this same
-    // "kba_theme" key and attribute.
-    (function () {
-      try {
-        var theme = localStorage.getItem("kba_theme");
-        if (theme === "light" || theme === "dark") {
-          document.documentElement.dataset.theme = theme;
-        }
-      } catch (err) {
-        /* localStorage unavailable (e.g. private browsing); system
-           preference alone still applies via CSS, nothing else to do */
-      }
-    })();
-  </script>
+  <script src="theme-init.js"></script>
 </head>
 <body>
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>

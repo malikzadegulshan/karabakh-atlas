@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Shared request-body validation helpers for the API views."""
 import re
+from urllib.parse import urlsplit
 
 MAX_NAME_LENGTH = 128
 MAX_TEXT_LENGTH = 5000
@@ -43,6 +44,33 @@ def optional_string(data, field, max_length=MAX_TEXT_LENGTH):
     if len(value) > max_length:
         raise ValidationError(
             "{} must be at most {} characters".format(field, max_length))
+
+
+SAFE_URL_SCHEMES = {"http", "https"}
+
+
+def optional_url(data, field, max_length=MAX_TEXT_LENGTH):
+    """Raise ValidationError if data[field] is present but not an
+    http(s) URL.
+
+    Rejects any other scheme outright — most importantly javascript:,
+    which the frontend renders straight into an <a href="..."> for
+    website links (city.website in buildDetailCardHtml). Without this,
+    a stored value there is a stored-XSS payload against every visitor
+    who views that place's Website button, not just whoever entered it.
+    """
+    if field not in data or data[field] is None:
+        return
+    value = data[field]
+    if not isinstance(value, str):
+        raise ValidationError("{} must be a string".format(field))
+    if len(value) > max_length:
+        raise ValidationError(
+            "{} must be at most {} characters".format(field, max_length))
+    scheme = urlsplit(value.strip()).scheme.lower()
+    if scheme not in SAFE_URL_SCHEMES:
+        raise ValidationError(
+            "{} must be an http:// or https:// URL".format(field))
 
 
 def require_number_in_range(data, field, minimum, maximum):
