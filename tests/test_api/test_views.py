@@ -144,6 +144,39 @@ class TestAPIViews(unittest.TestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, 400)
 
+    def test_create_city_rejects_javascript_scheme_website(self):
+        """POST .../cities rejects a javascript: URL in website — the
+        frontend renders this field straight into an <a href="...">,
+        so an unvalidated scheme here is a stored-XSS vector against
+        every visitor who views the place, not just whoever set it."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "website": "javascript:alert(document.cookie)",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_city_rejects_javascript_scheme_image_url(self):
+        """POST .../cities rejects a javascript: URL in image_url too."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "image_url": "javascript:alert(1)",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
     def test_create_city_accepts_road_category(self):
         """POST .../cities accepts the "road" category."""
         region = json.loads(self.client.post(

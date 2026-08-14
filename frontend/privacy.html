@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- This page loads no scripts and fetches nothing — the strictest
+       version of the policy on index.html. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'none';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self';
+    connect-src 'none';
+    font-src 'self';
+    object-src 'none';
+    base-uri 'none';
+    form-action 'none'
+  ">
   <title>Privacy Policy — Karabakh Atlas</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
@@ -13,12 +26,13 @@
   <main class="legal-page">
     <a class="legal-back-link" href="index.html">← Back to the map</a>
     <h1>Privacy Policy</h1>
-    <p class="legal-updated">Last updated: 2026-08-13. Provided in English only.</p>
+    <p class="legal-updated">Last updated: 2026-08-14. Provided in English only.</p>
 
     <p>
       Karabakh Atlas is a map and community forum for exploring the
       Karabakh region. This page explains what information the site
-      collects, why, and how to reach us about it.
+      collects, why, and how to reach us about it. It works together
+      with our <a href="terms.html">Terms &amp; Conditions</a>.
     </p>
 
     <h2>What we collect</h2>

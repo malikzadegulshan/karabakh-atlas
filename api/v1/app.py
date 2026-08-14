@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 """Starts the Flask API application for the Karabakh Atlas backend."""
+import logging
 import os
 import secrets
-import sys
+import time
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -17,6 +18,18 @@ WRITE_METHODS = {"POST", "PUT", "DELETE"}
 ADMIN_GATED_PREFIXES = ("/api/v1/regions", "/api/v1/cities")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
+
+# Configures the root logger, so every module's own
+# logging.getLogger(__name__) (mailer.py, db_storage.py, this file)
+# shares one format/destination without importing this Flask app —
+# models/engine code in particular shouldn't depend on the web layer.
+# Render (and any other stdout/stderr-collecting host) captures this
+# directly; nothing extra is needed to ship logs there.
+logging.basicConfig(
+    level=os.environ.get("KBA_LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -43,12 +56,11 @@ if not app.secret_key:
         # worker handles a given request. Fine for a single local dev
         # process; any real deployment must set KBA_SECRET_KEY.
         app.secret_key = secrets.token_hex(32)
-        print(
-            "WARNING: KBA_SECRET_KEY is not set — using a random, "
-            "process-local secret key. Sessions will not survive a "
-            "restart and will break across multiple worker processes. "
-            "Set KBA_SECRET_KEY for anything beyond local dev.",
-            file=sys.stderr,
+        logger.warning(
+            "KBA_SECRET_KEY is not set — using a random, process-local "
+            "secret key. Sessions will not survive a restart and will "
+            "break across multiple worker processes. Set KBA_SECRET_KEY "
+            "for anything beyond local dev."
         )
 
 app.config.update(
@@ -124,6 +136,11 @@ def openapi_spec():
 
 
 @app.before_request
+def _start_request_timer():
+    request._kba_start_time = time.monotonic()
+
+
+@app.before_request
 def require_admin_for_writes():
     """Reject region/city write requests unless the session user is an
     admin. Read-only GET requests, and every /auth/* route (which has
@@ -138,6 +155,55 @@ def require_admin_for_writes():
         return jsonify({"error": "Login required"}), 401
     if user.role != "admin":
         return jsonify({"error": "Admin privileges required"}), 403
+
+
+@app.after_request
+def set_security_headers(response):
+    """Attach standard defense-in-depth headers to every response.
+
+    None of these are a substitute for actually validating input (see
+    optional_url() in api/v1/validation.py) — they're a second layer,
+    e.g. so a future rendering bug can't be leveraged past this API's
+    own HTML surface (currently just the self-hosted Swagger UI at
+    /api/docs; this file itself only ever returns JSON).
+    """
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        # This header is set on every response, including the JSON ones
+        # (script-src is inert there regardless — a browser never
+        # executes a JSON response body as script no matter what this
+        # header says). The 'unsafe-inline' below only actually matters
+        # on /api/docs: flask-swagger-ui's bundled template bootstraps
+        # itself with an inline <script>, and that page is static
+        # vendored boilerplate, not rendering any request data — so
+        # permitting inline script there isn't reopening the XSS class
+        # this policy exists to backstop everywhere else.
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'none'"
+    )
+    return response
+
+
+@app.after_request
+def log_request(response):
+    """One line per request: method, path, status, and time taken.
+
+    Runs after set_security_headers above (after_request hooks fire in
+    reverse registration order) but that ordering doesn't matter here —
+    this only reads the response status, it doesn't touch headers.
+    """
+    duration_ms = (time.monotonic() - request._kba_start_time) * 1000
+    logger.info(
+        "%s %s %s %.1fms",
+        request.method, request.path, response.status_code, duration_ms,
+    )
+    return response
 
 
 @app.teardown_appcontext
@@ -163,6 +229,16 @@ def not_found(error):
 def payload_too_large(error):
     """Return a JSON 413 response instead of Flask's default HTML page."""
     return jsonify({"error": "Payload too large"}), 413
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Return a generic JSON 500 instead of Flask's default HTML page —
+    no exception detail goes to the client. Flask already logs the real
+    traceback server-side on its own before this handler ever runs, so
+    nothing extra needs to be captured here.
+    """
+    return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == "__main__":

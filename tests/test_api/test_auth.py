@@ -30,6 +30,7 @@ class TestAuthViews(unittest.TestCase):
         self.client = app.test_client()
         auth_utils.login_limiter._attempts.clear()
         auth_utils.resend_verification_limiter._attempts.clear()
+        auth_utils.register_limiter._attempts.clear()
         patcher = patch("api.v1.views.auth.send_email", return_value=True)
         self.mock_send_email = patcher.start()
         self.addCleanup(patcher.stop)
@@ -184,6 +185,16 @@ class TestAuthViews(unittest.TestCase):
                 data=json.dumps(
                     {"email": email, "password": "wrong-password"}),
                 content_type="application/json")
+            last_status = resp.status_code
+        self.assertEqual(last_status, 429)
+
+    def test_register_rate_limited_after_repeated_attempts(self):
+        """Repeated registrations from one source eventually get
+        rate-limited — this endpoint sends a real email on every call,
+        so it's also a spam-relay vector without a cap."""
+        last_status = None
+        for _ in range(auth_utils.register_limiter.max_attempts + 1):
+            _, resp = self._register()
             last_status = resp.status_code
         self.assertEqual(last_status, 429)
 

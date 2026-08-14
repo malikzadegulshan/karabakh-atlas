@@ -6,10 +6,12 @@ Falls back to printing the message when KBA_SMTP_* isn't configured, so
 registration/verification stay fully testable in local dev without a
 real mail account.
 """
+import logging
 import os
 import smtplib
-import sys
 from email.mime.text import MIMEText
+
+logger = logging.getLogger(__name__)
 
 
 def _smtp_config():
@@ -35,12 +37,10 @@ def send_email(to_addr, subject, body):
     """
     config = _smtp_config()
     if config is None:
-        print(
+        logger.info(
             "KBA_SMTP_* not configured — printing email instead of "
-            "sending it:\n"
-            "  To: {}\n  Subject: {}\n  Body:\n{}".format(
-                to_addr, subject, body),
-            file=sys.stderr,
+            "sending it:\n  To: %s\n  Subject: %s\n  Body:\n%s",
+            to_addr, subject, body,
         )
         return True
 
@@ -56,8 +56,5 @@ def send_email(to_addr, subject, body):
             smtp.sendmail(config["from_addr"], [to_addr], message.as_string())
         return True
     except (smtplib.SMTPException, OSError) as error:
-        print(
-            "Failed to send email to {}: {}".format(to_addr, error),
-            file=sys.stderr,
-        )
+        logger.error("Failed to send email to %s: %s", to_addr, error)
         return False

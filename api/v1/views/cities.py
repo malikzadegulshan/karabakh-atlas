@@ -11,6 +11,7 @@ from api.v1.validation import (
     require_non_empty_string,
     require_number_in_range,
     optional_string,
+    optional_url,
     optional_i18n_dict,
     optional_enum,
     only_allowed_fields,
@@ -44,10 +45,10 @@ def _validate_city_data(data, *, require_required_fields):
         require_number_in_range(data, "longitude", -180, 180)
     optional_string(data, "description")
     optional_string(data, "alt_names", max_length=255)
-    optional_string(data, "image_url", max_length=500)
+    optional_url(data, "image_url", max_length=500)
     optional_string(data, "image_credit", max_length=255)
     optional_string(data, "phone", max_length=30)
-    optional_string(data, "website", max_length=500)
+    optional_url(data, "website", max_length=500)
     optional_i18n_dict(data, "name_i18n")
     optional_i18n_dict(data, "description_i18n")
     optional_enum(data, "category", CITY_CATEGORIES)

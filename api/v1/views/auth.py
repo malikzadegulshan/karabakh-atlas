@@ -10,6 +10,7 @@ from api.v1.auth_utils import (
     record_login_failure,
     clear_login_failures,
     resend_verification_limiter,
+    register_limiter,
 )
 from api.v1.mailer import send_email
 from api.v1.validation import (
@@ -63,6 +64,11 @@ def register():
     use the site) — it just starts unverified, with a verification email
     sent in the background.
     """
+    if register_limiter.is_limited(request.remote_addr):
+        return jsonify({
+            "error": "Too many accounts created recently. Try again later.",
+        }), 429
+
     data = request.get_json(silent=True)
     if data is None:
         abort(400, description="Not a JSON")
@@ -74,6 +80,7 @@ def register():
     except ValidationError as error:
         abort(400, description=error.message)
 
+    register_limiter.record(request.remote_addr)
     email = data["email"].strip().lower()
     if _find_user_by_email(email) is not None:
         return jsonify(

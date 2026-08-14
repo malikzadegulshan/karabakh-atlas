@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- This page loads no scripts and fetches nothing — the strictest
+       version of the policy on index.html. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'none';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self';
+    connect-src 'none';
+    font-src 'self';
+    object-src 'none';
+    base-uri 'none';
+    form-action 'none'
+  ">
+  <title>Page Not Found — Karabakh Atlas</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="legal-page-body">
+  <main class="legal-page">
+    <a class="legal-back-link" href="index.html">← Back to the map</a>
+    <h1>Page not found</h1>
+    <p>
+      There's nothing at this address. The page may have moved, or the
+      link might just be out of date.
+    </p>
+    <p>
+      <a href="index.html">Go to the map</a>
+    </p>
+  </main>
+</body>
+</html>

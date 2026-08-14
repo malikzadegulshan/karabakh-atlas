@@ -46,6 +46,12 @@ class RateLimiter:
 
 login_limiter = RateLimiter(max_attempts=5, window_seconds=300)
 resend_verification_limiter = RateLimiter(max_attempts=3, window_seconds=3600)
+# Keyed by IP, not email — an unlimited registration endpoint is both a
+# bulk-account-creation vector and a free spam relay (every registration
+# sends a real verification email to whatever address is given, with no
+# proof of ownership beforehand). This doesn't stop one signup per
+# genuine visitor; it stops scripting hundreds of them from one source.
+register_limiter = RateLimiter(max_attempts=5, window_seconds=3600)
 # Blunts a single account flooding the moderation queue with spam —
 # generous enough for genuine back-and-forth use, tight enough that
 # scripting registrations-then-posts doesn't scale.

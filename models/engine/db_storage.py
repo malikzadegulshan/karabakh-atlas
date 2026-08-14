@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Defines DBStorage, a PostgreSQL-backed persistence engine."""
+import logging
 import os
-import sys
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models.base_model import Base
@@ -13,6 +13,8 @@ from models.forum_post import ForumPost
 classes = {
     "Region": Region, "City": City, "User": User, "ForumPost": ForumPost,
 }
+
+logger = logging.getLogger(__name__)
 
 
 def _db_url():
@@ -95,6 +97,7 @@ class DBStorage:
         every other table/column, or the app, from starting.
         """
         inspector = inspect(self.__engine)
+        preparer = self.__engine.dialect.identifier_preparer
         for table in Base.metadata.sorted_tables:
             if not inspector.has_table(table.name):
                 continue
@@ -103,22 +106,27 @@ class DBStorage:
                 if column.name in existing:
                     continue
                 ddl_type = column.type.compile(dialect=self.__engine.dialect)
+                # Table/column names only ever come from this codebase's
+                # own model definitions (Base.metadata), never from a
+                # request — but quote_identifier() (not manual "{}"
+                # formatting) is used regardless, so that stays true even
+                # if a future refactor ever lets either name be
+                # influenced by anything less trusted.
+                qualified_table = preparer.quote_identifier(table.name)
+                qualified_column = preparer.quote_identifier(column.name)
                 try:
                     with self.__engine.begin() as conn:
                         conn.execute(text(
-                            'ALTER TABLE "{}" ADD COLUMN "{}" {}'.format(
-                                table.name, column.name, ddl_type)
+                            "ALTER TABLE {} ADD COLUMN {} {}".format(
+                                qualified_table, qualified_column, ddl_type)
                         ))
-                    print(
-                        "Added missing column {}.{}".format(
-                            table.name, column.name),
-                        file=sys.stderr,
+                    logger.info(
+                        "Added missing column %s.%s", table.name, column.name
                     )
                 except Exception as error:
-                    print(
-                        "WARNING: could not add column {}.{}: {}".format(
-                            table.name, column.name, error),
-                        file=sys.stderr,
+                    logger.warning(
+                        "Could not add column %s.%s: %s",
+                        table.name, column.name, error,
                     )
 
     def close(self):
