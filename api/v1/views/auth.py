@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Authentication views: register, login, logout, current user, and
 email verification."""
+import logging
 import os
 from flask import jsonify, abort, request, session
 from api.v1.views import app_views
@@ -26,6 +27,8 @@ from models.user import User
 REGISTER_FIELDS = {"name", "email", "password"}
 LOGIN_FIELDS = {"email", "password"}
 VERIFY_FIELDS = {"token"}
+
+logger = logging.getLogger(__name__)
 
 
 def _find_user_by_email(email):
@@ -65,6 +68,8 @@ def register():
     sent in the background.
     """
     if register_limiter.is_limited(request.remote_addr):
+        logger.warning(
+            "Registration rate limit hit for %s", request.remote_addr)
         return jsonify({
             "error": "Too many accounts created recently. Try again later.",
         }), 429
@@ -114,6 +119,7 @@ def login():
     email = data["email"].strip().lower()
     rate_key = "{}:{}".format(request.remote_addr, email)
     if is_login_rate_limited(rate_key):
+        logger.warning("Login rate limit hit for %s", rate_key)
         return jsonify({
             "error": "Too many failed login attempts. Try again later.",
         }), 429
@@ -121,6 +127,7 @@ def login():
     user = _find_user_by_email(email)
     if user is None or not user.check_password(data["password"]):
         record_login_failure(rate_key)
+        logger.warning("Failed login attempt for %s", rate_key)
         # Same message either way — don't reveal whether the email is
         # registered at all.
         return jsonify({"error": "Invalid email or password"}), 401
@@ -181,6 +188,8 @@ def resend_verification():
     if user.email_verified:
         return jsonify({"error": "Email is already verified"}), 400
     if resend_verification_limiter.is_limited(user.id):
+        logger.warning(
+            "Resend-verification rate limit hit for user %s", user.id)
         return jsonify({
             "error": "Too many verification emails sent. Try again later.",
         }), 429

@@ -24,6 +24,7 @@ visitor, so it's worth being explicit about what protects what):
     pending/rejected queues, and only for their own moderation view —
     unapproved content never reaches an anonymous or non-admin caller.
 """
+import logging
 from datetime import datetime
 from flask import jsonify, abort, request
 from api.v1.views import app_views
@@ -45,6 +46,8 @@ FORUM_BODY_MAX_LENGTH = 2000
 CREATE_FIELDS = {"body", "target_city_id"}
 MODERATE_FIELDS = {"status"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
+
+logger = logging.getLogger(__name__)
 
 
 def _user_name(user_id):
@@ -80,6 +83,7 @@ def create_forum_post():
     user = get_current_user()
     is_admin = user.role == "admin"
     if not is_admin and forum_post_limiter.is_limited(user.id):
+        logger.warning("Forum post rate limit hit for user %s", user.id)
         return jsonify({
             "error": "Too many posts submitted recently. Try again later.",
         }), 429
