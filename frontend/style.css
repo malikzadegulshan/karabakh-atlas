@@ -1037,7 +1037,8 @@ main {
 .poi-marker-label {
   white-space: nowrap;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: #1f2937;
   text-shadow:
     -1px -1px 0 rgba(255, 255, 255, 0.9),
@@ -1045,6 +1046,17 @@ main {
     -1px  1px 0 rgba(255, 255, 255, 0.9),
      1px  1px 0 rgba(255, 255, 255, 0.9),
      0    0    3px rgba(255, 255, 255, 0.9);
+}
+
+/* Institutional names ("Karabakh University Dormitory 2") are the
+   usual source of label-on-label overlap at typical marker spacing —
+   shrinking just these, via the .poi-marker-label--long class app.js
+   adds past POI_LONG_NAME_LENGTH characters, keeps short names (most
+   hotels/cafes/shops) at full readable size instead of shrinking
+   everything to accommodate the few long outliers. */
+.poi-marker-label--long {
+  font-size: 0.68rem;
+  letter-spacing: -0.02em;
 }
 
 @media (prefers-color-scheme: dark) {

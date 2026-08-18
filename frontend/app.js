@@ -197,8 +197,15 @@ const markersLayer = L.layerGroup().addTo(map);
 // would look chaotic at the region-wide view. That clutter concern goes
 // away once a category filter narrows it down to just one kind of
 // place, so a filter being active bypasses the zoom gate entirely.
-const POI_MIN_ZOOM = 14;
-const poiMarkersLayer = L.layerGroup();
+//
+// Staggered by POI_TONES' own tier (0 = civic/emergency ... 3 =
+// leisure, defined below) instead of one flat cutoff, so the map fills
+// in by importance as you zoom — civic/emergency places appear first,
+// leisure spots (the most numerous category, and the biggest source of
+// label clutter) need the deepest zoom — rather than every category
+// snapping in or out together in one visible jump.
+const POI_TIER_MIN_ZOOM = [13, 14, 15, 16];
+const poiMarkersLayers = POI_TIER_MIN_ZOOM.map(() => L.layerGroup());
 let activeCategoryFilter = null;
 
 // Which of the four grays each category's marker uses. Replaces the old
@@ -253,11 +260,12 @@ const POI_TONE_RAMP = {
 const POI_GLYPH = { light: "#ffffff", dark: "#18181b" };
 const POI_RING = { light: "#ffffff", dark: "#2c2c2e" };
 
+function poiTier(category) {
+  return POI_TONES[category] !== undefined ? POI_TONES[category] : POI_TONES.other;
+}
+
 function poiToneColor(category) {
-  const tier = POI_TONES[category] !== undefined
-    ? POI_TONES[category]
-    : POI_TONES.other;
-  return POI_TONE_RAMP[scheme()][tier];
+  return POI_TONE_RAMP[scheme()][poiTier(category)];
 }
 
 function updateMarkersVisibility(activeLayer) {
@@ -266,12 +274,16 @@ function updateMarkersVisibility(activeLayer) {
 }
 
 function updatePoiVisibility() {
-  const shouldShow = activeCategoryFilter !== null || map.getZoom() >= POI_MIN_ZOOM;
-  if (shouldShow && !map.hasLayer(poiMarkersLayer)) {
-    map.addLayer(poiMarkersLayer);
-  } else if (!shouldShow && map.hasLayer(poiMarkersLayer)) {
-    map.removeLayer(poiMarkersLayer);
-  }
+  const zoom = map.getZoom();
+  POI_TIER_MIN_ZOOM.forEach((minZoom, tier) => {
+    const layer = poiMarkersLayers[tier];
+    const shouldShow = activeCategoryFilter !== null || zoom >= minZoom;
+    if (shouldShow && !map.hasLayer(layer)) {
+      map.addLayer(layer);
+    } else if (!shouldShow && map.hasLayer(layer)) {
+      map.removeLayer(layer);
+    }
+  });
 }
 
 const timelineEl = document.getElementById("timeline");
@@ -914,9 +926,19 @@ function renderCategoryGrid() {
   });
 }
 
+// Past this many characters a name reliably starts overlapping its
+// neighbors at typical marker spacing (institutional names — "Karabakh
+// University Dormitory 2", "Khankendi City Executive Power" — are the
+// usual culprits, not hotel/cafe names). Shrinking just those instead
+// of every label keeps short names at full, easily-readable size.
+const POI_LONG_NAME_LENGTH = 20;
+
 function buildMarker(city) {
   if (isPoi(city)) {
     const name = localizedName(city);
+    const labelClass = name.length > POI_LONG_NAME_LENGTH
+      ? "poi-marker-label poi-marker-label--long"
+      : "poi-marker-label";
     // iconSize: null (like the city label below) lets the wrapper size
     // itself to its content instead of clipping the name — POI markers
     // already only render once zoomed in (or a category filter is
@@ -928,12 +950,12 @@ function buildMarker(city) {
         `<div class="poi-marker" style="background:${poiToneColor(city.category)};` +
         `border-color:${POI_RING[scheme()]}">` +
         `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>` +
-        `<span class="poi-marker-label">${escapeHtml(name)}</span>`,
+        `<span class="${labelClass}">${escapeHtml(name)}</span>`,
       iconSize: null,
       iconAnchor: [13, 13],
     });
     return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
-      .addTo(poiMarkersLayer);
+      .addTo(poiMarkersLayers[poiTier(city.category)]);
   }
   const name = localizedName(city);
   const labelIcon = L.divIcon({
@@ -951,10 +973,11 @@ function buildMarker(city) {
 // from the DOM.
 let cityMarkers = new Map();
 
-// Points of interest only render once zoomed in past POI_MIN_ZOOM (see
-// updatePoiVisibility), so jumping straight to one needs a zoom level
-// past that threshold or its marker/popup won't actually be on the map
-// yet. Regular cities keep the zoom level list clicks have always used.
+// Points of interest only render once zoomed in past their tier's own
+// threshold (see POI_TIER_MIN_ZOOM/updatePoiVisibility), so jumping
+// straight to one needs a zoom level past the deepest tier or its
+// marker/popup won't actually be on the map yet. Regular cities keep
+// the zoom level list clicks have always used.
 const POI_JUMP_ZOOM = 16;
 const CITY_JUMP_ZOOM = 12;
 
@@ -988,7 +1011,7 @@ function buildListItem(city, marker) {
 
 function renderCities(cities, { fitBounds = true } = {}) {
   markersLayer.clearLayers();
-  poiMarkersLayer.clearLayers();
+  poiMarkersLayers.forEach((layer) => layer.clearLayers());
   listEl.innerHTML = "";
   cityMarkers = new Map();
   // A re-render (search, filter, reload) implicitly clears whatever
