@@ -93,7 +93,8 @@ def create_forum_post():
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, CREATE_FIELDS)
-        require_non_empty_string(data, "body", max_length=FORUM_BODY_MAX_LENGTH)
+        require_non_empty_string(
+            data, "body", max_length=FORUM_BODY_MAX_LENGTH)
     except ValidationError as error:
         abort(400, description=error.message)
 

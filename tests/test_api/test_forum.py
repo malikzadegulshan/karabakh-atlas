@@ -49,7 +49,7 @@ class TestForumViews(unittest.TestCase):
             content_type="application/json")
 
     def _create_post(self, client=None, body="This region is beautiful.",
-                      target_city_id=None):
+                     target_city_id=None):
         client = client or self.client
         payload = {"body": body}
         if target_city_id is not None:
@@ -77,7 +77,8 @@ class TestForumViews(unittest.TestCase):
 
     def test_admin_post_is_auto_approved(self):
         """An admin's own post skips the moderation queue entirely."""
-        resp = self._create_post(client=self.admin_client, body="Admin opinion")
+        resp = self._create_post(
+            client=self.admin_client, body="Admin opinion")
         self.assertEqual(resp.status_code, 201)
         body = json.loads(resp.data)
         self.assertEqual(body["status"], "approved")
@@ -94,7 +95,8 @@ class TestForumViews(unittest.TestCase):
         limit = auth_utils.forum_post_limiter.max_attempts
         last_status = None
         for _ in range(limit + 2):
-            last_status = self._create_post(client=self.admin_client).status_code
+            last_status = self._create_post(
+                client=self.admin_client).status_code
         self.assertEqual(last_status, 201)
 
     def test_create_rejects_empty_body(self):
@@ -312,7 +314,7 @@ class TestForumViews(unittest.TestCase):
         """Deleting a city also removes any forum posts about it."""
         city_id = self._create_city()
         self._create_post(body="About a soon-deleted city",
-                           target_city_id=city_id)
+                          target_city_id=city_id)
 
         resp = self.admin_client.delete(
             "/api/v1/cities/{}".format(city_id))
