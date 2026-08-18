@@ -46,7 +46,8 @@ class City(BaseModel, Base):
     else:
         @property
         def forum_posts(self):
-            """Return ForumPost instances that target this city (FileStorage)."""
+            """Return ForumPost instances that target this city
+            (FileStorage)."""
             from models.forum_post import ForumPost
             return [p for p in models.storage.all(ForumPost).values()
                     if p.target_city_id == self.id]

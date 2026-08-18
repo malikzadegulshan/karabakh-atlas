@@ -35,7 +35,8 @@ def require_non_empty_string(data, field, max_length=MAX_NAME_LENGTH):
 
 
 def optional_string(data, field, max_length=MAX_TEXT_LENGTH):
-    """Raise ValidationError if data[field] is present but not a valid string."""
+    """Raise ValidationError if data[field] is present but not a valid
+    string."""
     if field not in data or data[field] is None:
         return
     value = data[field]
@@ -74,7 +75,8 @@ def optional_url(data, field, max_length=MAX_TEXT_LENGTH):
 
 
 def require_number_in_range(data, field, minimum, maximum):
-    """Raise ValidationError unless data[field] is a number in [minimum, maximum]."""
+    """Raise ValidationError unless data[field] is a number in
+    [minimum, maximum]."""
     value = data.get(field)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValidationError("{} must be a number".format(field))

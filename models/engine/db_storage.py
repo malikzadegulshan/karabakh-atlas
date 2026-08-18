@@ -101,7 +101,8 @@ class DBStorage:
         for table in Base.metadata.sorted_tables:
             if not inspector.has_table(table.name):
                 continue
-            existing = {col["name"] for col in inspector.get_columns(table.name)}
+            existing = {
+                col["name"] for col in inspector.get_columns(table.name)}
             for column in table.columns:
                 if column.name in existing:
                     continue

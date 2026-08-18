@@ -38,7 +38,8 @@ class TestBaseModel(unittest.TestCase):
         self.assertIsInstance(d["updated_at"], str)
 
     def test_init_from_kwargs_rebuilds_instance(self):
-        """Passing kwargs (as from to_dict) reconstructs an equivalent instance."""
+        """Passing kwargs (as from to_dict) reconstructs an equivalent
+        instance."""
         original = BaseModel()
         original.name = "test"
         d = original.to_dict()
