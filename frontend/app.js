@@ -372,13 +372,20 @@ const eventMarkersLayer = L.layerGroup();
 let lastHistoricalEvents = [];
 
 function buildEventPopupHtml(event) {
+  // <div>s, not <p>s: Leaflet's own leaflet.css sets a blanket
+  // ".leaflet-popup-content p { margin: 1.3em 0; }" that's more
+  // specific than a single class selector here (element+class beats
+  // class alone), so it would silently override event-popup-year/
+  // event-popup-description's own margins otherwise, and did before
+  // this was a <div> — the tell was way more vertical gap between
+  // lines than either stylesheet asked for.
   const parts = [
     `<h3 class="event-popup-title">${escapeHtml(event.title)}</h3>`,
-    `<p class="event-popup-year">${escapeHtml(String(event.year))}</p>`,
+    `<div class="event-popup-year">${escapeHtml(String(event.year))}</div>`,
   ];
   if (event.description) {
     parts.push(
-      `<p class="event-popup-description">${escapeHtml(event.description)}</p>`
+      `<div class="event-popup-description">${escapeHtml(event.description)}</div>`
     );
   }
   if (event.source_url) {
