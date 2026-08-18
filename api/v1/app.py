@@ -13,9 +13,12 @@ from api.v1.views import app_views
 from api.v1.auth_utils import get_current_user
 
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
-# Only region/city writes go through the account gate — /auth/* has its
-# own rules (register/login must be reachable while logged out).
-ADMIN_GATED_PREFIXES = ("/api/v1/regions", "/api/v1/cities")
+# Only region/city/historical-event writes go through the account gate —
+# /auth/* has its own rules (register/login must be reachable while
+# logged out), and /forum/* enforces login (and admin, for moderation)
+# itself via decorators instead of this prefix list.
+ADMIN_GATED_PREFIXES = (
+    "/api/v1/regions", "/api/v1/cities", "/api/v1/historical-events")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
 
@@ -142,9 +145,10 @@ def _start_request_timer():
 
 @app.before_request
 def require_admin_for_writes():
-    """Reject region/city write requests unless the session user is an
-    admin. Read-only GET requests, and every /auth/* route (which has
-    its own logged-out-friendly rules), are always allowed through.
+    """Reject region/city/historical-event write requests unless the
+    session user is an admin. Read-only GET requests, and every /auth/*
+    route (which has its own logged-out-friendly rules), are always
+    allowed through.
     """
     if request.method not in WRITE_METHODS:
         return None

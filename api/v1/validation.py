@@ -85,6 +85,17 @@ def require_number_in_range(data, field, minimum, maximum):
             "{} must be between {} and {}".format(field, minimum, maximum))
 
 
+def require_integer_in_range(data, field, minimum, maximum):
+    """Raise ValidationError unless data[field] is an integer in
+    [minimum, maximum]."""
+    value = data.get(field)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValidationError("{} must be an integer".format(field))
+    if not (minimum <= value <= maximum):
+        raise ValidationError(
+            "{} must be between {} and {}".format(field, minimum, maximum))
+
+
 def optional_i18n_dict(data, field):
     """Raise ValidationError if data[field] is present but not a
     dict mapping string language codes to string values."""

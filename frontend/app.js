@@ -355,10 +355,94 @@ yearSliderEl.addEventListener("input", () => {
   selectedYear = Number(yearSliderEl.value);
   updateYearLabel();
   applySelectedYear();
+  updateEventMarkersVisibility();
 });
 
+// Historical-timeline event markers: notable events pinned to a place
+// and a year, shown only while the Historical layer is active (same as
+// the slider itself) and only within a small window around whatever
+// year the slider's currently on — otherwise the map would either look
+// empty for most of the range or show every event at once regardless
+// of the selected year. The backend already refuses events older than
+// the Wayback imagery itself reaches back to (see EVENT_YEAR_MIN in
+// api/v1/views/historical_events.py), so every event here sits on
+// imagery from around its own year.
+const EVENT_YEAR_WINDOW = 1;
+const eventMarkersLayer = L.layerGroup();
+let lastHistoricalEvents = [];
+
+function buildEventPopupHtml(event) {
+  // <div>s, not <p>s: Leaflet's own leaflet.css sets a blanket
+  // ".leaflet-popup-content p { margin: 1.3em 0; }" that's more
+  // specific than a single class selector here (element+class beats
+  // class alone), so it would silently override event-popup-year/
+  // event-popup-description's own margins otherwise, and did before
+  // this was a <div> — the tell was way more vertical gap between
+  // lines than either stylesheet asked for.
+  const parts = [
+    `<h3 class="event-popup-title">${escapeHtml(event.title)}</h3>`,
+    `<div class="event-popup-year">${escapeHtml(String(event.year))}</div>`,
+  ];
+  if (event.description) {
+    parts.push(
+      `<div class="event-popup-description">${escapeHtml(event.description)}</div>`
+    );
+  }
+  if (event.source_url) {
+    parts.push(
+      `<a class="event-popup-source" href="${escapeHtml(event.source_url)}" ` +
+      `target="_blank" rel="noopener noreferrer">` +
+      `${escapeHtml(t("eventSourceLink"))}</a>`
+    );
+  }
+  return parts.join("");
+}
+
+function buildEventMarker(event) {
+  const icon = L.divIcon({
+    className: "event-marker-wrapper",
+    html:
+      `<div class="event-marker">` +
+      `${KBA_ICON_SVG("event", 14, POI_GLYPH[scheme()])}</div>`,
+    iconSize: null,
+    iconAnchor: [10, 20],
+  });
+  return L.marker([event.latitude, event.longitude], { icon })
+    .bindPopup(buildEventPopupHtml(event))
+    .addTo(eventMarkersLayer);
+}
+
+function updateEventMarkersVisibility() {
+  eventMarkersLayer.clearLayers();
+  lastHistoricalEvents
+    .filter((event) => Math.abs(event.year - selectedYear) <= EVENT_YEAR_WINDOW)
+    .forEach(buildEventMarker);
+}
+
+async function loadHistoricalEvents() {
+  try {
+    const res = await fetch(`${API_BASE}/historical-events`);
+    if (!res.ok) {
+      throw new Error(`API returned ${res.status}`);
+    }
+    lastHistoricalEvents = await res.json();
+    updateEventMarkersVisibility();
+  } catch (err) {
+    // Non-fatal: the timeline and imagery still work without event
+    // markers, same degradation as the weather panel failing to load.
+  }
+}
+
 function updateTimelineVisibility(activeLayer) {
-  timelineEl.hidden = activeLayer !== historicalLayer;
+  const showTimeline = activeLayer === historicalLayer;
+  timelineEl.hidden = !showTimeline;
+  if (showTimeline) {
+    if (!map.hasLayer(eventMarkersLayer)) {
+      map.addLayer(eventMarkersLayer);
+    }
+  } else if (map.hasLayer(eventMarkersLayer)) {
+    map.removeLayer(eventMarkersLayer);
+  }
 }
 
 map.on("baselayerchange", (event) => {
@@ -520,6 +604,7 @@ function applyColorScheme() {
   renderCategoryGrid();
   applyFilterAndRender({ fitBounds: false });
   renderWeatherPanel();
+  updateEventMarkersVisibility();
 }
 
 darkModeQuery.addEventListener("change", applyColorScheme);
@@ -1192,3 +1277,4 @@ async function loadCities() {
 
 setStatus(t("loading"), false);
 loadCities();
+loadHistoricalEvents();
