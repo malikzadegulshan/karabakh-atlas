@@ -22,8 +22,7 @@ python3 -m api.v1.app
 ```
 
 By default this uses a local JSON file for storage — no database setup
-needed. See [Environment variables](#environment-variables) below to run
-against PostgreSQL instead.
+needed.
 
 **Frontend** (in a second terminal):
 
