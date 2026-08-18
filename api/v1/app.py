@@ -170,6 +170,14 @@ def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Safe to set unconditionally, including for local HTTP dev — browsers
+    # only ever honor this header when it arrives over an actual HTTPS
+    # connection, so it's a no-op locally and does nothing on plain HTTP.
+    # No "preload" directive: submitting to the browser preload list is a
+    # separate, much harder to reverse decision that deserves its own call.
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         # This header is set on every response, including the JSON ones
