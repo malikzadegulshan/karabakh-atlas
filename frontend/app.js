@@ -284,6 +284,56 @@ function updatePoiVisibility() {
       map.removeLayer(layer);
     }
   });
+  updatePoiLabelCollisions();
+}
+
+// Two POIs a few meters apart on the ground can be a few *pixels*
+// apart on screen once zoomed in enough to show either — the tiered
+// zoom reveal and the long-name wrap (both above) stop the map from
+// looking crowded overall, but they don't stop two specific
+// neighboring labels from landing on top of each other. This is the
+// same technique most map products use for that: measure every
+// currently-visible label's actual screen box, and hide (not the
+// icon — just its text) whichever one loses a collision, checked in
+// tier order so a higher-priority category never disappears for a
+// lower one. Re-run whenever the visible marker set or the map's pan
+// position changes (see the call sites below).
+function updatePoiLabelCollisions() {
+  const candidates = [];
+  poiMarkersLayers.forEach((layer, tier) => {
+    if (!map.hasLayer(layer)) {
+      return;
+    }
+    layer.eachLayer((marker) => {
+      const el = marker.getElement();
+      const label = el && el.querySelector(".poi-marker-label");
+      if (label) {
+        candidates.push({ tier, label });
+      }
+    });
+  });
+  // Stable sort (every modern engine's Array#sort is): markers within
+  // the same tier keep whatever order Leaflet iterated them in, so the
+  // outcome doesn't jitter between runs for a pair that isn't moving.
+  candidates.sort((a, b) => a.tier - b.tier);
+
+  const acceptedBoxes = [];
+  candidates.forEach(({ label }) => {
+    // Un-hide before measuring — a still-hidden element reports a
+    // zeroed-out rect, which would never register as colliding with
+    // anything and defeat the whole check for it.
+    label.classList.remove("poi-marker-label--collision-hidden");
+    const box = label.getBoundingClientRect();
+    const collides = acceptedBoxes.some((other) =>
+      box.left < other.right && box.right > other.left &&
+      box.top < other.bottom && box.bottom > other.top
+    );
+    if (collides) {
+      label.classList.add("poi-marker-label--collision-hidden");
+    } else {
+      acceptedBoxes.push(box);
+    }
+  });
 }
 
 const timelineEl = document.getElementById("timeline");
@@ -316,6 +366,11 @@ map.on("baselayerchange", (event) => {
   updateTimelineVisibility(event.layer);
 });
 map.on("zoomend", updatePoiVisibility);
+// Pure panning doesn't change which zoom tier is showing (so no need
+// to re-run updatePoiVisibility), but it does change which markers
+// end up near each other on screen, which is exactly what
+// updatePoiLabelCollisions needs to re-check.
+map.on("moveend", updatePoiLabelCollisions);
 updateMarkersVisibility(streetLayer);
 updateTimelineVisibility(streetLayer);
 updatePoiVisibility();
@@ -1054,6 +1109,12 @@ function renderCities(cities, { fitBounds = true } = {}) {
     // whole class of interrupted-animation bugs.
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11, animate: false });
   }
+  // A fresh set of marker DOM elements — the previous collision pass's
+  // results don't apply to any of them. fitBounds above will also
+  // trigger this via the moveend listener when it actually moves the
+  // view, but not every render moves the map (e.g. typing in search
+  // with fitBounds: false), so this can't be left to that alone.
+  updatePoiLabelCollisions();
 }
 
 function matchesSearch(city) {

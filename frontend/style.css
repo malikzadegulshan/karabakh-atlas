@@ -1048,6 +1048,16 @@ main {
      0    0    3px rgba(255, 255, 255, 0.9);
 }
 
+/* Set by updatePoiLabelCollisions() in app.js when this label's
+   measured screen box overlaps a higher-priority one that's already
+   showing — the icon stays put and clickable either way, only the
+   competing text disappears. display: none (not visibility: hidden)
+   so .poi-marker-wrapper's flex layout collapses the gap instead of
+   leaving an empty space next to the icon. */
+.poi-marker-label--collision-hidden {
+  display: none;
+}
+
 /* Institutional names ("Karabakh University Dormitory 2") are the
    usual source of label-on-label overlap at typical marker spacing —
    past POI_LONG_NAME_LENGTH characters (app.js adds this class then),
