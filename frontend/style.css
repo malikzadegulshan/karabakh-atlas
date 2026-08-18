@@ -1050,13 +1050,20 @@ main {
 
 /* Institutional names ("Karabakh University Dormitory 2") are the
    usual source of label-on-label overlap at typical marker spacing —
-   shrinking just these, via the .poi-marker-label--long class app.js
-   adds past POI_LONG_NAME_LENGTH characters, keeps short names (most
-   hotels/cafes/shops) at full readable size instead of shrinking
-   everything to accommodate the few long outliers. */
+   past POI_LONG_NAME_LENGTH characters (app.js adds this class then),
+   the label wraps onto a second line within a fixed width instead of
+   stretching further sideways, which is what was actually eating the
+   horizontal room; the smaller font/tighter tracking alone (kept from
+   before) wasn't enough on its own since the text was still forced
+   onto one line via .poi-marker-label's white-space: nowrap. Short
+   names (most hotels/cafes/shops) are untouched, still one line at
+   full size. */
 .poi-marker-label--long {
   font-size: 0.68rem;
   letter-spacing: -0.02em;
+  white-space: normal;
+  max-width: 88px;
+  line-height: 1.15;
 }
 
 @media (prefers-color-scheme: dark) {
