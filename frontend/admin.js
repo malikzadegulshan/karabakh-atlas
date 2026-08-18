@@ -141,9 +141,34 @@ const adminRegionsListEl = document.getElementById("admin-regions-list");
 const adminForumTitleEl = document.getElementById("admin-forum-title");
 const adminForumListEl = document.getElementById("admin-forum-list");
 const adminTabDataEl = document.getElementById("admin-tab-data");
+const adminTabEventsEl = document.getElementById("admin-tab-events");
 const adminTabForumEl = document.getElementById("admin-tab-forum");
 const adminViewDataEl = document.getElementById("admin-view-data");
+const adminViewEventsEl = document.getElementById("admin-view-events");
 const adminViewForumEl = document.getElementById("admin-view-forum");
+const adminAddEventTitleEl = document.getElementById("admin-add-event-title");
+const adminEventsTitleEl = document.getElementById("admin-events-title");
+const eventFormEl = document.getElementById("event-form");
+const eventTitleInputEl = document.getElementById("event-title-input");
+const eventYearInputEl = document.getElementById("event-year-input");
+const eventLatInputEl = document.getElementById("event-lat-input");
+const eventLngInputEl = document.getElementById("event-lng-input");
+const eventPickOnMapEl = document.getElementById("event-pick-on-map");
+const eventDescriptionInputEl = document.getElementById("event-description-input");
+const eventSourceInputEl = document.getElementById("event-source-input");
+const eventFormSubmitEl = document.getElementById("event-form-submit");
+const adminEventsListEl = document.getElementById("admin-events-list");
+
+// The historical-imagery timeline only reaches back to ~2014 (see
+// WAYBACK_FALLBACK_MIN_YEAR in app.js) — kept in sync with
+// EVENT_YEAR_MIN in api/v1/views/historical_events.py, which is the
+// real enforcement point; this just gives the form's number input
+// sensible min/max instead of letting someone submit an out-of-range
+// year only to have the server reject it.
+const EVENT_YEAR_MIN = 2014;
+const eventYearMax = new Date().getFullYear();
+eventYearInputEl.min = EVENT_YEAR_MIN;
+eventYearInputEl.max = eventYearMax;
 
 function applyAdminStaticTranslations() {
   adminToggleEl.setAttribute("aria-label", t("adminToggle"));
@@ -157,19 +182,33 @@ function applyAdminStaticTranslations() {
   mapPickCancelEl.textContent = t("mapPickCancel");
   adminForumTitleEl.textContent = t("adminForumTitle");
   adminTabDataEl.textContent = t("adminRegionsTitle");
+  adminTabEventsEl.textContent = t("adminEventsTitle");
   adminTabForumEl.textContent = t("adminForumTitle");
+  adminAddEventTitleEl.textContent = t("adminAddEventTitle");
+  adminEventsTitleEl.textContent = t("adminEventsTitle");
+  eventTitleInputEl.placeholder = t("fieldTitle");
+  eventYearInputEl.placeholder = t("fieldYear");
+  eventLatInputEl.placeholder = t("fieldLatitude");
+  eventLngInputEl.placeholder = t("fieldLongitude");
+  eventPickOnMapEl.textContent = t("adminPickOnMap");
+  eventDescriptionInputEl.placeholder = t("fieldDescription");
+  eventSourceInputEl.placeholder = t("fieldSourceUrl");
+  eventFormSubmitEl.textContent = t("adminAddEventSubmit");
 }
 
-// Two tabs sharing the same modal, same pattern as the sign-in/register
+// Three tabs sharing the same modal, same pattern as the sign-in/register
 // tabs in auth.js (.active class + hidden toggling).
 function selectAdminTab(tab) {
   adminTabDataEl.classList.toggle("active", tab === "data");
+  adminTabEventsEl.classList.toggle("active", tab === "events");
   adminTabForumEl.classList.toggle("active", tab === "forum");
   adminViewDataEl.hidden = tab !== "data";
+  adminViewEventsEl.hidden = tab !== "events";
   adminViewForumEl.hidden = tab !== "forum";
 }
 
 adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
+adminTabEventsEl.addEventListener("click", () => selectAdminTab("events"));
 adminTabForumEl.addEventListener("click", () => selectAdminTab("forum"));
 
 function showAdminMessage(message, isError) {
@@ -306,8 +345,226 @@ async function refreshAdminData() {
     adminRegionsListEl.textContent = "";
     showAdminMessage(err.message, true);
   }
+  await refreshAdminEvents();
   await refreshAdminForumQueue();
 }
+
+async function refreshAdminEvents() {
+  adminEventsListEl.textContent = t("adminLoading");
+  try {
+    const events = await apiRequest("GET", "/historical-events");
+    renderAdminEvents(events);
+  } catch (err) {
+    adminEventsListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminEvents(events) {
+  adminEventsListEl.innerHTML = "";
+  if (events.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminNoEvents");
+    adminEventsListEl.appendChild(empty);
+    return;
+  }
+  events.forEach((event) => adminEventsListEl.appendChild(buildAdminEventRow(event)));
+}
+
+function buildAdminEventRow(event) {
+  const li = document.createElement("div");
+  li.className = "admin-region admin-event-row";
+  li.dataset.eventId = event.id;
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+
+  const label = document.createElement("strong");
+  label.textContent = `${event.title} (${event.year})`;
+  headerRow.appendChild(label);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.textContent = t("adminEdit");
+  editBtn.addEventListener("click", () => startEditEvent(event));
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "danger";
+  deleteBtn.textContent = t("adminDelete");
+  deleteBtn.addEventListener("click", () => deleteEvent(event));
+
+  actions.appendChild(editBtn);
+  actions.appendChild(deleteBtn);
+  headerRow.appendChild(actions);
+  li.appendChild(headerRow);
+
+  if (event.description) {
+    const desc = document.createElement("p");
+    desc.className = "admin-region-description";
+    desc.textContent = event.description;
+    li.appendChild(desc);
+  }
+
+  return li;
+}
+
+function startEditEvent(event) {
+  const row = adminEventsListEl.querySelector(
+    `.admin-event-row[data-event-id="${event.id}"]`);
+  if (!row) {
+    return;
+  }
+
+  const form = document.createElement("form");
+  form.className = "admin-form admin-edit-form";
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.value = event.title;
+  titleInput.required = true;
+  titleInput.maxLength = 200;
+
+  const yearInput = document.createElement("input");
+  yearInput.type = "number";
+  yearInput.step = "1";
+  yearInput.min = EVENT_YEAR_MIN;
+  yearInput.max = eventYearMax;
+  yearInput.value = event.year;
+  yearInput.required = true;
+
+  const latInput = document.createElement("input");
+  latInput.type = "number";
+  latInput.step = "any";
+  latInput.value = event.latitude;
+  latInput.required = true;
+
+  const lngInput = document.createElement("input");
+  lngInput.type = "number";
+  lngInput.step = "any";
+  lngInput.value = event.longitude;
+  lngInput.required = true;
+
+  const pickOnMapBtn = document.createElement("button");
+  pickOnMapBtn.type = "button";
+  pickOnMapBtn.className = "pick-on-map";
+  pickOnMapBtn.textContent = t("adminPickOnMap");
+  pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
+
+  const descInput = document.createElement("textarea");
+  descInput.rows = 2;
+  descInput.placeholder = t("fieldDescription");
+  descInput.value = event.description || "";
+
+  const sourceInput = document.createElement("input");
+  sourceInput.type = "url";
+  sourceInput.placeholder = t("fieldSourceUrl");
+  sourceInput.maxLength = 500;
+  sourceInput.value = event.source_url || "";
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "submit";
+  saveBtn.textContent = t("adminSave");
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t("adminCancel");
+  cancelBtn.addEventListener("click", refreshAdminEvents);
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  form.appendChild(titleInput);
+  form.appendChild(yearInput);
+  form.appendChild(latInput);
+  form.appendChild(lngInput);
+  form.appendChild(pickOnMapBtn);
+  form.appendChild(descInput);
+  form.appendChild(sourceInput);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", async (submitEvent) => {
+    submitEvent.preventDefault();
+    const title = titleInput.value.trim();
+    const year = parseInt(yearInput.value, 10);
+    const latitude = parseFloat(latInput.value);
+    const longitude = parseFloat(lngInput.value);
+    if (!title || Number.isNaN(year) || Number.isNaN(latitude) ||
+        Number.isNaN(longitude)) {
+      showAdminMessage(t("invalidEventFields"), true);
+      return;
+    }
+    saveBtn.disabled = true;
+    try {
+      await apiRequest("PUT", `/historical-events/${event.id}`, {
+        title, year, latitude, longitude,
+        description: descInput.value.trim() || null,
+        source_url: sourceInput.value.trim() || null,
+      });
+      showAdminMessage(t("eventUpdated")(title), false);
+      await refreshAdminEvents();
+      await loadHistoricalEvents();
+    } catch (err) {
+      showAdminMessage(err.message, true);
+      saveBtn.disabled = false;
+    }
+  });
+
+  row.replaceWith(form);
+}
+
+async function deleteEvent(event) {
+  const ok = window.confirm(t("confirmDeleteEvent")(event.title));
+  if (!ok) {
+    return;
+  }
+  try {
+    await apiRequest("DELETE", `/historical-events/${event.id}`);
+    showAdminMessage(t("eventDeleted")(event.title), false);
+    await refreshAdminEvents();
+    await loadHistoricalEvents();
+  } catch (err) {
+    showAdminMessage(err.message, true);
+  }
+}
+
+eventPickOnMapEl.addEventListener("click", () =>
+  startPickingLocation(eventLatInputEl, eventLngInputEl));
+
+eventFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const title = eventTitleInputEl.value.trim();
+  const year = parseInt(eventYearInputEl.value, 10);
+  const latitude = parseFloat(eventLatInputEl.value);
+  const longitude = parseFloat(eventLngInputEl.value);
+  if (!title || Number.isNaN(year) || Number.isNaN(latitude) ||
+      Number.isNaN(longitude)) {
+    showAdminMessage(t("invalidEventFields"), true);
+    return;
+  }
+  eventFormSubmitEl.disabled = true;
+  try {
+    await apiRequest("POST", "/historical-events", {
+      title, year, latitude, longitude,
+      description: eventDescriptionInputEl.value.trim() || null,
+      source_url: eventSourceInputEl.value.trim() || null,
+    });
+    showAdminMessage(t("eventAdded")(title), false);
+    eventFormEl.reset();
+    await refreshAdminEvents();
+    await loadHistoricalEvents();
+  } catch (err) {
+    showAdminMessage(err.message, true);
+  } finally {
+    eventFormSubmitEl.disabled = false;
+  }
+});
 
 async function refreshAdminForumQueue() {
   adminForumListEl.textContent = t("adminLoading");

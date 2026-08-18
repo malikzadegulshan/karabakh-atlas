@@ -160,6 +160,7 @@
       <div class="admin-panel-body">
         <div class="admin-tabs">
           <button type="button" id="admin-tab-data" class="admin-tab active">Regions &amp; cities</button>
+          <button type="button" id="admin-tab-events" class="admin-tab">Timeline events</button>
           <button type="button" id="admin-tab-forum" class="admin-tab">Forum moderation</button>
         </div>
 
@@ -175,6 +176,26 @@
           <section class="admin-section">
             <h3 id="admin-regions-title">Regions &amp; cities</h3>
             <div id="admin-regions-list"></div>
+          </section>
+        </div>
+
+        <div id="admin-view-events" class="admin-view" hidden>
+          <section class="admin-section">
+            <h3 id="admin-add-event-title">Add timeline event</h3>
+            <form id="event-form" class="admin-form">
+              <input type="text" id="event-title-input" required maxlength="200">
+              <input type="number" id="event-year-input" required step="1">
+              <input type="number" id="event-lat-input" step="any" required>
+              <input type="number" id="event-lng-input" step="any" required>
+              <button type="button" id="event-pick-on-map" class="pick-on-map">Pick on map</button>
+              <textarea id="event-description-input" rows="2"></textarea>
+              <input type="url" id="event-source-input" maxlength="500">
+              <button type="submit" id="event-form-submit">Add event</button>
+            </form>
+          </section>
+          <section class="admin-section">
+            <h3 id="admin-events-title">Timeline events</h3>
+            <div id="admin-events-list"></div>
           </section>
         </div>
 

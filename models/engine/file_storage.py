@@ -5,9 +5,11 @@ from models.region import Region
 from models.city import City
 from models.user import User
 from models.forum_post import ForumPost
+from models.historical_event import HistoricalEvent
 
 classes = {
     "Region": Region, "City": City, "User": User, "ForumPost": ForumPost,
+    "HistoricalEvent": HistoricalEvent,
 }
 
 

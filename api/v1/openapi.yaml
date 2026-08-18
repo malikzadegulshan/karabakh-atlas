@@ -245,6 +245,62 @@ components:
         target_city_id:
           type: string
           nullable: true
+    HistoricalEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        year:
+          type: integer
+          description: >
+            Must fall within the range the historical-imagery timeline
+            actually covers (~2014 onward) — see EVENT_YEAR_MIN in
+            api/v1/views/historical_events.py.
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        description:
+          type: string
+          nullable: true
+        source_url:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    HistoricalEventInput:
+      type: object
+      required: [title, year, latitude, longitude]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        year:
+          type: integer
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        description:
+          type: string
+          nullable: true
+        source_url:
+          type: string
+          nullable: true
     Error:
       type: object
       properties:
@@ -672,6 +728,86 @@ paths:
                 $ref: "#/components/schemas/ForumPost"
         "400":
           description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: Not found
+  /historical-events:
+    get:
+      summary: List all historical events, sorted by year
+      responses:
+        "200":
+          description: List of historical events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoricalEvent"
+    post:
+      summary: Create a historical event
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HistoricalEventInput"
+      responses:
+        "201":
+          description: Historical event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricalEvent"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+  /historical-events/{event_id}:
+    parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update a historical event
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HistoricalEventInput"
+      responses:
+        "200":
+          description: Updated historical event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricalEvent"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a historical event
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Deleted
         "401":
           description: Login required
         "403":
