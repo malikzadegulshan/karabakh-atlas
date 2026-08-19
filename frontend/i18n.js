@@ -38,6 +38,15 @@ const TRANSLATIONS = {
     accountResendVerification: "Verify email",
     accountVerificationSent: "Sent!",
     accountVerifySuccess: "Email verified — thanks!",
+    accountForgotPassword: "Forgot password?",
+    accountForgotPasswordTitle: "Reset password",
+    accountResetPasswordTitle: "Enter code",
+    accountSendResetCode: "Send reset code",
+    accountResetPasswordSubmit: "Reset password",
+    accountBackToSignIn: "Back to sign in",
+    accountOtpPlaceholder: "6-digit code",
+    accountResetCodeSent:
+      "If that email is registered, a reset code has been sent.",
     accountTermsLink: "Terms",
     accountPrivacyLink: "Privacy Policy",
     accountLegalNote: (termsLink, privacyLink) =>
@@ -172,6 +181,15 @@ const TRANSLATIONS = {
     accountResendVerification: "E-poçtu təsdiqlə",
     accountVerificationSent: "Göndərildi!",
     accountVerifySuccess: "E-poçt təsdiqləndi — təşəkkürlər!",
+    accountForgotPassword: "Şifrəni unutmusunuz?",
+    accountForgotPasswordTitle: "Şifrəni sıfırla",
+    accountResetPasswordTitle: "Kodu daxil edin",
+    accountSendResetCode: "Sıfırlama kodu göndər",
+    accountResetPasswordSubmit: "Şifrəni sıfırla",
+    accountBackToSignIn: "Daxil olmağa qayıt",
+    accountOtpPlaceholder: "6 rəqəmli kod",
+    accountResetCodeSent:
+      "Əgər bu e-poçt qeydiyyatdan keçibsə, sıfırlama kodu göndərildi.",
     accountTermsLink: "Şərtlər",
     accountPrivacyLink: "Məxfilik Siyasəti",
     accountLegalNote: (termsLink, privacyLink) =>
@@ -306,6 +324,15 @@ const TRANSLATIONS = {
     accountResendVerification: "E-postayı doğrula",
     accountVerificationSent: "Gönderildi!",
     accountVerifySuccess: "E-posta doğrulandı — teşekkürler!",
+    accountForgotPassword: "Şifreni mi unuttun?",
+    accountForgotPasswordTitle: "Şifreyi sıfırla",
+    accountResetPasswordTitle: "Kodu gir",
+    accountSendResetCode: "Sıfırlama kodu gönder",
+    accountResetPasswordSubmit: "Şifreyi sıfırla",
+    accountBackToSignIn: "Girişe dön",
+    accountOtpPlaceholder: "6 haneli kod",
+    accountResetCodeSent:
+      "Bu e-posta kayıtlıysa, bir sıfırlama kodu gönderildi.",
     accountTermsLink: "Şartlar",
     accountPrivacyLink: "Gizlilik Politikası",
     accountLegalNote: (termsLink, privacyLink) =>
@@ -438,6 +465,15 @@ const TRANSLATIONS = {
     accountResendVerification: "Подтвердить эл. почту",
     accountVerificationSent: "Отправлено!",
     accountVerifySuccess: "Эл. почта подтверждена — спасибо!",
+    accountForgotPassword: "Забыли пароль?",
+    accountForgotPasswordTitle: "Сброс пароля",
+    accountResetPasswordTitle: "Введите код",
+    accountSendResetCode: "Отправить код",
+    accountResetPasswordSubmit: "Сбросить пароль",
+    accountBackToSignIn: "Назад ко входу",
+    accountOtpPlaceholder: "6-значный код",
+    accountResetCodeSent:
+      "Если этот адрес зарегистрирован, код сброса отправлен.",
     accountTermsLink: "Условия использования",
     accountPrivacyLink: "Политику конфиденциальности",
     accountLegalNote: (termsLink, privacyLink) =>

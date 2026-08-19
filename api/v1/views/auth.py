@@ -12,6 +12,8 @@ from api.v1.auth_utils import (
     clear_login_failures,
     resend_verification_limiter,
     register_limiter,
+    password_reset_request_limiter,
+    password_reset_attempt_limiter,
 )
 from api.v1.mailer import send_email
 from api.v1.validation import (
@@ -27,6 +29,8 @@ from models.user import User
 REGISTER_FIELDS = {"name", "email", "password"}
 LOGIN_FIELDS = {"email", "password"}
 VERIFY_FIELDS = {"token"}
+FORGOT_PASSWORD_FIELDS = {"email"}
+RESET_PASSWORD_FIELDS = {"email", "otp", "password"}
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +60,18 @@ def _send_verification_email(user):
         "Confirm your email address by opening this link:\n{}\n\n"
         "This link expires in 24 hours. If you didn't create this "
         "account, you can ignore this email.".format(user.name, link),
+    )
+
+
+def _send_password_reset_email(user, otp):
+    send_email(
+        user.email,
+        "Your Karabakh Atlas password reset code",
+        "Hi {},\n\n"
+        "Your password reset code is: {}\n\n"
+        "This code expires in 15 minutes. If you didn't request this, "
+        "you can ignore this email — your password hasn't been "
+        "changed.".format(user.name, otp),
     )
 
 
@@ -196,3 +212,78 @@ def resend_verification():
     resend_verification_limiter.record(user.id)
     _send_verification_email(user)
     return jsonify({}), 200
+
+
+@app_views.route("/auth/forgot-password", methods=["POST"])
+def forgot_password():
+    """Email a time-limited OTP for resetting a forgotten password.
+
+    Always returns 200 regardless of whether the email is registered —
+    otherwise this endpoint would double as an account-enumeration
+    oracle (same reasoning as login's identical error either way).
+    """
+    if password_reset_request_limiter.is_limited(request.remote_addr):
+        logger.warning(
+            "Password-reset request rate limit hit for %s",
+            request.remote_addr)
+        return jsonify({
+            "error": "Too many requests. Try again later.",
+        }), 429
+
+    data = request.get_json(silent=True)
+    if data is None:
+        abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(data, FORGOT_PASSWORD_FIELDS)
+        require_email(data)
+    except ValidationError as error:
+        abort(400, description=error.message)
+
+    password_reset_request_limiter.record(request.remote_addr)
+    user = _find_user_by_email(data["email"])
+    if user is not None:
+        otp = user.generate_password_reset_otp()
+        user.save()
+        _send_password_reset_email(user, otp)
+    return jsonify({}), 200
+
+
+@app_views.route("/auth/reset-password", methods=["POST"])
+def reset_password():
+    """Set a new password using a valid, unexpired OTP from
+    forgot-password, then log the caller in — they've just proven
+    ownership of the account by way of the code, the same as a normal
+    login proves it by way of the old password.
+    """
+    data = request.get_json(silent=True)
+    if data is None:
+        abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(data, RESET_PASSWORD_FIELDS)
+        require_email(data)
+        require_non_empty_string(data, "otp", max_length=6)
+        require_password(data)
+    except ValidationError as error:
+        abort(400, description=error.message)
+
+    email = data["email"].strip().lower()
+    rate_key = "{}:{}".format(request.remote_addr, email)
+    if password_reset_attempt_limiter.is_limited(rate_key):
+        logger.warning(
+            "Password-reset attempt rate limit hit for %s", rate_key)
+        return jsonify({
+            "error": "Too many attempts. Try again later.",
+        }), 429
+
+    user = _find_user_by_email(email)
+    if user is None or not user.consume_password_reset_otp(data["otp"]):
+        password_reset_attempt_limiter.record(rate_key)
+        logger.warning("Failed password-reset attempt for %s", rate_key)
+        return jsonify({"error": "Invalid or expired code"}), 400
+
+    password_reset_attempt_limiter.clear(rate_key)
+    user.set_password(data["password"])
+    user.save()
+    session.clear()
+    session["user_id"] = user.id
+    return jsonify(user.public_dict()), 200

@@ -31,6 +31,8 @@ class TestAuthViews(unittest.TestCase):
         auth_utils.login_limiter._attempts.clear()
         auth_utils.resend_verification_limiter._attempts.clear()
         auth_utils.register_limiter._attempts.clear()
+        auth_utils.password_reset_request_limiter._attempts.clear()
+        auth_utils.password_reset_attempt_limiter._attempts.clear()
         patcher = patch("api.v1.views.auth.send_email", return_value=True)
         self.mock_send_email = patcher.start()
         self.addCleanup(patcher.stop)
@@ -289,6 +291,194 @@ class TestAuthViews(unittest.TestCase):
         limit = auth_utils.resend_verification_limiter.max_attempts
         for _ in range(limit + 1):
             resp = self.client.post("/api/v1/auth/resend-verification")
+            last_status = resp.status_code
+        self.assertEqual(last_status, 429)
+
+    def _otp_for(self, email):
+        for user in storage.all(User).values():
+            if user.email == email:
+                return user.password_reset_otp
+        raise AssertionError("no user found for {}".format(email))
+
+    def test_forgot_password_for_unknown_email_still_returns_200(self):
+        """An unregistered email gets the same 200 as a real one — this
+        endpoint can't be used to enumerate accounts."""
+        resp = self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": _unique_email()}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        self.mock_send_email.assert_not_called()
+
+    def test_forgot_password_sends_an_otp_email_for_known_email(self):
+        """A registered email gets a reset-code email."""
+        email, _ = self._register()
+        self.mock_send_email.reset_mock()
+        resp = self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        self.mock_send_email.assert_called_once()
+        self.assertEqual(self.mock_send_email.call_args[0][0], email)
+        self.assertIsNotNone(self._otp_for(email))
+
+    def test_forgot_password_rate_limited_after_repeated_requests(self):
+        """Repeated requests from one source eventually get rate-limited."""
+        email, _ = self._register()
+        last_status = None
+        limit = auth_utils.password_reset_request_limiter.max_attempts
+        for _ in range(limit + 1):
+            resp = self.client.post(
+                "/api/v1/auth/forgot-password",
+                data=json.dumps({"email": email}),
+                content_type="application/json")
+            last_status = resp.status_code
+        self.assertEqual(last_status, 429)
+
+    def test_reset_password_with_correct_otp_succeeds_and_logs_in(self):
+        """A valid OTP sets the new password and starts a session."""
+        email, _ = self._register()
+        self.client.post("/api/v1/auth/logout")
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        otp = self._otp_for(email)
+
+        resp = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps(
+                {"email": email, "otp": otp, "password": "newpassword123"}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("password_hash", json.loads(resp.data))
+
+        me_resp = self.client.get("/api/v1/auth/me")
+        self.assertEqual(me_resp.status_code, 200)
+
+    def test_reset_password_actually_changes_the_password(self):
+        """After a reset, the old password no longer works and the new
+        one does."""
+        email, _ = self._register()
+        self.client.post("/api/v1/auth/logout")
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        otp = self._otp_for(email)
+        self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps(
+                {"email": email, "otp": otp, "password": "newpassword123"}),
+            content_type="application/json")
+        self.client.post("/api/v1/auth/logout")
+
+        old_resp = self.client.post(
+            "/api/v1/auth/login",
+            data=json.dumps({"email": email, "password": TEST_PASSWORD}),
+            content_type="application/json")
+        self.assertEqual(old_resp.status_code, 401)
+
+        new_resp = self.client.post(
+            "/api/v1/auth/login",
+            data=json.dumps(
+                {"email": email, "password": "newpassword123"}),
+            content_type="application/json")
+        self.assertEqual(new_resp.status_code, 200)
+
+    def test_reset_password_with_wrong_otp_fails(self):
+        """An OTP that doesn't match is rejected."""
+        email, _ = self._register()
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        resp = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps({
+                "email": email, "otp": "000000",
+                "password": "newpassword123",
+            }),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_with_expired_otp_fails(self):
+        """An expired OTP is rejected even though it matches."""
+        email, _ = self._register()
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        for user in storage.all(User).values():
+            if user.email == email:
+                user.password_reset_otp_expires_at = (
+                    datetime.utcnow() - timedelta(seconds=1))
+                user.save()
+                break
+        otp = self._otp_for(email)
+        resp = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps(
+                {"email": email, "otp": otp, "password": "newpassword123"}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_otp_cannot_be_reused(self):
+        """An OTP already consumed is rejected on a second attempt."""
+        email, _ = self._register()
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        otp = self._otp_for(email)
+        first = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps(
+                {"email": email, "otp": otp, "password": "newpassword123"}),
+            content_type="application/json")
+        self.assertEqual(first.status_code, 200)
+
+        second = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps(
+                {"email": email, "otp": otp, "password": "anotherpass456"}),
+            content_type="application/json")
+        self.assertEqual(second.status_code, 400)
+
+    def test_reset_password_rejects_short_new_password(self):
+        """The new password still has to meet the minimum length."""
+        email, _ = self._register()
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        otp = self._otp_for(email)
+        resp = self.client.post(
+            "/api/v1/auth/reset-password",
+            data=json.dumps({"email": email, "otp": otp, "password": "x"}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_reset_password_rate_limited_after_repeated_attempts(self):
+        """Repeated wrong-OTP attempts against one account eventually get
+        rate-limited — the real defense against a 6-digit code's small
+        keyspace, not the code's secrecy alone."""
+        email, _ = self._register()
+        self.client.post(
+            "/api/v1/auth/forgot-password",
+            data=json.dumps({"email": email}),
+            content_type="application/json")
+        last_status = None
+        limit = auth_utils.password_reset_attempt_limiter.max_attempts
+        for _ in range(limit + 1):
+            resp = self.client.post(
+                "/api/v1/auth/reset-password",
+                data=json.dumps({
+                    "email": email, "otp": "000000",
+                    "password": "newpassword123",
+                }),
+                content_type="application/json")
             last_status = resp.status_code
         self.assertEqual(last_status, 429)
 

@@ -8,6 +8,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 VALID_ROLES = ("user", "admin")
 VERIFICATION_TOKEN_LIFETIME = timedelta(hours=24)
+# Short on purpose: a 6-digit OTP only has 1,000,000 possible values, so
+# unlike the verification token above (a 32-byte random string, safe to
+# leave valid for a day) this needs a tight window — combined with
+# password_reset_attempt_limiter in api/v1/views/auth.py, 15 minutes
+# keeps an online guessing attack infeasible within any one code's
+# lifetime.
+PASSWORD_RESET_OTP_LIFETIME = timedelta(minutes=15)
 
 
 class User(BaseModel, Base):
@@ -22,6 +29,8 @@ class User(BaseModel, Base):
     email_verified = Column(Boolean, nullable=False, default=False)
     verification_token = Column(String(64), nullable=True)
     verification_token_expires_at = Column(DateTime, nullable=True)
+    password_reset_otp = Column(String(6), nullable=True)
+    password_reset_otp_expires_at = Column(DateTime, nullable=True)
 
     def set_password(self, raw_password):
         """Hash `raw_password` with a salted, slow KDF and store the hash.
@@ -60,9 +69,36 @@ class User(BaseModel, Base):
         self.verification_token_expires_at = None
         return True
 
+    def generate_password_reset_otp(self):
+        """Create a fresh, time-limited 6-digit password-reset code and
+        return it. Overwrites any previous unused code, so requesting a
+        new one invalidates whatever was sent before."""
+        otp = "{:06d}".format(secrets.randbelow(1_000_000))
+        self.password_reset_otp = otp
+        self.password_reset_otp_expires_at = (
+            datetime.utcnow() + PASSWORD_RESET_OTP_LIFETIME)
+        return otp
+
+    def consume_password_reset_otp(self, otp):
+        """If `otp` matches this user's current, unexpired reset code,
+        clear it (so it can't be reused) and return True. Returns False
+        on any mismatch/expiry/missing-code — the caller is responsible
+        for rate-limiting attempts, since a 6-digit code is only safe
+        against online guessing with that in place."""
+        if not self.password_reset_otp or not otp:
+            return False
+        if not secrets.compare_digest(self.password_reset_otp, otp):
+            return False
+        if (self.password_reset_otp_expires_at is None
+                or datetime.utcnow() > self.password_reset_otp_expires_at):
+            return False
+        self.password_reset_otp = None
+        self.password_reset_otp_expires_at = None
+        return True
+
     def public_dict(self):
         """Same as to_dict(), but never includes the password hash or the
-        raw verification token.
+        raw verification/password-reset tokens.
 
         Use this (not to_dict()) whenever serializing a user for an API
         response. to_dict() itself must keep including every field —
@@ -72,4 +108,5 @@ class User(BaseModel, Base):
         data = self.to_dict()
         data.pop("password_hash", None)
         data.pop("verification_token", None)
+        data.pop("password_reset_otp", None)
         return data

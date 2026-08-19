@@ -617,6 +617,65 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Not logged in
+  /auth/forgot-password:
+    post:
+      summary: Email a time-limited OTP for resetting a forgotten password
+      description: >
+        Always returns 200 regardless of whether the email is
+        registered, so this can't be used to enumerate accounts. The
+        code expires in 15 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: >
+            Request accepted (an email was sent only if the address is
+            registered)
+        "400":
+          description: Validation error
+        "429":
+          description: Too many requests — try again later
+  /auth/reset-password:
+    post:
+      summary: Set a new password using a forgot-password OTP, and log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                  maxLength: 6
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+      responses:
+        "200":
+          description: Password reset; session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error, or invalid/expired code
+        "429":
+          description: Too many attempts — try again later
   /forum/posts:
     get:
       summary: List forum posts

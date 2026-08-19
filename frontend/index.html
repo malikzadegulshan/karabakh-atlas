@@ -144,6 +144,7 @@
         <input type="email" id="login-email-input" required autocomplete="username">
         <input type="password" id="login-password-input" required autocomplete="current-password">
         <button type="submit" id="login-form-submit">Sign in</button>
+        <button type="button" id="forgot-password-link" class="account-link-btn">Forgot password?</button>
       </form>
       <form id="register-form" class="admin-form" hidden>
         <input type="text" id="register-name-input" required maxlength="128" autocomplete="name">
@@ -154,6 +155,17 @@
           <span id="account-legal-note"></span>
         </label>
         <button type="submit" id="register-form-submit">Create account</button>
+      </form>
+      <form id="forgot-password-form" class="admin-form" hidden>
+        <input type="email" id="forgot-password-email-input" required autocomplete="username">
+        <button type="submit" id="forgot-password-submit">Send reset code</button>
+        <button type="button" id="forgot-password-back" class="account-link-btn">Back to sign in</button>
+      </form>
+      <form id="reset-password-form" class="admin-form" hidden>
+        <input type="text" id="reset-otp-input" required maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code">
+        <input type="password" id="reset-new-password-input" required minlength="8" autocomplete="new-password">
+        <button type="submit" id="reset-password-submit">Reset password</button>
+        <button type="button" id="reset-password-back" class="account-link-btn">Back to sign in</button>
       </form>
     </div>
   </div>
