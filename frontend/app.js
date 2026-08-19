@@ -492,15 +492,36 @@ const langToggleLabelEl = document.getElementById("lang-toggle-label");
 const langMenuEl = document.getElementById("lang-menu");
 const themeToggleEl = document.getElementById("theme-toggle");
 
+// Matches #lang-menu/#account-status's own max-height in style.css —
+// used below as a "will it fit" check, not an exact measurement (the
+// popover isn't visible yet at the point this runs, so its real height
+// can't be read directly; the category picker's own flip-up logic in
+// admin.js makes the same tradeoff for the same reason).
+const POPOVER_MAX_HEIGHT = 200;
+
 // Positions a rail popover (#lang-menu, auth.js's #account-status) to
-// the right of its toggle button, bottom-aligned — in viewport pixels,
-// since both are position: fixed rather than position: absolute
-// anchored to their .rail-widget parent. See the comment on #lang-menu
-// in style.css for why they're built this way.
+// the right of its toggle button — in viewport pixels, since both are
+// position: fixed rather than position: absolute anchored to their
+// .rail-widget parent. See the comment on #lang-menu in style.css for
+// why they're built this way.
+//
+// Opens upward (bottom-aligned to the toggle) by default, matching the
+// desktop rail's buttons sitting mid-to-low on the screen — but flips
+// to open downward instead whenever there isn't enough room above,
+// which is the normal case for the compact floating toolbar mobile
+// uses instead of the rail (see style.css's mobile block): that
+// toolbar sits close to the top of the screen, where an upward-opening
+// popover would run off the top of the viewport instead.
 function positionPopover(toggleEl, popoverEl) {
   const rect = toggleEl.getBoundingClientRect();
   popoverEl.style.left = `${rect.right + 8}px`;
-  popoverEl.style.bottom = `${window.innerHeight - rect.bottom}px`;
+  if (rect.top >= POPOVER_MAX_HEIGHT) {
+    popoverEl.style.bottom = `${window.innerHeight - rect.bottom}px`;
+    popoverEl.style.top = "auto";
+  } else {
+    popoverEl.style.top = `${rect.top}px`;
+    popoverEl.style.bottom = "auto";
+  }
 }
 
 function closeLangMenu() {
