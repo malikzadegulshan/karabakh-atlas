@@ -1646,12 +1646,18 @@ main {
      browsing the map) instead of permanently eating 48px off the left
      edge of an already-narrow screen. */
   :root {
-    /* Just tall enough for the handle, the Cities/Places/Forum tabs,
-       and the search box — the weather card and city list are one
-       scroll or one drag away instead of taking up peek space by
-       default, the same call Apple Maps itself makes (its own peek
-       state shows search, nothing else). */
-    --sheet-peek-h: 22vh;
+    /* A fixed px height, not vh like half/full below: what peek needs
+       to fit — the handle, the Cities/Places/Forum tabs, and the
+       search box — is fixed-height content that doesn't scale with
+       screen size, so a vh value was actually wrong here. It measured
+       out to ~98px on every phone width tested (the content itself is
+       the same regardless of viewport height); 120px leaves a little
+       breathing room without giving back the space this is meant to
+       save. The weather card and city list are one scroll or one drag
+       away instead of taking up peek space by default, the same call
+       Apple Maps itself makes (its own peek state shows search,
+       nothing else). */
+    --sheet-peek-h: 120px;
     --sheet-half-h: 55vh;
     --sheet-full-h: 88vh;
   }
