@@ -376,6 +376,14 @@ main {
   margin: 0 1.25rem 0.75rem;
 }
 
+/* Same [hidden]-specificity issue as #login-form/#register-form above
+   — showAccountView() in auth.js hides this row entirely outside the
+   login/register views (forgot/reset password aren't "tabs" the way
+   those two are). */
+.account-tabs[hidden] {
+  display: none;
+}
+
 .account-tab {
   flex: 1;
   padding: 0.5rem;
@@ -392,6 +400,27 @@ main {
 .account-tab.active {
   color: var(--color-text);
   background: var(--color-accent-soft);
+}
+
+/* "Forgot password?" / "Back to sign in" — reads as a plain text link
+   rather than a button, matching how these are styled everywhere else
+   this pattern shows up on the web. align-self: center (not the
+   .admin-form default of flex-start) so a short line of link text
+   doesn't stretch to the form's full width the way a real button
+   should. */
+.account-link-btn {
+  align-self: center;
+  padding: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.account-link-btn:hover {
+  text-decoration: underline;
 }
 
 .account-legal-checkbox {
@@ -1348,10 +1377,12 @@ main {
 
 /* .admin-form's own "display: flex" otherwise beats the [hidden]
    attribute's default UA rule (same specificity, author stylesheet
-   wins), so login-form/register-form wouldn't actually hide without
-   this override when their tab isn't active. */
+   wins), so these forms wouldn't actually hide without this override
+   when their view isn't the active one. */
 #login-form[hidden],
-#register-form[hidden] {
+#register-form[hidden],
+#forgot-password-form[hidden],
+#reset-password-form[hidden] {
   display: none;
 }
 

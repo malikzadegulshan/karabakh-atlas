@@ -15,12 +15,14 @@ const accountOverlayEl = document.getElementById("account-overlay");
 const accountTitleEl = document.getElementById("account-title");
 const accountCloseEl = document.getElementById("account-close");
 const accountMessageEl = document.getElementById("account-message");
+const accountTabsEl = document.querySelector(".account-tabs");
 const accountTabLoginEl = document.getElementById("account-tab-login");
 const accountTabRegisterEl = document.getElementById("account-tab-register");
 const loginFormEl = document.getElementById("login-form");
 const loginEmailInputEl = document.getElementById("login-email-input");
 const loginPasswordInputEl = document.getElementById("login-password-input");
 const loginFormSubmitEl = document.getElementById("login-form-submit");
+const forgotPasswordLinkEl = document.getElementById("forgot-password-link");
 const registerFormEl = document.getElementById("register-form");
 const registerNameInputEl = document.getElementById("register-name-input");
 const registerEmailInputEl = document.getElementById("register-email-input");
@@ -28,6 +30,23 @@ const registerPasswordInputEl = document.getElementById("register-password-input
 const registerFormSubmitEl = document.getElementById("register-form-submit");
 const accountLegalNoteEl = document.getElementById("account-legal-note");
 const adminToggleEl = document.getElementById("admin-toggle");
+const forgotPasswordFormEl = document.getElementById("forgot-password-form");
+const forgotPasswordEmailInputEl = document.getElementById("forgot-password-email-input");
+const forgotPasswordSubmitEl = document.getElementById("forgot-password-submit");
+const forgotPasswordBackEl = document.getElementById("forgot-password-back");
+const resetPasswordFormEl = document.getElementById("reset-password-form");
+const resetOtpInputEl = document.getElementById("reset-otp-input");
+const resetNewPasswordInputEl = document.getElementById("reset-new-password-input");
+const resetPasswordSubmitEl = document.getElementById("reset-password-submit");
+const resetPasswordBackEl = document.getElementById("reset-password-back");
+
+// Set by the forgot-password form's own submit handler and read by the
+// reset-password form's — the OTP the visitor types is only ever
+// checked against *this* email server-side, so the reset request needs
+// to carry the same address the code was actually sent to, not
+// whatever (if anything) happens to still be in a form field.
+let pendingResetEmail = null;
+let currentAccountView = "login";
 
 function applyAccountStaticTranslations() {
   accountSigninToggleEl.setAttribute("aria-label", t("accountSignIn"));
@@ -42,10 +61,19 @@ function applyAccountStaticTranslations() {
   registerEmailInputEl.placeholder = t("accountEmail");
   registerPasswordInputEl.placeholder = t("accountPassword");
   registerFormSubmitEl.textContent = t("accountCreateAccount");
-  accountTitleEl.textContent = accountTabLoginEl.classList.contains("active")
-    ? t("accountSignIn")
-    : t("accountCreateAccount");
+  forgotPasswordLinkEl.textContent = t("accountForgotPassword");
+  forgotPasswordEmailInputEl.placeholder = t("accountEmail");
+  forgotPasswordSubmitEl.textContent = t("accountSendResetCode");
+  forgotPasswordBackEl.textContent = t("accountBackToSignIn");
+  resetOtpInputEl.placeholder = t("accountOtpPlaceholder");
+  resetNewPasswordInputEl.placeholder = t("accountPassword");
+  resetPasswordSubmitEl.textContent = t("accountResetPasswordSubmit");
+  resetPasswordBackEl.textContent = t("accountBackToSignIn");
   accountResendEl.textContent = t("accountResendVerification");
+  // Re-derives the title for whichever view is currently showing —
+  // ACCOUNT_VIEW_TITLES is defined below, alongside showAccountView(),
+  // which is the only other thing that needs to agree on view names.
+  accountTitleEl.textContent = ACCOUNT_VIEW_TITLES[currentAccountView]();
   // The link hrefs are static, app-controlled markup (not user input),
   // built here rather than as plain translated strings so each
   // language can phrase the sentence naturally around them.
@@ -119,27 +147,34 @@ function clearAccountMessage() {
   accountMessageEl.textContent = "";
 }
 
-function showLoginTab() {
-  accountTabLoginEl.classList.add("active");
-  accountTabRegisterEl.classList.remove("active");
-  loginFormEl.hidden = false;
-  registerFormEl.hidden = true;
-  accountTitleEl.textContent = t("accountSignIn");
-  clearAccountMessage();
-}
+// Every view the account panel can show. Forgot/reset aren't part of
+// the login/register tab row (accountTabsEl) — reached from a link
+// inside the login form instead — so that row hides itself outside
+// those two views rather than trying to show either tab as "active"
+// for a flow neither of them represents.
+const ACCOUNT_VIEW_TITLES = {
+  login: () => t("accountSignIn"),
+  register: () => t("accountCreateAccount"),
+  "forgot-password": () => t("accountForgotPasswordTitle"),
+  "reset-password": () => t("accountResetPasswordTitle"),
+};
 
-function showRegisterTab() {
-  accountTabRegisterEl.classList.add("active");
-  accountTabLoginEl.classList.remove("active");
-  registerFormEl.hidden = false;
-  loginFormEl.hidden = true;
-  accountTitleEl.textContent = t("accountCreateAccount");
+function showAccountView(view) {
+  currentAccountView = view;
+  accountTabsEl.hidden = view !== "login" && view !== "register";
+  accountTabLoginEl.classList.toggle("active", view === "login");
+  accountTabRegisterEl.classList.toggle("active", view === "register");
+  loginFormEl.hidden = view !== "login";
+  registerFormEl.hidden = view !== "register";
+  forgotPasswordFormEl.hidden = view !== "forgot-password";
+  resetPasswordFormEl.hidden = view !== "reset-password";
+  accountTitleEl.textContent = ACCOUNT_VIEW_TITLES[view]();
   clearAccountMessage();
 }
 
 function openAccountPanel() {
   accountOverlayEl.hidden = false;
-  showLoginTab();
+  showAccountView("login");
   applyAccountStaticTranslations();
 }
 
@@ -147,6 +182,9 @@ function closeAccountPanel() {
   accountOverlayEl.hidden = true;
   loginFormEl.reset();
   registerFormEl.reset();
+  forgotPasswordFormEl.reset();
+  resetPasswordFormEl.reset();
+  pendingResetEmail = null;
 }
 
 accountSigninToggleEl.addEventListener("click", openAccountPanel);
@@ -161,8 +199,11 @@ document.addEventListener("keydown", (event) => {
     closeAccountPanel();
   }
 });
-accountTabLoginEl.addEventListener("click", showLoginTab);
-accountTabRegisterEl.addEventListener("click", showRegisterTab);
+accountTabLoginEl.addEventListener("click", () => showAccountView("login"));
+accountTabRegisterEl.addEventListener("click", () => showAccountView("register"));
+forgotPasswordLinkEl.addEventListener("click", () => showAccountView("forgot-password"));
+forgotPasswordBackEl.addEventListener("click", () => showAccountView("login"));
+resetPasswordBackEl.addEventListener("click", () => showAccountView("login"));
 
 async function authRequest(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -215,6 +256,45 @@ registerFormEl.addEventListener("submit", async (event) => {
     showAccountMessage(err.message, true);
   } finally {
     registerFormSubmitEl.disabled = false;
+  }
+});
+
+forgotPasswordFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  forgotPasswordSubmitEl.disabled = true;
+  const email = forgotPasswordEmailInputEl.value.trim();
+  try {
+    // Always succeeds from the caller's point of view regardless of
+    // whether the email is actually registered — see the matching
+    // comment on the backend's forgot_password() view. Advancing to
+    // the OTP-entry step either way is deliberate: anything else would
+    // leak account existence right back out through the UI.
+    await authRequest("/auth/forgot-password", { email });
+    pendingResetEmail = email;
+    showAccountView("reset-password");
+    showAccountMessage(t("accountResetCodeSent"), false);
+  } catch (err) {
+    showAccountMessage(err.message, true);
+  } finally {
+    forgotPasswordSubmitEl.disabled = false;
+  }
+});
+
+resetPasswordFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  resetPasswordSubmitEl.disabled = true;
+  try {
+    currentUser = await authRequest("/auth/reset-password", {
+      email: pendingResetEmail,
+      otp: resetOtpInputEl.value.trim(),
+      password: resetNewPasswordInputEl.value,
+    });
+    renderAccountWidget();
+    closeAccountPanel();
+  } catch (err) {
+    showAccountMessage(err.message, true);
+  } finally {
+    resetPasswordSubmitEl.disabled = false;
   }
 });
 

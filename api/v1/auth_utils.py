@@ -56,6 +56,18 @@ register_limiter = RateLimiter(max_attempts=5, window_seconds=3600)
 # generous enough for genuine back-and-forth use, tight enough that
 # scripting registrations-then-posts doesn't scale.
 forum_post_limiter = RateLimiter(max_attempts=5, window_seconds=600)
+# Keyed by IP (same reasoning as register_limiter): caps how many
+# password-reset emails a single source can trigger.
+password_reset_request_limiter = RateLimiter(
+    max_attempts=5, window_seconds=3600)
+# Keyed by "ip:email" (same convention as login's rate_key). A 6-digit
+# OTP is only 1,000,000 possible values, so this — not the code's own
+# secrecy — is what actually stops it from being guessed: 5 attempts
+# per window, and the window matches the OTP's own 15-minute lifetime
+# (see PASSWORD_RESET_OTP_LIFETIME in models/user.py), so exhausting
+# the guess budget never outlasts the code it's guessing against.
+password_reset_attempt_limiter = RateLimiter(
+    max_attempts=5, window_seconds=900)
 
 # Kept as module-level names for backward compatibility with existing
 # call sites/tests.
