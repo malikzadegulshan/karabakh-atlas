@@ -465,6 +465,7 @@ const detailEl = document.getElementById("city-detail");
 const detailViewEl = document.getElementById("detail-view");
 const detailBackEl = document.getElementById("detail-back");
 const searchBoxEl = document.getElementById("search-box");
+const searchResultsEl = document.getElementById("search-results");
 const weatherPanelEl = document.getElementById("weather-panel");
 const panelEl = document.getElementById("panel");
 const panelToggleEl = document.getElementById("panel-toggle");
@@ -731,9 +732,10 @@ function activateTab(tab) {
   sheetTabCitiesEl.classList.toggle("active", tab === "cities");
   sheetTabPlacesEl.classList.toggle("active", tab === "places");
   sheetTabForumEl.classList.toggle("active", tab === "forum");
-  panelViewCitiesEl.hidden = tab !== "cities";
-  panelViewPlacesEl.hidden = tab !== "places";
-  panelViewForumEl.hidden = tab !== "forum";
+  // Doesn't just set panelViewXEl.hidden directly — updateSearchResultsVisibility()
+  // (below) also needs a say, since an active search overrides whichever
+  // tab is nominally selected with the results dropdown instead.
+  updateSearchResultsVisibility();
   // forum.js (loaded after this file) owns the general-opinions list —
   // defensive check for the same reason applyAdminStaticTranslations()
   // gets one below: script load order guarantees it exists by the time
@@ -795,10 +797,7 @@ function closeDetailView() {
   Array.from(listEl.children).forEach((li) => li.classList.remove("active"));
   panelEl.classList.remove("panel-detail-open");
   searchBoxEl.hidden = false;
-  weatherPanelEl.hidden = false;
-  panelViewCitiesEl.hidden = activePanelTab !== "cities";
-  panelViewPlacesEl.hidden = activePanelTab !== "places";
-  panelViewForumEl.hidden = activePanelTab !== "forum";
+  updateSearchResultsVisibility();
 }
 
 detailBackEl.addEventListener("click", closeDetailView);
@@ -817,11 +816,16 @@ sheetTabForumEl.addEventListener("click", () => selectPanelTab("forum"));
 const SHEET_STATES = ["peek", "half", "full"];
 
 function sheetHeightPx(state) {
-  const vh = parseFloat(
-    getComputedStyle(document.documentElement)
-      .getPropertyValue(`--sheet-${state}-h`)
-  );
-  return (vh / 100) * window.innerHeight;
+  // --sheet-peek-h is a fixed px value (fixed-height content shouldn't
+  // scale with viewport height); half/full are vh. Handle both rather
+  // than assuming vh like this used to — that bug made peek silently
+  // read as ~120vh instead of 120px, which broke the drag clamp.
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(`--sheet-${state}-h`).trim();
+  if (raw.endsWith("vh")) {
+    return (parseFloat(raw) / 100) * window.innerHeight;
+  }
+  return parseFloat(raw);
 }
 
 function nearestSheetState(heightPx) {
@@ -1382,8 +1386,103 @@ function applyFilterAndRender(options) {
   renderCities(lastCities.filter(matchesActiveFilters), options);
 }
 
+// Search recommendations: a flat, cross-category list of everything
+// matching the query (cities and POIs alike, ignoring the Places tab's
+// own category filter — that's a separate, narrower concept), shown as
+// its own view that overrides whichever tab is nominally active. Capped
+// well below what could realistically fit on screen anyway, mainly as
+// a guard against a pathological one-character query against a very
+// large dataset.
+const SEARCH_RESULTS_MAX = 30;
+
+function matchingPlaces() {
+  if (!searchQuery) {
+    return [];
+  }
+  return lastCities.filter(matchesSearch).slice(0, SEARCH_RESULTS_MAX);
+}
+
+function buildSearchResultRow(city) {
+  const category = isPoi(city) ? city.category : "other";
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "search-result-row";
+  row.innerHTML =
+    `<span class="search-result-icon" style="background:${poiToneColor(category)}">` +
+    `${KBA_ICON_SVG(category, 16, POI_GLYPH[scheme()])}</span>` +
+    `<span class="search-result-text">` +
+    `<span class="search-result-name">${escapeHtml(localizedName(city))}</span>` +
+    `<span class="search-result-category">${escapeHtml(categoryLabel(city.category))}</span>` +
+    `</span>`;
+  row.addEventListener("click", () => {
+    // Clear and re-render *before* jumping, not after: renderCities()
+    // unconditionally closes whatever detail view is open (see its own
+    // comment above), so doing this the other way around would open
+    // this result's detail view via jumpToCity() and then immediately
+    // close it again. Re-rendering first also means cityMarkers is
+    // freshly rebuilt (it's cleared and repopulated on every render)
+    // by the time it's read just below, rather than a stale reference
+    // from before this click.
+    searchInputEl.value = "";
+    searchQuery = "";
+    applyFilterAndRender({ fitBounds: false });
+    const entry = cityMarkers.get(city.id);
+    if (entry) {
+      jumpToCity(entry.city, entry.marker);
+    }
+  });
+  return row;
+}
+
+function renderSearchResults() {
+  const matches = matchingPlaces();
+  searchResultsEl.innerHTML = "";
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "search-empty";
+    empty.textContent = t("searchNoResults");
+    searchResultsEl.appendChild(empty);
+    return;
+  }
+  matches.forEach((city) => searchResultsEl.appendChild(buildSearchResultRow(city)));
+}
+
+// The single place that decides what shows below the search box: the
+// results dropdown while there's a query, otherwise the weather card
+// plus whichever tab (Cities/Places/Forum) is active — called from
+// activateTab() and closeDetailView() as well as the search input
+// listener below, so switching tabs or backing out of a place detail
+// while still searching doesn't un-hide a tab view out from under the
+// results.
+function updateSearchResultsVisibility() {
+  const isSearching = Boolean(searchQuery) && !isPlaceSelected();
+  searchResultsEl.hidden = !isSearching;
+  if (isSearching) {
+    renderSearchResults();
+    weatherPanelEl.hidden = true;
+    panelViewCitiesEl.hidden = true;
+    panelViewPlacesEl.hidden = true;
+    panelViewForumEl.hidden = true;
+    // Same reasoning as openDetailView()'s own setPanelCollapsed(false)
+    // call: results that are actually visible matter more here than
+    // preserving a collapsed/peeking state, on both layouts — this
+    // only ever opens the panel/sheet further, never closes it.
+    setPanelCollapsed(false);
+    return;
+  }
+  if (isPlaceSelected()) {
+    return;
+  }
+  weatherPanelEl.hidden = false;
+  panelViewCitiesEl.hidden = activePanelTab !== "cities";
+  panelViewPlacesEl.hidden = activePanelTab !== "places";
+  panelViewForumEl.hidden = activePanelTab !== "forum";
+}
+
 searchInputEl.addEventListener("input", () => {
   searchQuery = searchInputEl.value.trim();
+  // applyFilterAndRender() -> renderCities() -> closeDetailView() already
+  // calls updateSearchResultsVisibility() on every render, search included.
   applyFilterAndRender();
 });
 
@@ -1392,13 +1491,18 @@ searchInputEl.addEventListener("keydown", (event) => {
     return;
   }
   event.preventDefault();
-  // Jump to the top match currently shown — same ranked order as the
-  // sidebar list (and includes POIs, which the sidebar itself doesn't
-  // list but the map still does).
-  const [topMatch] = lastCities.filter(matchesActiveFilters);
+  // Jump to the top result currently shown in the dropdown — same
+  // target a click on that same row would reach, and (like that click
+  // handler) clears the query before jumping rather than after, so the
+  // dropdown doesn't reappear from a stale query the moment the
+  // resulting detail view gets closed.
+  const [topMatch] = matchingPlaces();
   if (!topMatch) {
     return;
   }
+  searchInputEl.value = "";
+  searchQuery = "";
+  applyFilterAndRender({ fitBounds: false });
   const entry = cityMarkers.get(topMatch.id);
   if (!entry) {
     return;

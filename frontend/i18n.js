@@ -7,6 +7,7 @@ const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
     searchPlaceholder: "Search places…",
+    searchNoResults: "No matching places.",
     placesToggle: "Places",
     citiesToggle: "Cities",
     weatherLoading: "Loading weather…",
@@ -139,6 +140,7 @@ const TRANSLATIONS = {
   az: {
     title: "Qarabağ Atlası",
     searchPlaceholder: "Yer axtar…",
+    searchNoResults: "Uyğun yer tapılmadı.",
     placesToggle: "Yerlər",
     citiesToggle: "Şəhərlər",
     weatherLoading: "Hava məlumatı yüklənir…",
@@ -273,6 +275,7 @@ const TRANSLATIONS = {
   tr: {
     title: "Karabağ Atlası",
     searchPlaceholder: "Yer ara…",
+    searchNoResults: "Eşleşen yer bulunamadı.",
     placesToggle: "Yerler",
     citiesToggle: "Şehirler",
     weatherLoading: "Hava durumu yükleniyor…",
@@ -404,6 +407,7 @@ const TRANSLATIONS = {
   ru: {
     title: "Атлас Карабаха",
     searchPlaceholder: "Поиск местов…",
+    searchNoResults: "Совпадений не найдено.",
     placesToggle: "Места",
     citiesToggle: "Города",
     weatherLoading: "Загрузка погоды…",
