@@ -1646,7 +1646,12 @@ main {
      browsing the map) instead of permanently eating 48px off the left
      edge of an already-narrow screen. */
   :root {
-    --sheet-peek-h: 30vh;
+    /* Just tall enough for the handle, the Cities/Places/Forum tabs,
+       and the search box — the weather card and city list are one
+       scroll or one drag away instead of taking up peek space by
+       default, the same call Apple Maps itself makes (its own peek
+       state shows search, nothing else). */
+    --sheet-peek-h: 22vh;
     --sheet-half-h: 55vh;
     --sheet-full-h: 88vh;
   }
@@ -1719,6 +1724,16 @@ main {
 
   #panel.sheet-dragging {
     transition: none;
+  }
+
+  /* Belt-and-braces alongside the peek height itself: hides the
+     weather card outright while peeking rather than relying purely on
+     it getting clipped by the sheet's short height, which would only
+     reliably hide it on some phone screens and not others (peek is a
+     vh value; #weather-panel's own height isn't). It reappears the
+     moment the sheet opens past peek, same as it always has. */
+  #panel[data-sheet-state="peek"] #weather-panel {
+    display: none;
   }
 
   #panel[data-sheet-state="half"] {
