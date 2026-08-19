@@ -73,6 +73,16 @@ def send_email(to_addr, subject, body):
         with urllib.request.urlopen(request, timeout=10):
             pass
         return True
+    except urllib.error.HTTPError as error:
+        detail = ""
+        if error.fp is not None:
+            detail = error.fp.read().decode("utf-8", "replace")
+        logger.error(
+            "Failed to send email to %s: HTTP %s %s%s",
+            to_addr, error.code, error.reason,
+            " - {}".format(detail) if detail else "",
+        )
+        return False
     except (urllib.error.URLError, OSError) as error:
         logger.error("Failed to send email to %s: %s", to_addr, error)
         return False

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Tests for api.v1.mailer.send_email (the Resend-backed mailer)."""
+import io
 import json
 import unittest
 import urllib.error
@@ -70,6 +71,24 @@ class TestMailer(unittest.TestCase):
             mailer.RESEND_API_URL, 401, "Unauthorized", {}, None)
         result = mailer.send_email("someone@example.com", "Subject", "Body")
         self.assertFalse(result)
+
+    @patch.dict("os.environ", {"RESEND_API_KEY": "test-key-123"}, clear=True)
+    @patch("api.v1.mailer.urllib.request.urlopen")
+    @patch("api.v1.mailer.logger")
+    def test_http_error_body_is_logged(self, mock_logger, mock_urlopen):
+        """The response body (Resend's actual rejection reason) is read
+        and logged, not just the bare status line — that detail is what
+        actually explains a 403/422/etc. to whoever reads the logs."""
+        body = b'{"message": "You can only send testing emails to..."}'
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            mailer.RESEND_API_URL, 403, "Forbidden", {}, io.BytesIO(body))
+        result = mailer.send_email("someone@example.com", "Subject", "Body")
+        self.assertFalse(result)
+        logged_message = mock_logger.error.call_args[0][0]
+        logged_args = mock_logger.error.call_args[0][1:]
+        rendered = logged_message % logged_args
+        self.assertIn("403", rendered)
+        self.assertIn("You can only send testing emails to...", rendered)
 
 
 if __name__ == "__main__":
