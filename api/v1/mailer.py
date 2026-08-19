@@ -67,6 +67,11 @@ def send_email(to_addr, subject, body):
         headers={
             "Authorization": "Bearer {}".format(config["api_key"]),
             "Content-Type": "application/json",
+            # Resend's API sits behind Cloudflare, which blocks urllib's
+            # default "Python-urllib/x.y" User-Agent as a generic script
+            # signature (Cloudflare error 1010) before the request ever
+            # reaches Resend — a real, descriptive one avoids that.
+            "User-Agent": "karabakh-atlas-mailer/1.0",
         },
     )
     try:

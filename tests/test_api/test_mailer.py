@@ -34,6 +34,10 @@ class TestMailer(unittest.TestCase):
         self.assertEqual(request.full_url, mailer.RESEND_API_URL)
         self.assertEqual(
             request.get_header("Authorization"), "Bearer test-key-123")
+        # A real User-Agent avoids Cloudflare flagging urllib's default
+        # "Python-urllib/x.y" as a generic-script signature (error 1010).
+        self.assertEqual(
+            request.get_header("User-agent"), "karabakh-atlas-mailer/1.0")
         body = json.loads(request.data)
         self.assertEqual(body["to"], ["someone@example.com"])
         self.assertEqual(body["subject"], "Subject")
