@@ -527,6 +527,80 @@ main {
   display: none;
 }
 
+/* Search recommendations — a flat, cross-category results list shown
+   in place of whichever tab is active while there's a search query
+   (see updateSearchResultsVisibility() in app.js), styled the same
+   "colored circular icon + label" language as .category-grid-item
+   below and .poi-marker on the map itself, so a result reads as the
+   same kind of place regardless of where else it shows up. */
+#search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+#search-results[hidden] {
+  display: none;
+}
+
+.search-result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.4rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.search-result-row:hover {
+  background: var(--color-bg-muted);
+}
+
+.search-result-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Lets the name's own text-overflow ellipsis (below) actually kick in
+   — a flex child's default min-width is auto (its content's natural
+   width), which would keep the row growing instead of truncating. */
+.search-result-text {
+  min-width: 0;
+}
+
+.search-result-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-category {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.search-empty {
+  padding: 0.6rem 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text-faint);
+}
+
 /* Category grid — Apple Maps' "Find Nearby" pattern: a colored
    circular icon plus a label, two per row. */
 #category-grid {
@@ -1733,16 +1807,18 @@ main {
   }
 
   /* Belt-and-braces alongside the peek height itself: hides the
-     weather card and whichever tab's list (city list / category grid
-     / forum) is currently active outright while peeking, rather than
-     relying purely on the sheet's short height to clip them — that
-     would only reliably hide them on some phone screens and not
-     others (peek is a vh value; none of this content's own height
-     is). Peek ends up as just the handle, tabs, and search box, same
-     as Apple Maps' own peek state; everything else reappears the
-     moment the sheet opens past peek, same as it always has. */
+     weather card, whichever tab's list (city list / category grid /
+     forum) is currently active, and the search results dropdown
+     outright while peeking, rather than relying purely on the sheet's
+     short height to clip them. Peek ends up as just the handle, tabs,
+     and search box, same as Apple Maps' own peek state; everything
+     else reappears the moment the sheet opens past peek — typing a
+     query does that itself (see the search input listener in app.js),
+     so this mainly guards the instant before that transition finishes
+     rather than something a visitor would normally sit in. */
   #panel[data-sheet-state="peek"] #weather-panel,
-  #panel[data-sheet-state="peek"] .panel-view {
+  #panel[data-sheet-state="peek"] .panel-view,
+  #panel[data-sheet-state="peek"] #search-results {
     display: none;
   }
 
