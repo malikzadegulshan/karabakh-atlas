@@ -388,9 +388,9 @@ function buildEventPopupHtml(event) {
       `<div class="event-popup-description">${escapeHtml(event.description)}</div>`
     );
   }
-  if (event.source_url) {
+  if (event.source_url && isSafeUrl(event.source_url)) {
     parts.push(
-      `<a class="event-popup-source" href="${escapeHtml(event.source_url)}" ` +
+      `<a class="event-popup-source" href="${escapeAttr(event.source_url)}" ` +
       `target="_blank" rel="noopener noreferrer">` +
       `${escapeHtml(t("eventSourceLink"))}</a>`
     );
