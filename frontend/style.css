@@ -1727,12 +1727,16 @@ main {
   }
 
   /* Belt-and-braces alongside the peek height itself: hides the
-     weather card outright while peeking rather than relying purely on
-     it getting clipped by the sheet's short height, which would only
-     reliably hide it on some phone screens and not others (peek is a
-     vh value; #weather-panel's own height isn't). It reappears the
+     weather card and whichever tab's list (city list / category grid
+     / forum) is currently active outright while peeking, rather than
+     relying purely on the sheet's short height to clip them — that
+     would only reliably hide them on some phone screens and not
+     others (peek is a vh value; none of this content's own height
+     is). Peek ends up as just the handle, tabs, and search box, same
+     as Apple Maps' own peek state; everything else reappears the
      moment the sheet opens past peek, same as it always has. */
-  #panel[data-sheet-state="peek"] #weather-panel {
+  #panel[data-sheet-state="peek"] #weather-panel,
+  #panel[data-sheet-state="peek"] .panel-view {
     display: none;
   }
 
