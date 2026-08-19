@@ -485,6 +485,16 @@ main {
   left: 59px;
 }
 
+/* Bottom-sheet drag handle and segmented Cities/Places/Forum tabs —
+   both mobile-only (see the max-width: 700px block below for their
+   actual layout). Hidden here so they take up no space and don't need
+   an explicit override at every breakpoint above mobile; the desktop
+   layout keeps using the icon rail for tab-switching instead. */
+#panel-handle,
+#sheet-tabs {
+  display: none;
+}
+
 #search-box {
   display: flex;
   align-items: center;
@@ -1624,50 +1634,184 @@ main {
 /* Responsive: narrow (phone/small tablet) viewports */
 
 @media (max-width: 700px) {
-  /* The mobile panel overlays the map instead of pushing it, so the
-     narrow icon rail always hugs the left edge and the panel becomes
-     a full-height drawer above the map when open. */
+  /* Mobile trades the desktop's push-aside sidebar for a bottom sheet
+     that overlays the map — closer to how native map apps (Apple/
+     Google Maps) handle a small screen: the map fills the whole
+     viewport, and browsing/details live in a sheet you drag or tap to
+     resize instead of a fixed-width drawer. Cities/Places/Forum move
+     from the icon rail into a segmented control inside the sheet
+     itself (#sheet-tabs below); the rail itself shrinks from a
+     full-height column into a small floating toolbar (still holding
+     admin/account/language/theme — the stuff that isn't about
+     browsing the map) instead of permanently eating 48px off the left
+     edge of an already-narrow screen. */
+  :root {
+    --sheet-peek-h: 30vh;
+    --sheet-half-h: 55vh;
+    --sheet-full-h: 88vh;
+  }
+
+  #rail-cities,
+  #rail-places,
+  #rail-forum,
+  #panel-toggle,
+  /* Purely decorative (see its own comment in the CSS above) — worth
+     the space on a full-height desktop rail, not on a phone screen. */
+  #brand-mark,
+  .rail-spacer {
+    display: none;
+  }
+
+  #rail {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    flex-direction: row;
+    width: auto;
+    height: auto;
+    padding: 0.3rem;
+    gap: 0.3rem;
+    border-right: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    /* Above the map and the sheet, same reasoning as #panel below —
+       a floating toolbar that could get covered by its own map isn't
+       much of a toolbar. Leaflet's zoom/layers controls stay clear of
+       this regardless (both are pinned bottomright in app.js). */
+    z-index: 1100;
+  }
+
   #panel {
-    position: absolute;
-    inset: 0 auto 0 48px;
+    position: fixed;
+    /* No rail column to clear anymore — it floats over the map
+       (see #rail above) instead of reserving a permanent 48px strip,
+       so the sheet runs the full width of the screen. The floating
+       toolbar sits well above the sheet's top edge even at "full"
+       height, so there's no overlap to avoid the way there was when
+       the rail ran the full height of the screen. */
+    inset: auto 0 0 0;
+    /* The desktop rule above sets a fixed 320px width with no media
+       guard of its own — CSS cascades per property, not per rule, so
+       without this override that 320px would silently win here too
+       (same class of bug as .panel-detail-open's 380px below) and
+       leave a blank strip down the right edge instead of the sheet
+       actually running edge to edge like inset above asks for. */
+    width: auto;
+    display: flex;
+    flex-direction: column;
     /* Above Leaflet's own controls (.leaflet-top/.leaflet-bottom use
-       z-index: 1000), so the drawer fully covers the map when open. */
+       z-index: 1000), so the sheet always sits above the map. */
     z-index: 1050;
-    width: min(260px, 78vw);
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+    padding: 0;
+    border-right: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    height: var(--sheet-peek-h);
+    /* Dragging the handle (see the pointerdown/pointermove/pointerup
+       handlers on #panel-handle in app.js) sets this height directly,
+       frame by frame, with this transition disabled for that duration
+       via the .sheet-dragging class below — it only animates a
+       *tap*-triggered change: a tab switch, opening a place, or the
+       handle's own click-to-toggle. */
+    transition: height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  /* Same specificity as the desktop-only panel-detail-open rules above
-     (no media guard there), so these need to appear after them in the
-     stylesheet to win at this width — screen space is already tight on
-     mobile, so the detail view reuses the normal drawer width instead
-     of widening further. */
+  #panel.sheet-dragging {
+    transition: none;
+  }
+
+  #panel[data-sheet-state="half"] {
+    height: var(--sheet-half-h);
+  }
+
+  #panel[data-sheet-state="full"] {
+    height: var(--sheet-full-h);
+  }
+
+  #panel-handle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    background: transparent;
+    border: none;
+    cursor: grab;
+    /* Stops the browser's own pull-to-refresh/scroll gestures from
+       fighting the drag handler while dragging this handle — the
+       scrollable content below (#panel-content) deliberately keeps
+       its default touch-action so it still scrolls normally. */
+    touch-action: none;
+  }
+
+  #panel-handle::before {
+    content: "";
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border-strong);
+  }
+
+  #sheet-tabs {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.4rem;
+    padding: 0 0.9rem 0.6rem;
+  }
+
+  /* Same look as .account-tab (auth.js's sign-in/register tabs) —
+     reusing that pattern instead of inventing a second one. */
+  .sheet-tab {
+    flex: 1;
+    padding: 0.45rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-faint);
+    background: var(--color-bg-muted);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .sheet-tab.active {
+    color: #fff;
+    background: var(--color-accent);
+  }
+
+  #panel-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0.9rem 0.9rem;
+  }
+
+  /* Overrides the desktop-only #panel.panel-detail-open rule above (no
+     media guard there, width: 380px) — that selector's extra class
+     gives it higher specificity than this file's plain "#panel" rule,
+     so without this it would win here too and blow the sheet out to
+     380px wide, past the edge of most phone screens. The sheet's
+     own width already comes from #panel's inset (left/right), same as
+     every other sheet state — a selected place needs a taller sheet
+     (handled by setPanelCollapsed() in app.js), never a wider one. */
   #panel.panel-detail-open {
-    width: min(260px, 78vw);
+    width: auto;
   }
 
-  /* ...and #panel.collapsed (width, this time, not just position) has
-     to come after that panel-detail-open override in turn, for the
-     same "collapsed always wins if both classes are present" reason
-     as the base rules above — otherwise collapsing while a place
-     detail is open would win the specificity fight here but not
-     above, leaving the panel visually stuck at the drawer width. */
-  #panel.collapsed {
-    width: 0;
-    box-shadow: none;
+  /* Leaflet's own zoom/layers controls default to the map's
+     bottom-right corner, which the sheet would otherwise sit on top
+     of even at its shortest (peek) height. */
+  #map .leaflet-bottom.leaflet-right {
+    bottom: calc(var(--sheet-peek-h) + 12px);
   }
 
-  #panel.panel-detail-open ~ #panel-toggle {
-    left: calc(48px + min(260px, 78vw));
+  #timeline {
+    bottom: calc(var(--sheet-peek-h) + 16px);
+    width: min(300px, 90vw);
   }
 
-  #panel-toggle {
-    left: calc(48px + min(260px, 78vw));
-    z-index: 1060;
-  }
-
-  #panel.collapsed ~ #panel-toggle {
-    left: 48px;
+  #year-slider {
+    width: 100%;
   }
 
   #admin-overlay {
@@ -1717,14 +1861,6 @@ main {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
-  }
-
-  #timeline {
-    width: min(300px, 90vw);
-  }
-
-  #year-slider {
-    width: 100%;
   }
 }
 
