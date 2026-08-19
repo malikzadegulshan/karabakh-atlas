@@ -52,18 +52,18 @@ services:
         sync: false
       - key: KBA_ADMIN_NAME
         sync: false
-      # Sends registration verification emails via Gmail SMTP. Fill in
-      # via the dashboard, same as the admin vars above — never commit
-      # real credentials. KBA_SMTP_PASSWORD is a Gmail "App Password",
-      # not the actual account password. Left unset, verification
-      # emails just don't send (registration still works either way).
-      - key: KBA_SMTP_HOST
-        value: smtp.gmail.com
-      - key: KBA_SMTP_PORT
-        value: "587"
-      - key: KBA_SMTP_USER
+      # Sends verification/password-reset emails via the Resend API
+      # (resend.com). Fill in via the dashboard, same as the admin vars
+      # above — never commit a real key. Left unset, those emails just
+      # don't send (registration/reset still work either way — see
+      # api/v1/mailer.py). HTTP-based rather than SMTP on purpose: PaaS
+      # hosts commonly block outbound SMTP ports on free/starter tiers,
+      # which is exactly what happened when this used Gmail SMTP.
+      - key: RESEND_API_KEY
         sync: false
-      - key: KBA_SMTP_PASSWORD
+      # Optional — defaults to Resend's own "onboarding@resend.dev",
+      # which works without verifying a custom domain first.
+      - key: RESEND_FROM
         sync: false
 
   - type: web
