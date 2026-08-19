@@ -471,6 +471,10 @@ const panelToggleEl = document.getElementById("panel-toggle");
 const railCitiesEl = document.getElementById("rail-cities");
 const railPlacesEl = document.getElementById("rail-places");
 const railForumEl = document.getElementById("rail-forum");
+const panelHandleEl = document.getElementById("panel-handle");
+const sheetTabCitiesEl = document.getElementById("sheet-tab-cities");
+const sheetTabPlacesEl = document.getElementById("sheet-tab-places");
+const sheetTabForumEl = document.getElementById("sheet-tab-forum");
 const panelViewCitiesEl = document.getElementById("panel-view-cities");
 const panelViewPlacesEl = document.getElementById("panel-view-places");
 const panelViewForumEl = document.getElementById("panel-view-forum");
@@ -514,6 +518,9 @@ function applyStaticTranslations() {
   railPlacesEl.title = t("placesToggle");
   railForumEl.setAttribute("aria-label", t("forumToggle"));
   railForumEl.title = t("forumToggle");
+  sheetTabCitiesEl.textContent = t("citiesToggle");
+  sheetTabPlacesEl.textContent = t("placesToggle");
+  sheetTabForumEl.textContent = t("forumToggle");
   themeToggleEl.setAttribute("aria-label", t("themeToggle"));
   themeToggleEl.title = t("themeToggle");
   detailBackEl.setAttribute("aria-label", t("detailBack"));
@@ -637,7 +644,44 @@ renderCategoryGrid();
 
 let activePanelTab = "cities";
 
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 700px)").matches;
+}
+
+// Below 700px, #panel stops being a desktop drawer and becomes a
+// bottom sheet with three heights (see the --sheet-*-h custom
+// properties in style.css) instead of a binary collapsed/open state —
+// setSheetState() is the mobile equivalent of toggling the "collapsed"
+// class below, and isPanelCollapsed()/setPanelCollapsed() branch on
+// isMobileLayout() so every existing call site (tab switches, opening
+// a place, the toggle button) keeps working unchanged on both layouts.
+function setSheetState(state) {
+  panelEl.dataset.sheetState = state;
+  // Clears any inline height a drag left behind so the CSS rule for
+  // this state (or the base rule, for "peek") takes over — see the
+  // drag handler below.
+  panelEl.style.height = "";
+}
+
+function isPanelCollapsed() {
+  if (isMobileLayout()) {
+    return (panelEl.dataset.sheetState || "peek") === "peek";
+  }
+  return panelEl.classList.contains("collapsed");
+}
+
 function setPanelCollapsed(collapsed) {
+  if (isMobileLayout()) {
+    if (collapsed) {
+      setSheetState("peek");
+    } else if (isPanelCollapsed()) {
+      // Only bumps up from peek to half — if the sheet's already at
+      // half or full (the visitor dragged it there themselves),
+      // switching tabs shouldn't shrink it back down.
+      setSheetState("half");
+    }
+    return;
+  }
   panelEl.classList.toggle("collapsed", collapsed);
   panelToggleEl.textContent = collapsed ? "›" : "‹";
   panelToggleEl.setAttribute(
@@ -663,6 +707,9 @@ function activateTab(tab) {
   railCitiesEl.classList.toggle("active", tab === "cities");
   railPlacesEl.classList.toggle("active", tab === "places");
   railForumEl.classList.toggle("active", tab === "forum");
+  sheetTabCitiesEl.classList.toggle("active", tab === "cities");
+  sheetTabPlacesEl.classList.toggle("active", tab === "places");
+  sheetTabForumEl.classList.toggle("active", tab === "forum");
   panelViewCitiesEl.hidden = tab !== "cities";
   panelViewPlacesEl.hidden = tab !== "places";
   panelViewForumEl.hidden = tab !== "forum";
@@ -678,20 +725,21 @@ function activateTab(tab) {
   setPanelCollapsed(false);
 }
 
-// Rail buttons double as tab switches (Cities/Places/Forum) and, if you
-// click the already-active tab again, a close gesture — same
-// toggle-to-close behavior the old Cities button had. Clicking any rail
-// tab while a place detail is open is a "go back, then switch" gesture
-// instead: closeDetailView() restores the panel first, so the requested
-// tab has something to show rather than staying hidden behind the
-// now-closed detail view.
+// Rail buttons (desktop) and sheet tabs (mobile — see #sheet-tabs in
+// index.html) both call this for the same Cities/Places/Forum
+// switching. Clicking the already-active tab again is a close gesture
+// — same toggle-to-close behavior the old Cities button had. Clicking
+// any tab while a place detail is open is a "go back, then switch"
+// gesture instead: closeDetailView() restores the panel first, so the
+// requested tab has something to show rather than staying hidden
+// behind the now-closed detail view.
 function selectPanelTab(tab) {
   if (isPlaceSelected()) {
     closeDetailView();
     activateTab(tab);
     return;
   }
-  if (activePanelTab === tab && !panelEl.classList.contains("collapsed")) {
+  if (activePanelTab === tab && !isPanelCollapsed()) {
     setPanelCollapsed(true);
     return;
   }
@@ -699,7 +747,7 @@ function selectPanelTab(tab) {
 }
 
 panelToggleEl.addEventListener("click", () => {
-  setPanelCollapsed(!panelEl.classList.contains("collapsed"));
+  setPanelCollapsed(!isPanelCollapsed());
 });
 
 // Replaces search/weather/the active tab with the place-detail view —
@@ -714,7 +762,7 @@ function openDetailView() {
   detailViewEl.hidden = false;
   panelEl.classList.add("panel-detail-open");
   // A marker click should always reveal its detail card, even if the
-  // sidebar was manually collapsed at the time.
+  // sidebar was manually collapsed (or, on mobile, peeking) at the time.
   setPanelCollapsed(false);
 }
 
@@ -737,6 +785,89 @@ detailBackEl.addEventListener("click", closeDetailView);
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
 railForumEl.addEventListener("click", () => selectPanelTab("forum"));
+sheetTabCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
+sheetTabPlacesEl.addEventListener("click", () => selectPanelTab("places"));
+sheetTabForumEl.addEventListener("click", () => selectPanelTab("forum"));
+
+// Drag-to-resize for the mobile bottom sheet. Height is read from the
+// same --sheet-*-h custom properties style.css defines (rather than a
+// second hardcoded copy of the numbers here) so the two files can't
+// silently drift apart.
+const SHEET_STATES = ["peek", "half", "full"];
+
+function sheetHeightPx(state) {
+  const vh = parseFloat(
+    getComputedStyle(document.documentElement)
+      .getPropertyValue(`--sheet-${state}-h`)
+  );
+  return (vh / 100) * window.innerHeight;
+}
+
+function nearestSheetState(heightPx) {
+  return SHEET_STATES.reduce((closest, state) =>
+    Math.abs(sheetHeightPx(state) - heightPx) <
+      Math.abs(sheetHeightPx(closest) - heightPx)
+      ? state
+      : closest
+  );
+}
+
+let sheetDrag = null;
+
+function onSheetPointerMove(event) {
+  if (!sheetDrag) {
+    return;
+  }
+  const delta = sheetDrag.startY - event.clientY; // dragging up = taller
+  if (!sheetDrag.moved && Math.abs(delta) > 4) {
+    sheetDrag.moved = true;
+  }
+  // Below the movement threshold, leave the height alone — this might
+  // still turn out to be a plain tap, which the click listener below
+  // handles instead (a real drag and a tap are deliberately kept as
+  // two separate code paths so a tap can't also nudge the height).
+  if (!sheetDrag.moved) {
+    return;
+  }
+  const newHeight = Math.min(
+    sheetHeightPx("full"),
+    Math.max(sheetHeightPx("peek"), sheetDrag.startHeight + delta)
+  );
+  panelEl.style.height = `${newHeight}px`;
+}
+
+function onSheetPointerUp() {
+  if (!sheetDrag) {
+    return;
+  }
+  document.removeEventListener("pointermove", onSheetPointerMove);
+  document.removeEventListener("pointerup", onSheetPointerUp);
+  panelEl.classList.remove("sheet-dragging");
+  if (sheetDrag.moved) {
+    setSheetState(nearestSheetState(panelEl.getBoundingClientRect().height));
+  }
+  sheetDrag = null;
+}
+
+panelHandleEl.addEventListener("pointerdown", (event) => {
+  sheetDrag = {
+    startY: event.clientY,
+    startHeight: panelEl.getBoundingClientRect().height,
+    moved: false,
+  };
+  panelEl.classList.add("sheet-dragging");
+  document.addEventListener("pointermove", onSheetPointerMove);
+  document.addEventListener("pointerup", onSheetPointerUp);
+});
+
+// A genuine tap (not a drag) toggles between peek and half. This is a
+// plain "click" listener, not part of the pointer handlers above, so
+// it also covers keyboard activation (Enter/Space on this <button>)
+// for free — the drag handlers intentionally do nothing when no real
+// movement happened, so this is the only place a tap changes anything.
+panelHandleEl.addEventListener("click", () => {
+  setSheetState(isPanelCollapsed() ? "half" : "peek");
+});
 
 function escapeHtml(str) {
   const div = document.createElement("div");
