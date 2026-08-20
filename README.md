@@ -9,7 +9,7 @@ Leaflet-based visual interface backed by a REST API.
 - **Interactive map** — regions, cities, and 20+ categories of points
   of interest (cafes, museums, landmarks, roads, ...), each with its
   own icon, rendered at the zoom level where they're actually useful.
-- **Historical imagery timeline** — a year slider (2000–present)
+- **Historical imagery timeline** — a year slider (2014–present)
   swaps in NASA GIBS MODIS satellite imagery for that year, alongside
   historical events pinned to the map.
 - **Place details** — name, description, and photo (routed through a
