@@ -116,11 +116,20 @@ render.yaml         Render Blueprint — backend, frontend, and a free
 ```bash
 pip install -r requirements.txt
 export KBA_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+export KBA_API_HOST=127.0.0.1  # see note below
 python3 -m api.v1.app  # backend on :5000 (KBA_TYPE_STORAGE=file by
                         # default — no database needed)
 
-cd frontend && python3 -m http.server 8000  # frontend on :8000
+cd frontend && python3 -m http.server 8000 --bind 127.0.0.1  # frontend on :8000
 ```
+
+> **`KBA_API_HOST` defaults to `0.0.0.0`** (every network interface,
+> not just this machine) — that's required for production, where
+> Render's container networking needs it, but for local dev it means
+> the bare Flask dev server (not a hardened production server) is
+> reachable from your network, not just your own machine, unless a
+> firewall is already blocking it. Setting it to `127.0.0.1` as above
+> restricts it to localhost, which is all local dev actually needs.
 
 `.env.example` documents every other variable this app reads
 (`os.environ.get(...)` throughout — there's no `.env`-loading library
@@ -136,10 +145,17 @@ python3 -m pycodestyle api/ models/ tests/    # lint
 KBA_TYPE_STORAGE=file python3 -m unittest discover -s tests
 
 # Against Postgres too — KBA_DB_* vars as in .env.example (or
-# DATABASE_URL); KBA_ENV=test drops and recreates tables each run.
+# DATABASE_URL).
 KBA_TYPE_STORAGE=db KBA_ENV=test KBA_DB_USER=... KBA_DB_PWD=... \
   KBA_DB_HOST=localhost KBA_DB_NAME=... python3 -m unittest discover -s tests
 ```
+
+> **`KBA_ENV=test` drops every table this app owns** on the target
+> database before each run (`Base.metadata.drop_all(...)` in
+> `models/engine/db_storage.py`) — no confirmation prompt. Only ever
+> point it at a disposable local/CI database, never at the same
+> `DATABASE_URL`/`KBA_DB_*` values as a real deployment; there is no
+> backup taken first.
 
 CI (`.github/workflows/tests.yml`) runs the full suite against a real
 Postgres service on every push, so both storage engines stay honest.
