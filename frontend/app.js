@@ -925,6 +925,28 @@ function isSafeUrl(value) {
   }
 }
 
+// city.image_url is just a link an admin pasted in — we never store or
+// touch the actual image bytes, so "compress it" has to happen at
+// display time. Routes it through weserv.nl's free resize/re-encode
+// proxy (https://images.weserv.nl/), shrunk to the size the hero block
+// actually shows (see DETAIL_HERO_* below), instead of the browser
+// downloading whatever multi-MB original the admin linked to.
+const IMAGE_PROXY_URL = "https://images.weserv.nl/";
+const DETAIL_HERO_WIDTH = 960;
+const DETAIL_HERO_HEIGHT = 540;
+
+function compressedImageUrl(url, width, height) {
+  const params = new URLSearchParams({
+    url,
+    w: String(width),
+    h: String(height),
+    fit: "cover",
+    q: "80",
+    output: "webp",
+  });
+  return `${IMAGE_PROXY_URL}?${params.toString()}`;
+}
+
 function setStatus(message, isError) {
   statusEl.textContent = message;
   statusEl.hidden = !message;
@@ -953,9 +975,12 @@ function buildDetailCardHtml(city) {
   const parts = [];
 
   if (city.image_url && isSafeUrl(city.image_url)) {
+    const heroSrc = compressedImageUrl(
+      city.image_url, DETAIL_HERO_WIDTH, DETAIL_HERO_HEIGHT);
     parts.push(
-      `<div class="detail-hero"><img src="${escapeAttr(city.image_url)}" ` +
-        `alt="${escapeAttr(name)}"></div>`
+      `<div class="detail-hero"><img src="${escapeAttr(heroSrc)}" ` +
+        `data-original-src="${escapeAttr(city.image_url)}" ` +
+        `alt="${escapeAttr(name)}" loading="lazy"></div>`
     );
   }
 
@@ -1112,15 +1137,28 @@ async function loadWeatherFor(city) {
 function showCityDetail(city) {
   openDetailView();
   detailEl.innerHTML = buildDetailCardHtml(city);
-  // A city's photo is an externally-hosted URL an admin typed in, not
-  // something this app controls the availability of — if it 404s or
-  // times out, hide the hero block entirely rather than leave the
-  // browser's bare broken-image glyph sitting in it.
+  // A city's photo is served through the resize/compress proxy (see
+  // compressedImageUrl()) — if that fails (proxy hiccup, source image
+  // it can't fetch), fall back once to the original direct URL before
+  // giving up and hiding the hero block entirely, rather than leaving
+  // the browser's bare broken-image glyph sitting in it.
   const heroImg = detailEl.querySelector(".detail-hero img");
   if (heroImg) {
     heroImg.addEventListener(
       "error",
-      () => { heroImg.closest(".detail-hero").hidden = true; },
+      () => {
+        const original = heroImg.dataset.originalSrc;
+        if (original && heroImg.src !== original) {
+          heroImg.addEventListener(
+            "error",
+            () => { heroImg.closest(".detail-hero").hidden = true; },
+            { once: true }
+          );
+          heroImg.src = original;
+        } else {
+          heroImg.closest(".detail-hero").hidden = true;
+        }
+      },
       { once: true }
     );
   }
