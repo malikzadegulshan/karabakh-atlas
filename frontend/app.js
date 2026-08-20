@@ -486,6 +486,7 @@ const weatherTempEl = document.getElementById("weather-temp");
 const weatherDescEl = document.getElementById("weather-desc");
 const weatherMetaEl = document.getElementById("weather-meta");
 const titleEl = document.getElementById("app-title");
+const skipLinkEl = document.getElementById("skip-link");
 const searchInputEl = document.getElementById("search-input");
 const langSwitcherEl = document.getElementById("lang-switcher");
 const langToggleEl = document.getElementById("lang-toggle");
@@ -533,7 +534,8 @@ function closeLangMenu() {
 function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
-  searchInputEl.placeholder = t("searchPlaceholder");
+  skipLinkEl.textContent = t("skipToMap");
+  setPlaceholderLabel(searchInputEl, t("searchPlaceholder"));
   railCitiesEl.setAttribute("aria-label", t("citiesToggle"));
   railCitiesEl.title = t("citiesToggle");
   railPlacesEl.setAttribute("aria-label", t("placesToggle"));
@@ -617,6 +619,67 @@ function hydrateStaticIcons() {
   document.querySelectorAll("[data-icon]").forEach((el) => {
     el.innerHTML = KBA_ICON_SVG(el.dataset.icon, 19);
   });
+}
+
+// Sets both the placeholder and an aria-label from the same text —
+// used everywhere a compact form (no visible <label> element) relies
+// on placeholder text alone, which disappears the moment a screen
+// reader user has actually typed something into the field. Shared by
+// app.js/auth.js/admin.js/forum.js.
+function setPlaceholderLabel(el, text) {
+  el.placeholder = text;
+  el.setAttribute("aria-label", text);
+}
+
+// Shared focus management for the account/admin/stats modals (each is
+// a role="dialog" overlay — see index.html): moves focus into the
+// dialog on open, restores it to whatever triggered the dialog on
+// close, and keeps Tab/Shift+Tab cycling within the dialog instead of
+// escaping to the page underneath. One keyboard user, one dialog open
+// at a time in this app, so a single remembered element is enough —
+// no stack needed.
+let modalReturnFocusEl = null;
+
+function focusableElements(container) {
+  return Array.from(container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), ' +
+    'select:not([disabled]), textarea:not([disabled]), ' +
+    '[tabindex]:not([tabindex="-1"])'
+  )).filter((el) => el.offsetParent !== null);
+}
+
+function openModalFocus(panelEl) {
+  modalReturnFocusEl = document.activeElement;
+  const focusables = focusableElements(panelEl);
+  (focusables[0] || panelEl).focus();
+}
+
+function closeModalFocus() {
+  if (modalReturnFocusEl && typeof modalReturnFocusEl.focus === "function") {
+    modalReturnFocusEl.focus();
+  }
+  modalReturnFocusEl = null;
+}
+
+// Call from a dialog's own keydown listener, alongside its existing
+// Escape handling, whenever the dialog is currently open.
+function trapTabKey(event, panelEl) {
+  if (event.key !== "Tab") {
+    return;
+  }
+  const focusables = focusableElements(panelEl);
+  if (focusables.length === 0) {
+    return;
+  }
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 // Everything that has to change when the system flips between light and
@@ -894,6 +957,25 @@ panelHandleEl.addEventListener("pointerdown", (event) => {
 // movement happened, so this is the only place a tap changes anything.
 panelHandleEl.addEventListener("click", () => {
   setSheetState(isPanelCollapsed() ? "half" : "peek");
+});
+
+// The click handler above only ever reaches two of the three states
+// (peek/half) — a plain tap toggling all the way to "full" would be a
+// strange click gesture. A keyboard user has no drag gesture at all
+// though, so Up/Down here is the only way to reach "full" without a
+// pointer: steps through SHEET_STATES one at a time, same states a
+// drag can land on.
+panelHandleEl.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+    return;
+  }
+  event.preventDefault();
+  const current = panelEl.dataset.sheetState || "peek";
+  const index = SHEET_STATES.indexOf(current);
+  const nextIndex = event.key === "ArrowUp"
+    ? Math.min(index + 1, SHEET_STATES.length - 1)
+    : Math.max(index - 1, 0);
+  setSheetState(SHEET_STATES[nextIndex]);
 });
 
 function escapeHtml(str) {

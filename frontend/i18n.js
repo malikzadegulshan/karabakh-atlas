@@ -6,6 +6,7 @@
 const TRANSLATIONS = {
   en: {
     title: "Karabakh Atlas",
+    skipToMap: "Skip to map",
     searchPlaceholder: "Search places…",
     searchNoResults: "No matching places.",
     placesToggle: "Places",
@@ -163,6 +164,7 @@ const TRANSLATIONS = {
   },
   az: {
     title: "Qarabağ Atlası",
+    skipToMap: "Xəritəyə keç",
     searchPlaceholder: "Yer axtar…",
     searchNoResults: "Uyğun yer tapılmadı.",
     placesToggle: "Yerlər",
@@ -322,6 +324,7 @@ const TRANSLATIONS = {
   },
   tr: {
     title: "Karabağ Atlası",
+    skipToMap: "Haritaya geç",
     searchPlaceholder: "Yer ara…",
     searchNoResults: "Eşleşen yer bulunamadı.",
     placesToggle: "Yerler",
@@ -478,6 +481,7 @@ const TRANSLATIONS = {
   },
   ru: {
     title: "Атлас Карабаха",
+    skipToMap: "Перейти к карте",
     searchPlaceholder: "Поиск местов…",
     searchNoResults: "Совпадений не найдено.",
     placesToggle: "Места",

@@ -20,7 +20,7 @@ const forumPendingNoticeEl = document.getElementById("forum-pending-notice");
 const forumListEl = document.getElementById("forum-list");
 
 function applyForumStaticTranslations() {
-  forumBodyInputEl.placeholder = t("forumComposerPlaceholder");
+  setPlaceholderLabel(forumBodyInputEl, t("forumComposerPlaceholder"));
   forumSubmitEl.textContent = t("forumSubmit");
   forumSigninPromptEl.textContent = t("forumSignInPrompt");
 }
@@ -166,7 +166,7 @@ function buildCityForumComposer(cityId, onApprovedPost) {
   const textarea = document.createElement("textarea");
   textarea.rows = 2;
   textarea.maxLength = 2000;
-  textarea.placeholder = t("forumComposerPlaceholder");
+  setPlaceholderLabel(textarea, t("forumComposerPlaceholder"));
 
   const submit = document.createElement("button");
   submit.type = "submit";

@@ -36,6 +36,7 @@
   <script src="theme-init.js"></script>
 </head>
 <body>
+  <a href="#map" id="skip-link" class="skip-link">Skip to map</a>
   <h1 id="app-title" class="sr-only">Karabakh Atlas</h1>
   <main>
     <nav id="rail">
@@ -83,7 +84,7 @@
       </div>
       <div id="panel-content">
         <div id="search-box">
-          <input type="text" id="search-input" placeholder="Search places…" autocomplete="off">
+          <input type="text" id="search-input" placeholder="Search places…" aria-label="Search places…" autocomplete="off">
         </div>
 
         <div id="weather-panel">
@@ -99,7 +100,7 @@
         <div id="search-results" hidden></div>
 
         <div id="panel-view-cities" class="panel-view">
-          <p id="status">Loading…</p>
+          <p id="status" role="status" aria-live="polite">Loading…</p>
           <ul id="city-list"></ul>
         </div>
 
@@ -114,7 +115,7 @@
               <button type="submit" id="forum-submit">Post</button>
             </form>
             <button type="button" id="forum-signin-prompt" class="forum-signin-btn" hidden>Sign in to share your opinion</button>
-            <p id="forum-pending-notice" hidden></p>
+            <p id="forum-pending-notice" role="status" aria-live="polite" hidden></p>
             <ul id="forum-list"></ul>
           </div>
         </div>
@@ -128,7 +129,7 @@
     </aside>
     <button id="panel-toggle" aria-label="Close city list">‹</button>
 
-    <div id="map"></div>
+    <div id="map" tabindex="-1"></div>
 
     <div id="map-pick-banner" hidden>
       <span>Click anywhere on the map to set the location</span>
@@ -146,7 +147,7 @@
         <h2 id="account-title">Sign in</h2>
         <button type="button" id="account-close" aria-label="Close">×</button>
       </div>
-      <div id="account-message" class="admin-message" hidden></div>
+      <div id="account-message" class="admin-message" role="alert" aria-live="assertive" hidden></div>
       <div class="account-tabs">
         <button type="button" id="account-tab-login" class="account-tab active">Sign in</button>
         <button type="button" id="account-tab-register" class="account-tab">Create account</button>
@@ -187,7 +188,7 @@
         <h2 id="stats-title">About this Atlas</h2>
         <button type="button" id="stats-close" aria-label="Close">×</button>
       </div>
-      <p id="stats-loading">Loading…</p>
+      <p id="stats-loading" role="status" aria-live="polite">Loading…</p>
       <div id="stats-grid" hidden>
         <div class="stat-tile">
           <span class="stat-value" id="stat-regions">0</span>
@@ -223,7 +224,7 @@
         <h2 id="admin-title">Manage Data</h2>
         <button type="button" id="admin-close" aria-label="Close">×</button>
       </div>
-      <div id="admin-message" class="admin-message" hidden></div>
+      <div id="admin-message" class="admin-message" role="alert" aria-live="assertive" hidden></div>
       <div class="admin-panel-body">
         <div class="admin-tabs">
           <button type="button" id="admin-tab-data" class="admin-tab active">Regions &amp; cities</button>

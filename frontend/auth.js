@@ -12,6 +12,7 @@ const accountNameEl = document.getElementById("account-name");
 const accountResendEl = document.getElementById("account-resend-verification");
 const accountLogoutEl = document.getElementById("account-logout");
 const accountOverlayEl = document.getElementById("account-overlay");
+const accountPanelEl = document.getElementById("account-panel");
 const accountTitleEl = document.getElementById("account-title");
 const accountCloseEl = document.getElementById("account-close");
 const accountMessageEl = document.getElementById("account-message");
@@ -54,19 +55,19 @@ function applyAccountStaticTranslations() {
   accountLogoutEl.textContent = t("accountSignOut");
   accountTabLoginEl.textContent = t("accountSignIn");
   accountTabRegisterEl.textContent = t("accountCreateAccount");
-  loginEmailInputEl.placeholder = t("accountEmail");
-  loginPasswordInputEl.placeholder = t("accountPassword");
+  setPlaceholderLabel(loginEmailInputEl, t("accountEmail"));
+  setPlaceholderLabel(loginPasswordInputEl, t("accountPassword"));
   loginFormSubmitEl.textContent = t("accountSignIn");
-  registerNameInputEl.placeholder = t("fieldName");
-  registerEmailInputEl.placeholder = t("accountEmail");
-  registerPasswordInputEl.placeholder = t("accountPassword");
+  setPlaceholderLabel(registerNameInputEl, t("fieldName"));
+  setPlaceholderLabel(registerEmailInputEl, t("accountEmail"));
+  setPlaceholderLabel(registerPasswordInputEl, t("accountPassword"));
   registerFormSubmitEl.textContent = t("accountCreateAccount");
   forgotPasswordLinkEl.textContent = t("accountForgotPassword");
-  forgotPasswordEmailInputEl.placeholder = t("accountEmail");
+  setPlaceholderLabel(forgotPasswordEmailInputEl, t("accountEmail"));
   forgotPasswordSubmitEl.textContent = t("accountSendResetCode");
   forgotPasswordBackEl.textContent = t("accountBackToSignIn");
-  resetOtpInputEl.placeholder = t("accountOtpPlaceholder");
-  resetNewPasswordInputEl.placeholder = t("accountPassword");
+  setPlaceholderLabel(resetOtpInputEl, t("accountOtpPlaceholder"));
+  setPlaceholderLabel(resetNewPasswordInputEl, t("accountPassword"));
   resetPasswordSubmitEl.textContent = t("accountResetPasswordSubmit");
   resetPasswordBackEl.textContent = t("accountBackToSignIn");
   accountResendEl.textContent = t("accountResendVerification");
@@ -183,6 +184,7 @@ function openAccountPanel() {
   accountOverlayEl.hidden = false;
   showAccountView("login");
   applyAccountStaticTranslations();
+  openModalFocus(accountPanelEl);
 }
 
 function closeAccountPanel() {
@@ -192,6 +194,7 @@ function closeAccountPanel() {
   forgotPasswordFormEl.reset();
   resetPasswordFormEl.reset();
   pendingResetEmail = null;
+  closeModalFocus();
 }
 
 accountSigninToggleEl.addEventListener("click", openAccountPanel);
@@ -202,8 +205,13 @@ accountOverlayEl.addEventListener("click", (event) => {
   }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !accountOverlayEl.hidden) {
+  if (accountOverlayEl.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
     closeAccountPanel();
+  } else {
+    trapTabKey(event, accountPanelEl);
   }
 });
 accountTabLoginEl.addEventListener("click", () => showAccountView("login"));

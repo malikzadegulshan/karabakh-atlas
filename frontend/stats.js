@@ -6,6 +6,7 @@
 
 const statsToggleEl = document.getElementById("stats-toggle");
 const statsOverlayEl = document.getElementById("stats-overlay");
+const statsPanelEl = document.getElementById("stats-panel");
 const statsCloseEl = document.getElementById("stats-close");
 const statsTitleEl = document.getElementById("stats-title");
 const statsLoadingEl = document.getElementById("stats-loading");
@@ -107,11 +108,13 @@ async function loadStats() {
 function openStatsPanel() {
   applyStatsStaticTranslations();
   statsOverlayEl.hidden = false;
+  openModalFocus(statsPanelEl);
   loadStats();
 }
 
 function closeStatsPanel() {
   statsOverlayEl.hidden = true;
+  closeModalFocus();
 }
 
 statsToggleEl.addEventListener("click", openStatsPanel);
@@ -122,7 +125,12 @@ statsOverlayEl.addEventListener("click", (event) => {
   }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !statsOverlayEl.hidden) {
+  if (statsOverlayEl.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
     closeStatsPanel();
+  } else {
+    trapTabKey(event, statsPanelEl);
   }
 });

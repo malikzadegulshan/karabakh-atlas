@@ -128,6 +128,7 @@ function categoryPickerValue(picker) {
 }
 
 const adminOverlayEl = document.getElementById("admin-overlay");
+const adminPanelEl = document.getElementById("admin-panel");
 const adminTitleEl = document.getElementById("admin-title");
 const adminCloseEl = document.getElementById("admin-close");
 const adminMessageEl = document.getElementById("admin-message");
@@ -186,13 +187,13 @@ function applyAdminStaticTranslations() {
   adminTabForumEl.textContent = t("adminForumTitle");
   adminAddEventTitleEl.textContent = t("adminAddEventTitle");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
-  eventTitleInputEl.placeholder = t("fieldTitle");
-  eventYearInputEl.placeholder = t("fieldYear");
-  eventLatInputEl.placeholder = t("fieldLatitude");
-  eventLngInputEl.placeholder = t("fieldLongitude");
+  setPlaceholderLabel(eventTitleInputEl, t("fieldTitle"));
+  setPlaceholderLabel(eventYearInputEl, t("fieldYear"));
+  setPlaceholderLabel(eventLatInputEl, t("fieldLatitude"));
+  setPlaceholderLabel(eventLngInputEl, t("fieldLongitude"));
   eventPickOnMapEl.textContent = t("adminPickOnMap");
-  eventDescriptionInputEl.placeholder = t("fieldDescription");
-  eventSourceInputEl.placeholder = t("fieldSourceUrl");
+  setPlaceholderLabel(eventDescriptionInputEl, t("fieldDescription"));
+  setPlaceholderLabel(eventSourceInputEl, t("fieldSourceUrl"));
   eventFormSubmitEl.textContent = t("adminAddEventSubmit");
 }
 
@@ -228,10 +229,12 @@ function openAdminPanel() {
   applyAdminStaticTranslations();
   selectAdminTab("data");
   refreshAdminData();
+  openModalFocus(adminPanelEl);
 }
 
 function closeAdminPanel() {
   adminOverlayEl.hidden = true;
+  closeModalFocus();
 }
 
 adminToggleEl.addEventListener("click", openAdminPanel);
@@ -242,8 +245,13 @@ adminOverlayEl.addEventListener("click", (event) => {
   }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !adminOverlayEl.hidden) {
+  if (adminOverlayEl.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
     closeAdminPanel();
+  } else {
+    trapTabKey(event, adminPanelEl);
   }
 });
 
@@ -457,12 +465,12 @@ function startEditEvent(event) {
 
   const descInput = document.createElement("textarea");
   descInput.rows = 2;
-  descInput.placeholder = t("fieldDescription");
+  setPlaceholderLabel(descInput, t("fieldDescription"));
   descInput.value = event.description || "";
 
   const sourceInput = document.createElement("input");
   sourceInput.type = "url";
-  sourceInput.placeholder = t("fieldSourceUrl");
+  setPlaceholderLabel(sourceInput, t("fieldSourceUrl"));
   sourceInput.maxLength = 500;
   sourceInput.value = event.source_url || "";
 
@@ -753,7 +761,7 @@ function buildNameI18nInputs(existingNameI18n) {
   const elements = NAME_I18N_LANGS.map((lang) => {
     const input = document.createElement("input");
     input.type = "text";
-    input.placeholder = `${t("fieldName")} (${lang.toUpperCase()})`;
+    setPlaceholderLabel(input, `${t("fieldName")} (${lang.toUpperCase()})`);
     input.maxLength = 128;
     input.value = (existingNameI18n && existingNameI18n[lang]) || "";
     inputs[lang] = input;
@@ -783,7 +791,7 @@ function buildDescriptionI18nInputs(existingDescriptionI18n) {
   const elements = NAME_I18N_LANGS.map((lang) => {
     const textarea = document.createElement("textarea");
     textarea.rows = 2;
-    textarea.placeholder = `${t("fieldDescription")} (${lang.toUpperCase()})`;
+    setPlaceholderLabel(textarea, `${t("fieldDescription")} (${lang.toUpperCase()})`);
     textarea.value = (existingDescriptionI18n && existingDescriptionI18n[lang]) || "";
     inputs[lang] = textarea;
     return textarea;
@@ -809,38 +817,38 @@ function buildAddCityForm(region) {
 
   const nameInput = document.createElement("input");
   nameInput.type = "text";
-  nameInput.placeholder = t("fieldName");
+  setPlaceholderLabel(nameInput, t("fieldName"));
   nameInput.required = true;
   nameInput.maxLength = 128;
 
   const latInput = document.createElement("input");
   latInput.type = "number";
   latInput.step = "any";
-  latInput.placeholder = t("fieldLatitude");
+  setPlaceholderLabel(latInput, t("fieldLatitude"));
   latInput.required = true;
 
   const lngInput = document.createElement("input");
   lngInput.type = "number";
   lngInput.step = "any";
-  lngInput.placeholder = t("fieldLongitude");
+  setPlaceholderLabel(lngInput, t("fieldLongitude"));
   lngInput.required = true;
 
   const nameI18n = buildNameI18nInputs(null);
 
   const descInput = document.createElement("textarea");
   descInput.rows = 2;
-  descInput.placeholder = t("fieldDescription");
+  setPlaceholderLabel(descInput, t("fieldDescription"));
 
   const descriptionI18n = buildDescriptionI18nInputs(null);
 
   const imageUrlInput = document.createElement("input");
   imageUrlInput.type = "url";
-  imageUrlInput.placeholder = t("fieldImageUrl");
+  setPlaceholderLabel(imageUrlInput, t("fieldImageUrl"));
   imageUrlInput.maxLength = 500;
 
   const imageCreditInput = document.createElement("input");
   imageCreditInput.type = "text";
-  imageCreditInput.placeholder = t("fieldImageCredit");
+  setPlaceholderLabel(imageCreditInput, t("fieldImageCredit"));
   imageCreditInput.maxLength = 255;
 
   // Phone/website only apply to points of interest, not plain cities —
@@ -848,13 +856,13 @@ function buildAddCityForm(region) {
   // since that's this form's default category.
   const phoneInput = document.createElement("input");
   phoneInput.type = "tel";
-  phoneInput.placeholder = t("fieldPhone");
+  setPlaceholderLabel(phoneInput, t("fieldPhone"));
   phoneInput.maxLength = 30;
   phoneInput.hidden = true;
 
   const websiteInput = document.createElement("input");
   websiteInput.type = "url";
-  websiteInput.placeholder = t("fieldWebsite");
+  setPlaceholderLabel(websiteInput, t("fieldWebsite"));
   websiteInput.maxLength = 500;
   websiteInput.hidden = true;
 
@@ -1025,7 +1033,7 @@ function startEditCity(city) {
 
   const descInput = document.createElement("textarea");
   descInput.rows = 2;
-  descInput.placeholder = t("fieldDescription");
+  setPlaceholderLabel(descInput, t("fieldDescription"));
   descInput.value = city.description || "";
 
   const nameI18n = buildNameI18nInputs(city.name_i18n);
@@ -1033,13 +1041,13 @@ function startEditCity(city) {
 
   const imageUrlInput = document.createElement("input");
   imageUrlInput.type = "url";
-  imageUrlInput.placeholder = t("fieldImageUrl");
+  setPlaceholderLabel(imageUrlInput, t("fieldImageUrl"));
   imageUrlInput.maxLength = 500;
   imageUrlInput.value = city.image_url || "";
 
   const imageCreditInput = document.createElement("input");
   imageCreditInput.type = "text";
-  imageCreditInput.placeholder = t("fieldImageCredit");
+  setPlaceholderLabel(imageCreditInput, t("fieldImageCredit"));
   imageCreditInput.maxLength = 255;
   imageCreditInput.value = city.image_credit || "";
 
@@ -1047,14 +1055,14 @@ function startEditCity(city) {
   // hidden whenever the category picker is on "city".
   const phoneInput = document.createElement("input");
   phoneInput.type = "tel";
-  phoneInput.placeholder = t("fieldPhone");
+  setPlaceholderLabel(phoneInput, t("fieldPhone"));
   phoneInput.maxLength = 30;
   phoneInput.value = city.phone || "";
   phoneInput.hidden = city.category === "city";
 
   const websiteInput = document.createElement("input");
   websiteInput.type = "url";
-  websiteInput.placeholder = t("fieldWebsite");
+  setPlaceholderLabel(websiteInput, t("fieldWebsite"));
   websiteInput.maxLength = 500;
   websiteInput.value = city.website || "";
   websiteInput.hidden = city.category === "city";
