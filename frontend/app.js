@@ -799,6 +799,7 @@ function closeDetailView() {
   searchBoxEl.hidden = false;
   updateSearchResultsVisibility();
   clearUrlPlace();
+  clearDistanceLine();
 }
 
 detailBackEl.addEventListener("click", closeDetailView);
@@ -1048,6 +1049,29 @@ function buildDetailCardHtml(city) {
   }
   parts.push("</div>");
 
+  // Options are built here from whatever's already loaded (lastCities)
+  // rather than fetched separately — the wiring that actually computes
+  // the distance and draws the line lives in showCityDetail(), once
+  // this HTML is in the DOM and its <select> can be found.
+  const otherPlaces = lastCities
+    .filter((c) => c.id !== city.id)
+    .slice()
+    .sort((a, b) => localizedName(a).localeCompare(localizedName(b)));
+  const distanceOptionsHtml = otherPlaces
+    .map((c) => `<option value="${escapeAttr(c.id)}">` +
+      `${escapeHtml(localizedName(c))}</option>`)
+    .join("");
+  parts.push('<div class="detail-distance">');
+  parts.push(`<h3>${escapeHtml(t("distanceTitle"))}</h3>`);
+  parts.push(
+    '<select id="distance-target-select" class="distance-select">' +
+      `<option value="">${escapeHtml(t("distancePlaceholder"))}</option>` +
+      distanceOptionsHtml +
+      "</select>"
+  );
+  parts.push('<p id="distance-result" class="distance-result" hidden></p>');
+  parts.push("</div>");
+
   return parts.join("");
 }
 
@@ -1157,6 +1181,7 @@ async function loadWeatherFor(city) {
 
 function showCityDetail(city) {
   openDetailView();
+  clearDistanceLine();
   detailEl.innerHTML = buildDetailCardHtml(city);
   // A city's photo is served through the resize/compress proxy (see
   // compressedImageUrl()) — if that fails (proxy hiccup, source image
@@ -1196,6 +1221,37 @@ function showCityDetail(city) {
     renderCityForumSection(detailEl, city);
   }
   updateUrlForPlace(city.id);
+
+  const distanceSelect = detailEl.querySelector("#distance-target-select");
+  const distanceResultEl = detailEl.querySelector("#distance-result");
+  if (distanceSelect) {
+    distanceSelect.addEventListener("change", () => {
+      clearDistanceLine();
+      const targetId = distanceSelect.value;
+      const entry = targetId ? cityMarkers.get(targetId) : null;
+      if (!entry) {
+        distanceResultEl.hidden = true;
+        return;
+      }
+      const km = haversineKm(
+        city.latitude, city.longitude,
+        entry.city.latitude, entry.city.longitude
+      );
+      distanceResultEl.hidden = false;
+      distanceResultEl.textContent = t("distanceResult")(
+        km.toFixed(1), localizedName(entry.city));
+      distanceLine = L.polyline(
+        [
+          [city.latitude, city.longitude],
+          [entry.city.latitude, entry.city.longitude],
+        ],
+        { color: "#7c5cff", weight: 3, dashArray: "6 6" }
+      ).addTo(map);
+      map.fitBounds(distanceLine.getBounds(), {
+        padding: [60, 60], animate: false,
+      });
+    });
+  }
 }
 
 // Not true geographic distance (no latitude-scaling correction) — just
@@ -1205,6 +1261,35 @@ function squaredDistance(lat1, lng1, lat2, lng2) {
   const dLat = lat1 - lat2;
   const dLng = lng1 - lng2;
   return dLat * dLat + dLng * dLng;
+}
+
+// Real great-circle distance, in km — unlike squaredDistance above
+// (which only ranks nearby candidates against each other), this backs
+// an actual number shown to the user when measuring between two
+// places. Standard haversine formula.
+const EARTH_RADIUS_KM = 6371;
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
+}
+
+// The dashed line drawn on the map when a detail view's "Distance"
+// picker has a target selected — module-level so a fresh selection (or
+// leaving the detail view entirely) can clean up the previous one
+// instead of layering lines on top of each other.
+let distanceLine = null;
+
+function clearDistanceLine() {
+  if (distanceLine) {
+    map.removeLayer(distanceLine);
+    distanceLine = null;
+  }
 }
 
 function nearestCityTo(lat, lng) {
