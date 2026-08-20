@@ -798,6 +798,7 @@ function closeDetailView() {
   panelEl.classList.remove("panel-detail-open");
   searchBoxEl.hidden = false;
   updateSearchResultsVisibility();
+  clearUrlPlace();
 }
 
 detailBackEl.addEventListener("click", closeDetailView);
@@ -923,6 +924,26 @@ function isSafeUrl(value) {
   } catch (err) {
     return false;
   }
+}
+
+// Keeps the address bar in sync with whichever place is open, so
+// copying/bookmarking the URL and reopening it (see restorePlaceFromUrl()
+// in loadCities()) lands back on the same detail view. replaceState, not
+// pushState — this is for sharing a link, not for building up Back-button
+// history entries for every place clicked.
+function updateUrlForPlace(cityId) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("place", cityId);
+  window.history.replaceState({}, "", url);
+}
+
+function clearUrlPlace() {
+  if (!new URLSearchParams(window.location.search).has("place")) {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete("place");
+  window.history.replaceState({}, "", url);
 }
 
 // city.image_url is just a link an admin pasted in — we never store or
@@ -1174,6 +1195,7 @@ function showCityDetail(city) {
   if (typeof renderCityForumSection === "function") {
     renderCityForumSection(detailEl, city);
   }
+  updateUrlForPlace(city.id);
 }
 
 // Not true geographic distance (no latitude-scaling correction) — just
@@ -1549,6 +1571,24 @@ searchInputEl.addEventListener("keydown", (event) => {
   searchInputEl.blur();
 });
 
+// Captured once at boot, before the first renderCities() call strips it
+// from the URL (closeDetailView(), which every render calls, clears the
+// "place" param — see clearUrlPlace()) — so a shared/bookmarked link
+// still opens the right place even though the URL itself gets cleaned
+// up immediately after.
+const initialPlaceId = new URLSearchParams(window.location.search).get(
+  "place");
+
+function restorePlaceFromUrl() {
+  if (!initialPlaceId) {
+    return;
+  }
+  const entry = cityMarkers.get(initialPlaceId);
+  if (entry) {
+    jumpToCity(entry.city, entry.marker);
+  }
+}
+
 async function loadCities() {
   try {
     const res = await fetch(`${API_BASE}/cities`);
@@ -1558,6 +1598,7 @@ async function loadCities() {
     const cities = await res.json();
     lastCities = cities;
     applyFilterAndRender();
+    restorePlaceFromUrl();
     if (!weatherCity && cities.length > 0) {
       // Default weather panel content before anything's been clicked —
       // Khankendi if it's there, otherwise just whatever loaded first.
