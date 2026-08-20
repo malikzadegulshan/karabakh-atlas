@@ -38,6 +38,94 @@ class TestAPIViews(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.data), {"status": "OK"})
 
+    def _create_region(self):
+        return json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region-{}".format(uuid.uuid4())}),
+            content_type="application/json").data)
+
+    def _create_city(self, region_id, category="city"):
+        return json.loads(self.client.post(
+            "/api/v1/regions/{}/cities".format(region_id),
+            data=json.dumps({
+                "name": "Place-{}".format(uuid.uuid4()),
+                "latitude": 39.8, "longitude": 46.75,
+                "category": category,
+            }),
+            content_type="application/json").data)
+
+    def test_stats_counts_regions_cities_and_pois_separately(self):
+        region = self._create_region()
+        self._create_city(region["id"], category="city")
+        self._create_city(region["id"], category="museum")
+        self._create_city(region["id"], category="museum")
+        self._create_city(region["id"], category="cafe")
+
+        stats = json.loads(self.client.get("/api/v1/stats").data)
+        self.assertGreaterEqual(stats["regions"], 1)
+        self.assertGreaterEqual(stats["cities"], 1)
+        self.assertGreaterEqual(stats["points_of_interest"], 3)
+        self.assertGreaterEqual(stats["categories"].get("museum", 0), 2)
+        self.assertGreaterEqual(stats["categories"].get("cafe", 0), 1)
+        self.assertNotIn("city", stats["categories"])
+
+    def test_stats_forum_posts_counts_approved_only(self):
+        region = self._create_region()
+        city = self._create_city(region["id"])
+        before = json.loads(self.client.get("/api/v1/stats").data)
+
+        # Admin posts are auto-approved (see api/v1/views/forum.py).
+        self.client.post(
+            "/api/v1/forum/posts",
+            data=json.dumps(
+                {"body": "Nice place", "target_city_id": city["id"]}),
+            content_type="application/json")
+
+        after = json.loads(self.client.get("/api/v1/stats").data)
+        self.assertEqual(after["forum_posts"], before["forum_posts"] + 1)
+
+    def test_stats_excludes_pending_forum_posts(self):
+        regular = app.test_client()
+        regular.post(
+            "/api/v1/auth/register",
+            data=json.dumps({
+                "name": "Regular User",
+                "email": "regular-{}@example.com".format(uuid.uuid4()),
+                "password": TEST_PASSWORD}),
+            content_type="application/json")
+        before = json.loads(self.client.get("/api/v1/stats").data)
+
+        # A non-admin's post starts "pending" — not publicly visible.
+        regular.post(
+            "/api/v1/forum/posts",
+            data=json.dumps({"body": "Awaiting review"}),
+            content_type="application/json")
+
+        after = json.loads(self.client.get("/api/v1/stats").data)
+        self.assertEqual(after["forum_posts"], before["forum_posts"])
+
+    def test_stats_does_not_require_login(self):
+        anon = app.test_client()
+        response = anon.get("/api/v1/stats")
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_city_rejects_null_category(self):
+        """A PUT with category explicitly set to null is rejected, not
+        silently applied — optional_enum() treats None as "field
+        omitted" for genuinely optional fields, but category always
+        needs a real value (see the comment in _validate_city_data)."""
+        region = self._create_region()
+        city = self._create_city(region["id"], category="museum")
+        resp = self.client.put(
+            "/api/v1/cities/{}".format(city["id"]),
+            data=json.dumps({"category": None}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+        unchanged = json.loads(
+            self.client.get("/api/v1/cities/{}".format(city["id"])).data)
+        self.assertEqual(unchanged["category"], "museum")
+
     def test_create_region_requires_name(self):
         """POST /api/v1/regions without a name is rejected with 400."""
         response = self.client.post(

@@ -52,6 +52,15 @@ def _validate_city_data(data, *, require_required_fields):
     optional_url(data, "website", max_length=500)
     optional_i18n_dict(data, "name_i18n")
     optional_i18n_dict(data, "description_i18n")
+    # Unlike the optional_string/optional_url fields above, category
+    # isn't something a client can legitimately clear — every City has
+    # one — so an explicit null is rejected outright here rather than
+    # falling through to optional_enum(), which treats None as "field
+    # omitted" and would let it slip past validation only for the
+    # unconditional setattr loop in update_city() below to actually set
+    # city.category = None on the object.
+    if "category" in data and data["category"] is None:
+        raise ValidationError("category cannot be null")
     optional_enum(data, "category", CITY_CATEGORIES)
 
 

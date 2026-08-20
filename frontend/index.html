@@ -52,6 +52,7 @@
           <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
         </div>
       </div>
+      <button type="button" id="stats-toggle" class="rail-btn" data-icon="rail_stats" aria-label="About this atlas"></button>
       <button type="button" id="theme-toggle" class="rail-btn" data-icon="theme_light" aria-pressed="false" aria-label="Toggle dark mode"></button>
       <div id="account-widget" class="rail-widget">
         <button type="button" id="account-signin-toggle" class="rail-btn" data-icon="rail_account" aria-label="Sign in"></button>
@@ -176,6 +177,42 @@
     </div>
   </div>
 
+  <div id="stats-overlay" hidden>
+    <div id="stats-panel" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+      <div class="admin-panel-header">
+        <h2 id="stats-title">About this Atlas</h2>
+        <button type="button" id="stats-close" aria-label="Close">×</button>
+      </div>
+      <p id="stats-loading">Loading…</p>
+      <div id="stats-grid" hidden>
+        <div class="stat-tile">
+          <span class="stat-value" id="stat-regions">0</span>
+          <span class="stat-label" id="stat-regions-label"></span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" id="stat-cities">0</span>
+          <span class="stat-label" id="stat-cities-label"></span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" id="stat-pois">0</span>
+          <span class="stat-label" id="stat-pois-label"></span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" id="stat-events">0</span>
+          <span class="stat-label" id="stat-events-label"></span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" id="stat-posts">0</span>
+          <span class="stat-label" id="stat-posts-label"></span>
+        </div>
+      </div>
+      <div id="stats-categories" hidden>
+        <h3 id="stats-categories-title"></h3>
+        <ul id="stats-categories-list"></ul>
+      </div>
+    </div>
+  </div>
+
   <div id="admin-overlay" hidden>
     <div id="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-title">
       <div class="admin-panel-header">
@@ -244,5 +281,6 @@
   <script src="admin.js"></script>
   <script src="forum.js"></script>
   <script src="favorites.js"></script>
+  <script src="stats.js"></script>
 </body>
 </html>

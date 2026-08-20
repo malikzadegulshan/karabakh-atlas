@@ -323,10 +323,14 @@ paths:
                     example: OK
   /stats:
     get:
-      summary: Object counts
+      summary: Public counts for the "about this atlas" dashboard
+      description: >
+        Only ever counts what's already publicly visible elsewhere in
+        the API (e.g. approved forum posts, not pending/rejected ones)
+        — safe to leave unauthenticated.
       responses:
         "200":
-          description: Counts of regions and cities
+          description: Object counts
           content:
             application/json:
               schema:
@@ -336,6 +340,22 @@ paths:
                     type: integer
                   cities:
                     type: integer
+                    description: Places with category "city"
+                  points_of_interest:
+                    type: integer
+                    description: Places with any other category
+                  categories:
+                    type: object
+                    description: >
+                      Point-of-interest count per category (e.g.
+                      {"museum": 3, "cafe": 5, ...})
+                    additionalProperties:
+                      type: integer
+                  historical_events:
+                    type: integer
+                  forum_posts:
+                    type: integer
+                    description: Approved (publicly visible) posts only
   /regions:
     get:
       summary: List all regions
