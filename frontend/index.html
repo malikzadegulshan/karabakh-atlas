@@ -19,6 +19,8 @@
     img-src 'self' https: data:;
     connect-src 'self' https://api.open-meteo.com https://karabakh-atlas-api.onrender.com http://localhost:5000 https://s3-us-west-2.amazonaws.com;
     font-src 'self';
+    manifest-src 'self';
+    worker-src 'self';
     object-src 'none';
     base-uri 'none';
     form-action 'self'
@@ -27,6 +29,8 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#221539" />
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script src="theme-init.js"></script>
@@ -282,5 +286,6 @@
   <script src="forum.js"></script>
   <script src="favorites.js"></script>
   <script src="stats.js"></script>
+  <script src="register-sw.js"></script>
 </body>
 </html>

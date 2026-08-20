@@ -1,0 +1,24 @@
+{
+  "name": "Karabakh Atlas — Dirchalish",
+  "short_name": "Karabakh Atlas",
+  "description": "An interactive map of Karabakh and its cities, points of interest, and history.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#221539",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
