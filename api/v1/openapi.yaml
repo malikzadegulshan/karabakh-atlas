@@ -791,6 +791,63 @@ paths:
           description: Login required
         "403":
           description: Admin privileges required
+  /favorites:
+    get:
+      summary: List the logged-in caller's saved places
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: List of saved cities/POIs, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/City"
+        "401":
+          description: Login required
+    post:
+      summary: Save a place (idempotent — favoriting twice is a no-op)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city_id]
+              properties:
+                city_id:
+                  type: string
+      responses:
+        "201":
+          description: Favorite created
+        "200":
+          description: Already favorited — existing favorite returned
+        "400":
+          description: Validation error, or city_id does not exist
+        "401":
+          description: Login required
+  /favorites/{city_id}:
+    parameters:
+      - name: city_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: >
+        Un-save a place (idempotent — removing something not saved,
+        or already removed, is still a 200)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Removed (or wasn't saved in the first place)
+        "401":
+          description: Login required
         "404":
           description: Not found
   /historical-events:

@@ -102,6 +102,13 @@ function renderAccountWidget() {
   } else {
     closeAccountStatusPopover();
   }
+  // favorites.js loads after this file — every currentUser change
+  // (login, register, reset-password, logout, boot) already funnels
+  // through this one function, so hooking here covers all of them
+  // instead of touching each call site individually.
+  if (typeof refreshFavorites === "function") {
+    refreshFavorites();
+  }
 }
 
 accountAvatarToggleEl.addEventListener("click", (event) => {

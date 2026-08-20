@@ -44,6 +44,10 @@ const KBA_ICON_PATHS = {
   detail_back: '<path d="M15 6l-6 6l6 6" />',
   detail_call: '<path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />',
   detail_website: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M3.6 9h16.8" /><path d="M3.6 15h16.8" /><path d="M11.5 3a17 17 0 0 0 0 18" /><path d="M12.5 3a17 17 0 0 1 0 18" />',
+  // Favorite/save toggle (#detail-favorite-toggle in index.html) — a
+  // closed heart outline, so it also works filled (see .is-favorited in
+  // style.css, which overrides KBA_ICON_SVG's fill="none" for this one).
+  detail_favorite: '<path d="M20.84 4.61a5.5 5.5 0 0 0 -7.78 0L12 5.67l-1.06 -1.06a5.5 5.5 0 0 0 -7.78 7.78l1.06 1.06L12 21.23l7.78 -7.78 1.06 -1.06a5.5 5.5 0 0 0 0 -7.78z" />',
   // brand mark (#brand-mark in index.html, favicon) — a Karabakh carpet
   // medallion reduced to four points: a center diamond plus one smaller
   // diamond at each cardinal direction, doubling as a compass rose. Filled

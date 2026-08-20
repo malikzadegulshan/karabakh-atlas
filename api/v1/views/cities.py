@@ -6,6 +6,7 @@ from models import storage
 from models.region import Region
 from models.city import City
 from models.forum_post import ForumPost
+from models.favorite import Favorite
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
@@ -106,14 +107,17 @@ def get_city(city_id):
 
 @app_views.route("/cities/<city_id>", methods=["DELETE"])
 def delete_city(city_id):
-    """Delete a City object by id (and any forum posts about it), or
-    404 if not found."""
+    """Delete a City object by id (and any forum posts or favorites
+    referencing it), or 404 if not found."""
     city = storage.all(City).get("City.{}".format(city_id))
     if city is None:
         abort(404)
     for post in [p for p in storage.all(ForumPost).values()
                  if p.target_city_id == city_id]:
         post.delete()
+    for favorite in [f for f in storage.all(Favorite).values()
+                     if f.city_id == city_id]:
+        favorite.delete()
     city.delete()
     storage.save()
     return jsonify({}), 200

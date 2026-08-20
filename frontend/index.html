@@ -59,6 +59,11 @@
         <div id="account-status" role="menu" hidden>
           <span id="account-name"></span>
           <button type="button" id="account-resend-verification" hidden>Verify email</button>
+          <div id="account-favorites">
+            <h4 id="account-favorites-title">My Favorites</h4>
+            <ul id="account-favorites-list"></ul>
+            <p id="account-favorites-empty" hidden>No favorites yet.</p>
+          </div>
           <button type="button" id="account-logout">Log out</button>
         </div>
       </div>
@@ -111,6 +116,7 @@
 
         <div id="detail-view" hidden>
           <button type="button" id="detail-back" class="detail-back-btn" data-icon="detail_back" aria-label="Back"></button>
+          <button type="button" id="detail-favorite-toggle" class="detail-favorite-btn" data-icon="detail_favorite" aria-pressed="false" aria-label="Save"></button>
           <div id="city-detail"></div>
         </div>
       </div>
@@ -237,5 +243,6 @@
   <script src="auth.js"></script>
   <script src="admin.js"></script>
   <script src="forum.js"></script>
+  <script src="favorites.js"></script>
 </body>
 </html>

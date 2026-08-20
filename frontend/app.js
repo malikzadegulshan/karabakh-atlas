@@ -1220,6 +1220,9 @@ function showCityDetail(city) {
   if (typeof renderCityForumSection === "function") {
     renderCityForumSection(detailEl, city);
   }
+  if (typeof updateFavoriteToggle === "function") {
+    updateFavoriteToggle(city);
+  }
   updateUrlForPlace(city.id);
 
   const distanceSelect = detailEl.querySelector("#distance-target-select");

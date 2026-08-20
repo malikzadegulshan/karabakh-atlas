@@ -10,10 +10,11 @@ from models.city import City
 from models.user import User
 from models.forum_post import ForumPost
 from models.historical_event import HistoricalEvent
+from models.favorite import Favorite
 
 classes = {
     "Region": Region, "City": City, "User": User, "ForumPost": ForumPost,
-    "HistoricalEvent": HistoricalEvent,
+    "HistoricalEvent": HistoricalEvent, "Favorite": Favorite,
 }
 
 logger = logging.getLogger(__name__)
