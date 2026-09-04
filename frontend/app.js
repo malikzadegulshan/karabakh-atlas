@@ -61,8 +61,8 @@ L.control.zoom({ position: "bottomright" }).addTo(map);
 // to a glaring white map. Swapped at runtime via setUrl(), see
 // applyColorScheme() below.
 const STREET_TILE_URLS = {
-  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_2wmf_1_e4571e160475685ea6714b5b",
+  dark: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_2wmf_1_e4571e160475685ea6714b5b",
 };
 
 const streetLayer = L.tileLayer(
