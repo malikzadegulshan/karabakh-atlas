@@ -84,6 +84,9 @@ CI runs the full suite on every push.
 Pull requests are welcome. Please don't commit secrets or `.env`
 files — configuration is documented in `.env.example` only.
 
+Found a security issue? See [SECURITY.md](.github/SECURITY.md) —
+please don't open a public issue for it.
+
 ## License
 
 All rights reserved — see [LICENSE](LICENSE).
