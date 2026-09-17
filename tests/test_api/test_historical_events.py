@@ -112,6 +112,21 @@ class TestHistoricalEventViews(unittest.TestCase):
         resp = self._create_event(source_url="javascript:alert(1)")
         self.assertEqual(resp.status_code, 400)
 
+    def test_create_accepts_title_and_description_i18n(self):
+        """title_i18n/description_i18n round-trip as given."""
+        resp = self._create_event(
+            title_i18n={"az": "Nümunə", "tr": "Örnek", "ru": "Пример"},
+            description_i18n={"az": "Təsvir"})
+        self.assertEqual(resp.status_code, 201)
+        body = json.loads(resp.data)
+        self.assertEqual(body["title_i18n"]["tr"], "Örnek")
+        self.assertEqual(body["description_i18n"]["az"], "Təsvir")
+
+    def test_create_rejects_non_string_i18n_values(self):
+        """title_i18n entries must map language codes to strings."""
+        resp = self._create_event(title_i18n={"az": 5})
+        self.assertEqual(resp.status_code, 400)
+
     def test_list_is_publicly_readable(self):
         """GET /historical-events works without a session."""
         self._create_event(title="Public Event")

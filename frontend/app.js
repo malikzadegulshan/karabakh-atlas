@@ -381,12 +381,13 @@ function buildEventPopupHtml(event) {
   // this was a <div> — the tell was way more vertical gap between
   // lines than either stylesheet asked for.
   const parts = [
-    `<h3 class="event-popup-title">${escapeHtml(event.title)}</h3>`,
+    `<h3 class="event-popup-title">${escapeHtml(localizedEventTitle(event))}</h3>`,
     `<div class="event-popup-year">${escapeHtml(String(event.year))}</div>`,
   ];
-  if (event.description) {
+  const description = localizedDescription(event);
+  if (description) {
     parts.push(
-      `<div class="event-popup-description">${escapeHtml(event.description)}</div>`
+      `<div class="event-popup-description">${escapeHtml(description)}</div>`
     );
   }
   if (event.source_url && isSafeUrl(event.source_url)) {
@@ -1067,6 +1068,10 @@ function localizedDescription(city) {
     (city.description_i18n && city.description_i18n[currentLang]) ||
     city.description
   );
+}
+
+function localizedEventTitle(event) {
+  return (event.title_i18n && event.title_i18n[currentLang]) || event.title;
 }
 
 // Builds the Apple-Maps-style place card shown in #city-detail once
