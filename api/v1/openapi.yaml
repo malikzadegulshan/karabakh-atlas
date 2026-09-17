@@ -100,6 +100,16 @@ components:
         image_credit:
           type: string
           nullable: true
+        image_url_before:
+          type: string
+          nullable: true
+          description: >
+            An older/historical photo of the same place. When set
+            alongside image_url, the frontend renders a before/after
+            compare slider instead of a single photo.
+        image_before_credit:
+          type: string
+          nullable: true
         phone:
           type: string
           nullable: true
@@ -161,6 +171,12 @@ components:
           type: string
           nullable: true
         image_credit:
+          type: string
+          nullable: true
+        image_url_before:
+          type: string
+          nullable: true
+        image_before_credit:
           type: string
           nullable: true
         phone:

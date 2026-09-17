@@ -359,6 +359,145 @@ yearSliderEl.addEventListener("input", () => {
   updateEventMarkersVisibility();
 });
 
+// Before/after satellite-imagery compare: a second Wayback tile layer
+// (an earlier year) sits beneath historicalLayer, and a draggable
+// divider clips historicalLayer via clip-path — dragging left reveals
+// more of compareLayer's year, dragging right reveals more of the
+// year the main slider is on. Only meaningful while Historical is the
+// active base layer; updateTimelineVisibility() below turns it off if
+// the base layer changes away from Historical.
+const compareToggleEl = document.getElementById("compare-toggle");
+const compareToggleTextEl = document.getElementById("compare-toggle-text");
+const compareControlsEl = document.getElementById("compare-controls");
+const compareYearSliderEl = document.getElementById("compare-year-slider");
+const compareYearLabelEl = document.getElementById("compare-year-label");
+
+const compareLayer = L.tileLayer("", { maxZoom: 19 });
+let compareYear = null;
+let mapCompareDividerEl = null;
+let mapCompareSlider = null;
+
+function updateCompareYearLabel() {
+  compareYearLabelEl.textContent = t("compareYearLabel")(compareYear);
+}
+
+function applyCompareYear() {
+  if (waybackReleases.length === 0 || compareYear === null) {
+    return;
+  }
+  compareLayer.setUrl(releaseForYear(compareYear).urlTemplate);
+}
+
+compareYearSliderEl.addEventListener("input", () => {
+  compareYear = Number(compareYearSliderEl.value);
+  updateCompareYearLabel();
+  applyCompareYear();
+});
+
+// Shared by the map compare above and the before/after place-photo
+// slider in buildDetailCardHtml()/showCityDetail() below: turns a
+// container + a divider element inside it into a draggable (and
+// arrow-key-operable) 0-100 slider, calling onChange(percent) on every
+// move. What 0/100 actually reveal is entirely up to the caller.
+function wireCompareSlider(container, dividerEl, onChange) {
+  function setPercent(percent) {
+    const clamped = Math.max(0, Math.min(100, percent));
+    dividerEl.style.left = `${clamped}%`;
+    dividerEl.setAttribute("aria-valuenow", String(Math.round(clamped)));
+    onChange(clamped);
+  }
+  function percentFromClientX(clientX) {
+    const rect = container.getBoundingClientRect();
+    return ((clientX - rect.left) / rect.width) * 100;
+  }
+  dividerEl.addEventListener("pointerdown", (event) => {
+    dividerEl.setPointerCapture(event.pointerId);
+  });
+  dividerEl.addEventListener("pointermove", (event) => {
+    if (!dividerEl.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+    setPercent(percentFromClientX(event.clientX));
+  });
+  dividerEl.addEventListener("keydown", (event) => {
+    const current = Number(dividerEl.getAttribute("aria-valuenow")) || 50;
+    if (event.key === "ArrowLeft") {
+      setPercent(current - 5);
+      event.preventDefault();
+    } else if (event.key === "ArrowRight") {
+      setPercent(current + 5);
+      event.preventDefault();
+    }
+  });
+  setPercent(50);
+  return { setPercent };
+}
+
+function ensureMapCompareDivider() {
+  if (mapCompareDividerEl) {
+    return;
+  }
+  mapCompareDividerEl = document.createElement("div");
+  mapCompareDividerEl.className = "compare-divider";
+  mapCompareDividerEl.hidden = true;
+  mapCompareDividerEl.tabIndex = 0;
+  mapCompareDividerEl.setAttribute("role", "slider");
+  mapCompareDividerEl.setAttribute("aria-valuemin", "0");
+  mapCompareDividerEl.setAttribute("aria-valuemax", "100");
+  mapCompareDividerEl.setAttribute("aria-label", t("compareMapLabel"));
+  const handle = document.createElement("div");
+  handle.className = "compare-divider-handle";
+  mapCompareDividerEl.appendChild(handle);
+  map.getContainer().appendChild(mapCompareDividerEl);
+  mapCompareSlider = wireCompareSlider(
+    map.getContainer(), mapCompareDividerEl, (percent) => {
+      const afterContainer = historicalLayer.getContainer();
+      if (afterContainer) {
+        afterContainer.style.clipPath = `inset(0 0 0 ${percent}%)`;
+      }
+    }
+  );
+}
+
+function enableMapCompare() {
+  ensureMapCompareDivider();
+  compareYear = waybackReleases.length
+    ? waybackReleases[0].date.getFullYear()
+    : WAYBACK_FALLBACK_MIN_YEAR;
+  compareYearSliderEl.min = yearSliderEl.min;
+  compareYearSliderEl.max = yearSliderEl.max;
+  compareYearSliderEl.value = compareYear;
+  updateCompareYearLabel();
+  applyCompareYear();
+  compareLayer.addTo(map);
+  historicalLayer.bringToFront();
+  mapCompareDividerEl.hidden = false;
+  compareControlsEl.hidden = false;
+  mapCompareSlider.setPercent(50);
+}
+
+function disableMapCompare() {
+  if (map.hasLayer(compareLayer)) {
+    map.removeLayer(compareLayer);
+  }
+  if (mapCompareDividerEl) {
+    mapCompareDividerEl.hidden = true;
+  }
+  compareControlsEl.hidden = true;
+  const afterContainer = historicalLayer.getContainer();
+  if (afterContainer) {
+    afterContainer.style.clipPath = "";
+  }
+}
+
+compareToggleEl.addEventListener("change", () => {
+  if (compareToggleEl.checked) {
+    enableMapCompare();
+  } else {
+    disableMapCompare();
+  }
+});
+
 // Historical-timeline event markers: notable events pinned to a place
 // and a year, shown only while the Historical layer is active (same as
 // the slider itself) and only within a small window around whatever
@@ -442,8 +581,14 @@ function updateTimelineVisibility(activeLayer) {
     if (!map.hasLayer(eventMarkersLayer)) {
       map.addLayer(eventMarkersLayer);
     }
-  } else if (map.hasLayer(eventMarkersLayer)) {
-    map.removeLayer(eventMarkersLayer);
+  } else {
+    if (map.hasLayer(eventMarkersLayer)) {
+      map.removeLayer(eventMarkersLayer);
+    }
+    if (compareToggleEl.checked) {
+      compareToggleEl.checked = false;
+      disableMapCompare();
+    }
   }
 }
 
@@ -552,6 +697,13 @@ function applyStaticTranslations() {
   detailBackEl.setAttribute("aria-label", t("detailBack"));
   detailBackEl.title = t("detailBack");
   updateYearLabel();
+  compareToggleTextEl.textContent = t("compareToggle");
+  if (compareYear !== null) {
+    updateCompareYearLabel();
+  }
+  if (mapCompareDividerEl) {
+    mapCompareDividerEl.setAttribute("aria-label", t("compareMapLabel"));
+  }
   panelToggleEl.setAttribute(
     "aria-label",
     panelEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
@@ -1085,13 +1237,39 @@ function buildDetailCardHtml(city) {
   const parts = [];
 
   if (city.image_url && isSafeUrl(city.image_url)) {
-    const heroSrc = compressedImageUrl(
+    const afterSrc = compressedImageUrl(
       city.image_url, DETAIL_HERO_WIDTH, DETAIL_HERO_HEIGHT);
-    parts.push(
-      `<div class="detail-hero"><img src="${escapeAttr(heroSrc)}" ` +
-        `data-original-src="${escapeAttr(city.image_url)}" ` +
-        `alt="${escapeAttr(name)}" loading="lazy"></div>`
-    );
+    const hasBeforePhoto =
+      city.image_url_before && isSafeUrl(city.image_url_before);
+    if (hasBeforePhoto) {
+      // A before/after compare slider needs two full <img>s stacked in
+      // the same box (see .has-compare in style.css) rather than the
+      // single <img> below — wireDetailPhotoCompare() in
+      // showCityDetail() clips .compare-after via the shared
+      // wireCompareSlider() helper once this is in the DOM.
+      const beforeSrc = compressedImageUrl(
+        city.image_url_before, DETAIL_HERO_WIDTH, DETAIL_HERO_HEIGHT);
+      parts.push(
+        `<div class="detail-hero has-compare">` +
+          `<img class="compare-before" src="${escapeAttr(beforeSrc)}" ` +
+            `data-original-src="${escapeAttr(city.image_url_before)}" ` +
+            `alt="${escapeAttr(name)}" loading="lazy">` +
+          `<img class="compare-after" src="${escapeAttr(afterSrc)}" ` +
+            `data-original-src="${escapeAttr(city.image_url)}" ` +
+            `alt="${escapeAttr(name)}" loading="lazy">` +
+          `<div class="compare-divider" role="slider" tabindex="0" ` +
+            `aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" ` +
+            `aria-label="${escapeAttr(t("comparePhotoLabel"))}">` +
+            `<div class="compare-divider-handle"></div></div>` +
+        `</div>`
+      );
+    } else {
+      parts.push(
+        `<div class="detail-hero"><img src="${escapeAttr(afterSrc)}" ` +
+          `data-original-src="${escapeAttr(city.image_url)}" ` +
+          `alt="${escapeAttr(name)}" loading="lazy"></div>`
+      );
+    }
   }
 
   parts.push(`<h2 class="detail-title">${escapeHtml(name)}</h2>`);
@@ -1134,6 +1312,10 @@ function buildDetailCardHtml(city) {
   }
   if (city.image_credit) {
     parts.push(`<p class="image-credit">${escapeHtml(city.image_credit)}</p>`);
+  }
+  if (city.image_before_credit) {
+    parts.push(
+      `<p class="image-credit">${escapeHtml(city.image_before_credit)}</p>`);
   }
   parts.push("</div>");
 
@@ -1276,8 +1458,7 @@ function showCityDetail(city) {
   // it can't fetch), fall back once to the original direct URL before
   // giving up and hiding the hero block entirely, rather than leaving
   // the browser's bare broken-image glyph sitting in it.
-  const heroImg = detailEl.querySelector(".detail-hero img");
-  if (heroImg) {
+  detailEl.querySelectorAll(".detail-hero img").forEach((heroImg) => {
     heroImg.addEventListener(
       "error",
       () => {
@@ -1295,6 +1476,19 @@ function showCityDetail(city) {
       },
       { once: true }
     );
+  });
+  // Before/after place-photo slider — see the has-compare markup in
+  // buildDetailCardHtml() above. Reuses the same drag/keyboard helper
+  // the map's satellite-imagery compare uses, just clipping an <img>
+  // instead of a Leaflet tile layer's container.
+  const photoCompareDivider = detailEl.querySelector(
+    ".detail-hero.has-compare .compare-divider");
+  if (photoCompareDivider) {
+    const heroBox = photoCompareDivider.closest(".detail-hero");
+    const afterImg = heroBox.querySelector(".compare-after");
+    wireCompareSlider(heroBox, photoCompareDivider, (percent) => {
+      afterImg.style.clipPath = `inset(0 0 0 ${percent}%)`;
+    });
   }
   Array.from(listEl.children).forEach((li) => {
     li.classList.toggle("active", li.dataset.cityId === city.id);

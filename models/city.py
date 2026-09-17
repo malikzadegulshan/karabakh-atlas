@@ -18,6 +18,14 @@ class City(BaseModel, Base):
     alt_names = Column(String(255), nullable=True)
     image_url = Column(String(500), nullable=True)
     image_credit = Column(String(255), nullable=True)
+    # An older/historical photo of the same place, shown as a
+    # before/after compare slider against image_url in the frontend
+    # when both are set — optional, and independent of image_url (a
+    # place can have a current photo with no "before" one, or vice
+    # versa, though only the current/after one renders alone in that
+    # case).
+    image_url_before = Column(String(500), nullable=True)
+    image_before_credit = Column(String(255), nullable=True)
     phone = Column(String(30), nullable=True)
     website = Column(String(500), nullable=True)
     # "city" for regular cities (map label + sidebar entry); anything else
