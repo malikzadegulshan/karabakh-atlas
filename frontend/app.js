@@ -56,14 +56,14 @@ L.control.zoom({ position: "bottomright" }).addTo(map);
 // CartoDB Positron / Dark Matter: a clean basemap with place labels but
 // no baked-in amenity icons (cafe/restaurant/etc.), so our own
 // points-of-interest markers stay legible instead of competing with
-// icons we can't control. Two variants of the same basemap, picked to
-// match the app's color scheme — otherwise a dark UI would sit next to
-// a glaring white map. Swapped at runtime via setUrl(), see
+// icons we can't control. Two distinct basemaps, picked to match the
+// app's color scheme — otherwise a dark UI would sit next to a
+// glaring white map. Swapped at runtime via setUrl(), see
 // applyColorScheme() below. Requires an API key (see config.js) since
 // CARTO started gating its raster basemaps.
 const STREET_TILE_URLS = {
-  light: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${window.KBA_CARTO_KEY}`,
-  dark: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${window.KBA_CARTO_KEY}`,
+  light: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${window.KBA_CARTO_KEY}`,
+  dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${window.KBA_CARTO_KEY}`,
 };
 
 const streetLayer = L.tileLayer(
