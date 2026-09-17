@@ -1029,6 +1029,29 @@ main {
   margin: -0.9rem -0.9rem 0.9rem;
 }
 
+/* Before/after photo compare — see the has-compare markup in
+   buildDetailCardHtml() (app.js). Both images are stacked and sized to
+   fill the same box instead of the single block-flow <img> below;
+   .compare-after starts clipped to its right half by wireCompareSlider()
+   in showCityDetail(), revealing .compare-before underneath on drag. */
+.detail-hero.has-compare {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.detail-hero.has-compare img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-hero.has-compare .compare-after {
+  clip-path: inset(0 0 0 50%);
+}
+
 .detail-hero img {
   display: block;
   width: 100%;
@@ -1996,6 +2019,8 @@ main {
   transform: translateX(-50%);
   z-index: 1200;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 0.7rem;
   padding: 0.5rem 1rem;
@@ -2018,6 +2043,151 @@ main {
 
 #year-slider {
   width: 220px;
+}
+
+/* Both range inputs in the app (year timeline, compare-year) — replaces
+   the raw OS-default blue thumb/track with the app's own accent color,
+   so they read as part of the design system instead of a stock browser
+   control dropped onto a themed pill. Thumb-only coloring (not a
+   filled-in track) since a cross-browser filled track needs a JS-driven
+   gradient in WebKit (no ::-moz-range-progress equivalent there) —
+   not worth the complexity for two sliders. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+#compare-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#compare-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#compare-controls[hidden] {
+  display: none;
+}
+
+#compare-year-label {
+  min-width: 5.5em;
+  white-space: nowrap;
+}
+
+#compare-year-slider {
+  width: 160px;
+}
+
+/* Before/after compare divider — shared by the map's satellite-imagery
+   compare (dragged over #map, clipping historicalLayer's tile
+   container) and the place-photo compare slider in the detail view
+   (dragged over .detail-hero.has-compare, clipping .compare-after).
+   250 comfortably clears Leaflet's own panes (tiles/markers/popups top
+   out at 700) but stays under its corner controls (800+), so dragging
+   near a corner tucks behind the zoom/layer buttons instead of
+   covering them. */
+.compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  z-index: 750;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.compare-divider[hidden] {
+  display: none;
+}
+
+.compare-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--color-bg);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.compare-divider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.compare-divider-handle::before {
+  content: "\2194";
+}
+
+.compare-divider:focus-visible {
+  outline: none;
+}
+
+.compare-divider:focus-visible .compare-divider-handle {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Responsive: narrow (phone/small tablet) viewports */

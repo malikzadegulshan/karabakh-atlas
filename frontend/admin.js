@@ -872,6 +872,18 @@ function buildAddCityForm(region) {
   setPlaceholderLabel(imageCreditInput, t("fieldImageCredit"));
   imageCreditInput.maxLength = 255;
 
+  // Optional — an older/historical photo shown as a before/after
+  // compare slider against the main photo above when both are set.
+  const imageUrlBeforeInput = document.createElement("input");
+  imageUrlBeforeInput.type = "url";
+  setPlaceholderLabel(imageUrlBeforeInput, t("fieldImageUrlBefore"));
+  imageUrlBeforeInput.maxLength = 500;
+
+  const imageBeforeCreditInput = document.createElement("input");
+  imageBeforeCreditInput.type = "text";
+  setPlaceholderLabel(imageBeforeCreditInput, t("fieldImageBeforeCredit"));
+  imageBeforeCreditInput.maxLength = 255;
+
   // Phone/website only apply to points of interest, not plain cities —
   // hidden whenever the category picker is on "city", starting here
   // since that's this form's default category.
@@ -911,6 +923,8 @@ function buildAddCityForm(region) {
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
   form.appendChild(imageCreditInput);
+  form.appendChild(imageUrlBeforeInput);
+  form.appendChild(imageBeforeCreditInput);
   form.appendChild(phoneInput);
   form.appendChild(websiteInput);
   form.appendChild(descInput);
@@ -933,6 +947,8 @@ function buildAddCityForm(region) {
       description: descInput.value.trim() || null,
       image_url: imageUrlInput.value.trim() || null,
       image_credit: imageCreditInput.value.trim() || null,
+      image_url_before: imageUrlBeforeInput.value.trim() || null,
+      image_before_credit: imageBeforeCreditInput.value.trim() || null,
       // Cities don't get a contact section in the detail view, so don't
       // save contact info for them either — even if the fields still
       // hold text from before the category was switched to "city".
@@ -1072,6 +1088,18 @@ function startEditCity(city) {
   imageCreditInput.maxLength = 255;
   imageCreditInput.value = city.image_credit || "";
 
+  const imageUrlBeforeInput = document.createElement("input");
+  imageUrlBeforeInput.type = "url";
+  setPlaceholderLabel(imageUrlBeforeInput, t("fieldImageUrlBefore"));
+  imageUrlBeforeInput.maxLength = 500;
+  imageUrlBeforeInput.value = city.image_url_before || "";
+
+  const imageBeforeCreditInput = document.createElement("input");
+  imageBeforeCreditInput.type = "text";
+  setPlaceholderLabel(imageBeforeCreditInput, t("fieldImageBeforeCredit"));
+  imageBeforeCreditInput.maxLength = 255;
+  imageBeforeCreditInput.value = city.image_before_credit || "";
+
   // Phone/website only apply to points of interest, not plain cities —
   // hidden whenever the category picker is on "city".
   const phoneInput = document.createElement("input");
@@ -1122,6 +1150,8 @@ function startEditCity(city) {
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
   form.appendChild(imageCreditInput);
+  form.appendChild(imageUrlBeforeInput);
+  form.appendChild(imageBeforeCreditInput);
   form.appendChild(phoneInput);
   form.appendChild(websiteInput);
   form.appendChild(descInput);
@@ -1145,6 +1175,8 @@ function startEditCity(city) {
         description: descInput.value.trim() || null,
         image_url: imageUrlInput.value.trim() || null,
         image_credit: imageCreditInput.value.trim() || null,
+        image_url_before: imageUrlBeforeInput.value.trim() || null,
+        image_before_credit: imageBeforeCreditInput.value.trim() || null,
         // Cities don't get a contact section in the detail view, so
         // don't save contact info for them either — even if the fields
         // still hold text from before the category was switched to

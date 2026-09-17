@@ -265,6 +265,41 @@ class TestAPIViews(unittest.TestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, 400)
 
+    def test_create_city_accepts_before_photo(self):
+        """image_url_before/image_before_credit round-trip as given."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "image_url_before": "https://example.com/before.jpg",
+                "image_before_credit": "Archive photo, 1994",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        body = json.loads(response.data)
+        self.assertEqual(
+            body["image_url_before"], "https://example.com/before.jpg")
+        self.assertEqual(body["image_before_credit"], "Archive photo, 1994")
+
+    def test_create_city_rejects_javascript_scheme_image_url_before(self):
+        """POST .../cities rejects a javascript: URL in image_url_before."""
+        region = json.loads(self.client.post(
+            "/api/v1/regions",
+            data=json.dumps({"name": "Region"}),
+            content_type="application/json").data)
+        response = self.client.post(
+            "/api/v1/regions/{}/cities".format(region["id"]),
+            data=json.dumps({
+                "name": "Corner Cafe", "latitude": 1, "longitude": 1,
+                "image_url_before": "javascript:alert(1)",
+            }),
+            content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
     def test_create_city_accepts_road_category(self):
         """POST .../cities accepts the "road" category."""
         region = json.loads(self.client.post(
