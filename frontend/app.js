@@ -476,7 +476,26 @@ function ensureMapCompareDivider() {
     (percent) => {
       const afterContainer = historicalLayer.getContainer();
       if (afterContainer) {
-        afterContainer.style.clipPath = `inset(0 0 0 ${percent}%)`;
+        // A tile layer's container has no intrinsic size (each tile
+        // positions itself independently inside it via its own
+        // transform, so the container reports getBoundingClientRect()
+        // width/height of 0) — clip-path: inset() computes its visible
+        // region as (the element's OWN size) minus the insets, so on a
+        // 0×0 box that's always zero or negative: the layer ends up
+        // fully invisible at every position, not just clipped to the
+        // wrong spot, silently leaving only compareLayer visible
+        // underneath, everywhere, at all times. The older `clip: rect()`
+        // property doesn't have this problem — it takes absolute
+        // coordinates in the element's own coordinate space rather than
+        // insets relative to its size, so it clips correctly even
+        // though the container reports zero size. Deprecated in favor
+        // of clip-path, but still supported everywhere, and exactly
+        // what dedicated Leaflet compare-slider plugins use for this
+        // same reason.
+        const size = map.getSize();
+        const offsetPx = (size.x * percent) / 100;
+        afterContainer.style.clip =
+          `rect(0px, ${size.x}px, ${size.y}px, ${offsetPx}px)`;
       }
     },
     {
@@ -513,7 +532,7 @@ function disableMapCompare() {
   compareControlsEl.hidden = true;
   const afterContainer = historicalLayer.getContainer();
   if (afterContainer) {
-    afterContainer.style.clipPath = "";
+    afterContainer.style.clip = "";
   }
 }
 
