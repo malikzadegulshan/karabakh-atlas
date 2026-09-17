@@ -399,7 +399,17 @@ compareYearSliderEl.addEventListener("input", () => {
 // container + a divider element inside it into a draggable (and
 // arrow-key-operable) 0-100 slider, calling onChange(percent) on every
 // move. What 0/100 actually reveal is entirely up to the caller.
-function wireCompareSlider(container, dividerEl, onChange) {
+//
+// onDragStart/onDragEnd exist purely for the map case: the divider
+// lives inside Leaflet's own map container, which has its own
+// mousedown/touchstart listener for panning the map — without
+// stopPropagation() *and* onDragStart disabling map.dragging for the
+// duration, a drag on the divider also starts a map pan, and the two
+// fight each other (the divider's clip-path updates correctly
+// underneath, but panning the whole map moves both layers together,
+// making it look like dragging does nothing). The photo slider isn't
+// inside a Leaflet map, so it just omits these.
+function wireCompareSlider(container, dividerEl, onChange, { onDragStart, onDragEnd } = {}) {
   function setPercent(percent) {
     const clamped = Math.max(0, Math.min(100, percent));
     dividerEl.style.left = `${clamped}%`;
@@ -412,12 +422,24 @@ function wireCompareSlider(container, dividerEl, onChange) {
   }
   dividerEl.addEventListener("pointerdown", (event) => {
     dividerEl.setPointerCapture(event.pointerId);
+    if (onDragStart) {
+      onDragStart();
+    }
+    event.stopPropagation();
   });
   dividerEl.addEventListener("pointermove", (event) => {
     if (!dividerEl.hasPointerCapture(event.pointerId)) {
       return;
     }
     setPercent(percentFromClientX(event.clientX));
+    event.stopPropagation();
+  });
+  ["pointerup", "pointercancel"].forEach((type) => {
+    dividerEl.addEventListener(type, () => {
+      if (onDragEnd) {
+        onDragEnd();
+      }
+    });
   });
   dividerEl.addEventListener("keydown", (event) => {
     const current = Number(dividerEl.getAttribute("aria-valuenow")) || 50;
@@ -450,11 +472,16 @@ function ensureMapCompareDivider() {
   mapCompareDividerEl.appendChild(handle);
   map.getContainer().appendChild(mapCompareDividerEl);
   mapCompareSlider = wireCompareSlider(
-    map.getContainer(), mapCompareDividerEl, (percent) => {
+    map.getContainer(), mapCompareDividerEl,
+    (percent) => {
       const afterContainer = historicalLayer.getContainer();
       if (afterContainer) {
         afterContainer.style.clipPath = `inset(0 0 0 ${percent}%)`;
       }
+    },
+    {
+      onDragStart: () => map.dragging.disable(),
+      onDragEnd: () => map.dragging.enable(),
     }
   );
 }
