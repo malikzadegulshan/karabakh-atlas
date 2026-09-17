@@ -20,6 +20,7 @@ from api.v1.validation import (
     require_number_in_range,
     optional_string,
     optional_url,
+    optional_i18n_dict,
     only_allowed_fields,
 )
 
@@ -31,6 +32,7 @@ EVENT_YEAR_MIN = 2014
 
 EVENT_FIELDS = {
     "title", "year", "latitude", "longitude", "description", "source_url",
+    "title_i18n", "description_i18n",
 }
 
 
@@ -49,6 +51,8 @@ def _validate_event_data(data, *, require_required_fields):
         require_number_in_range(data, "longitude", -180, 180)
     optional_string(data, "description")
     optional_url(data, "source_url", max_length=500)
+    optional_i18n_dict(data, "title_i18n")
+    optional_i18n_dict(data, "description_i18n")
 
 
 def _sorted_by_year(events):

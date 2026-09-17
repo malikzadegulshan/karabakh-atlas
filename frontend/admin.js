@@ -166,10 +166,80 @@ const adminEventsListEl = document.getElementById("admin-events-list");
 // real enforcement point; this just gives the form's number input
 // sensible min/max instead of letting someone submit an out-of-range
 // year only to have the server reject it.
+// Per-language overrides for a name/title/description field — same
+// *_i18n convention the seeded cities (Khankendi/Shusha) already use
+// for name_i18n/description_i18n, extended to whichever field calls
+// this. English uses the field's main input as its fallback (see
+// localizedName()/localizedDescription()/localizedEventTitle() in
+// app.js), so there's no separate "EN" input here.
+const NAME_I18N_LANGS = ["az", "tr", "ru"];
+
+function buildI18nInputs(existingValue, labelKey, { textarea = false, maxLength } = {}) {
+  const inputs = {};
+  const elements = NAME_I18N_LANGS.map((lang) => {
+    const el = document.createElement(textarea ? "textarea" : "input");
+    if (!textarea) {
+      el.type = "text";
+    } else {
+      el.rows = 2;
+    }
+    setPlaceholderLabel(el, `${t(labelKey)} (${lang.toUpperCase()})`);
+    if (maxLength) {
+      el.maxLength = maxLength;
+    }
+    el.value = (existingValue && existingValue[lang]) || "";
+    inputs[lang] = el;
+    return el;
+  });
+
+  function collect() {
+    const result = {};
+    NAME_I18N_LANGS.forEach((lang) => {
+      const value = inputs[lang].value.trim();
+      if (value) {
+        result[lang] = value;
+      }
+    });
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  return { elements, collect };
+}
+
+function buildNameI18nInputs(existingNameI18n) {
+  return buildI18nInputs(existingNameI18n, "fieldName", { maxLength: 128 });
+}
+
+function buildDescriptionI18nInputs(existingDescriptionI18n) {
+  return buildI18nInputs(existingDescriptionI18n, "fieldDescription", { textarea: true });
+}
+
+function buildTitleI18nInputs(existingTitleI18n) {
+  return buildI18nInputs(existingTitleI18n, "fieldTitle", { maxLength: 200 });
+}
+
 const EVENT_YEAR_MIN = 2014;
 const eventYearMax = new Date().getFullYear();
 eventYearInputEl.min = EVENT_YEAR_MIN;
 eventYearInputEl.max = eventYearMax;
+
+// Unlike the add-city form (rebuilt from scratch on every render, so it
+// always picks up the current language), this add-event form is static
+// markup — built once. Its az/tr/ru inputs are injected here rather
+// than hardcoded in index.html so they share buildTitleI18nInputs()/
+// buildDescriptionI18nInputs() with the edit-event form below, and
+// their placeholders are refreshed explicitly in
+// applyAdminStaticTranslations() since they're never rebuilt.
+const eventTitleI18n = buildTitleI18nInputs(null);
+eventTitleInputEl.after(...eventTitleI18n.elements);
+const eventDescriptionI18n = buildDescriptionI18nInputs(null);
+eventDescriptionInputEl.after(...eventDescriptionI18n.elements);
+
+function refreshI18nPlaceholders(elements, labelKey) {
+  elements.forEach((el, i) => {
+    setPlaceholderLabel(el, `${t(labelKey)} (${NAME_I18N_LANGS[i].toUpperCase()})`);
+  });
+}
 
 function applyAdminStaticTranslations() {
   adminToggleEl.setAttribute("aria-label", t("adminToggle"));
@@ -188,11 +258,13 @@ function applyAdminStaticTranslations() {
   adminAddEventTitleEl.textContent = t("adminAddEventTitle");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
   setPlaceholderLabel(eventTitleInputEl, t("fieldTitle"));
+  refreshI18nPlaceholders(eventTitleI18n.elements, "fieldTitle");
   setPlaceholderLabel(eventYearInputEl, t("fieldYear"));
   setPlaceholderLabel(eventLatInputEl, t("fieldLatitude"));
   setPlaceholderLabel(eventLngInputEl, t("fieldLongitude"));
   eventPickOnMapEl.textContent = t("adminPickOnMap");
   setPlaceholderLabel(eventDescriptionInputEl, t("fieldDescription"));
+  refreshI18nPlaceholders(eventDescriptionI18n.elements, "fieldDescription");
   setPlaceholderLabel(eventSourceInputEl, t("fieldSourceUrl"));
   eventFormSubmitEl.textContent = t("adminAddEventSubmit");
 }
@@ -437,6 +509,8 @@ function startEditEvent(event) {
   titleInput.required = true;
   titleInput.maxLength = 200;
 
+  const titleI18n = buildTitleI18nInputs(event.title_i18n);
+
   const yearInput = document.createElement("input");
   yearInput.type = "number";
   yearInput.step = "1";
@@ -468,6 +542,8 @@ function startEditEvent(event) {
   setPlaceholderLabel(descInput, t("fieldDescription"));
   descInput.value = event.description || "";
 
+  const descriptionI18n = buildDescriptionI18nInputs(event.description_i18n);
+
   const sourceInput = document.createElement("input");
   sourceInput.type = "url";
   setPlaceholderLabel(sourceInput, t("fieldSourceUrl"));
@@ -489,11 +565,13 @@ function startEditEvent(event) {
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
   form.appendChild(titleInput);
+  titleI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(yearInput);
   form.appendChild(latInput);
   form.appendChild(lngInput);
   form.appendChild(pickOnMapBtn);
   form.appendChild(descInput);
+  descriptionI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(sourceInput);
   form.appendChild(actions);
 
@@ -514,6 +592,8 @@ function startEditEvent(event) {
         title, year, latitude, longitude,
         description: descInput.value.trim() || null,
         source_url: sourceInput.value.trim() || null,
+        title_i18n: titleI18n.collect(),
+        description_i18n: descriptionI18n.collect(),
       });
       showAdminMessage(t("eventUpdated")(title), false);
       await refreshAdminEvents();
@@ -562,6 +642,8 @@ eventFormEl.addEventListener("submit", async (event) => {
       title, year, latitude, longitude,
       description: eventDescriptionInputEl.value.trim() || null,
       source_url: eventSourceInputEl.value.trim() || null,
+      title_i18n: eventTitleI18n.collect(),
+      description_i18n: eventDescriptionI18n.collect(),
     });
     showAdminMessage(t("eventAdded")(title), false);
     eventFormEl.reset();
@@ -748,67 +830,6 @@ function buildAdminCityRow(city) {
   li.appendChild(actions);
 
   return li;
-}
-
-// Per-language name overrides — same name_i18n field the seeded cities
-// (Khankendi/Shusha) already use, just now editable from the admin
-// panel for any city or point of interest. English uses the main Name
-// field as its fallback, so there's no separate "EN" input here.
-const NAME_I18N_LANGS = ["az", "tr", "ru"];
-
-function buildNameI18nInputs(existingNameI18n) {
-  const inputs = {};
-  const elements = NAME_I18N_LANGS.map((lang) => {
-    const input = document.createElement("input");
-    input.type = "text";
-    setPlaceholderLabel(input, `${t("fieldName")} (${lang.toUpperCase()})`);
-    input.maxLength = 128;
-    input.value = (existingNameI18n && existingNameI18n[lang]) || "";
-    inputs[lang] = input;
-    return input;
-  });
-
-  function collect() {
-    const result = {};
-    NAME_I18N_LANGS.forEach((lang) => {
-      const value = inputs[lang].value.trim();
-      if (value) {
-        result[lang] = value;
-      }
-    });
-    return Object.keys(result).length > 0 ? result : null;
-  }
-
-  return { elements, collect };
-}
-
-// Same idea as buildNameI18nInputs, but for the longer description text
-// — textareas instead of single-line inputs. English still uses the
-// main Description field as its fallback (see localizedDescription()
-// in app.js), so there's no separate "EN" textarea here either.
-function buildDescriptionI18nInputs(existingDescriptionI18n) {
-  const inputs = {};
-  const elements = NAME_I18N_LANGS.map((lang) => {
-    const textarea = document.createElement("textarea");
-    textarea.rows = 2;
-    setPlaceholderLabel(textarea, `${t("fieldDescription")} (${lang.toUpperCase()})`);
-    textarea.value = (existingDescriptionI18n && existingDescriptionI18n[lang]) || "";
-    inputs[lang] = textarea;
-    return textarea;
-  });
-
-  function collect() {
-    const result = {};
-    NAME_I18N_LANGS.forEach((lang) => {
-      const value = inputs[lang].value.trim();
-      if (value) {
-        result[lang] = value;
-      }
-    });
-    return Object.keys(result).length > 0 ? result : null;
-  }
-
-  return { elements, collect };
 }
 
 function buildAddCityForm(region) {

@@ -272,6 +272,16 @@ components:
         source_url:
           type: string
           nullable: true
+        title_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        description_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
         created_at:
           type: string
           format: date-time
@@ -301,6 +311,16 @@ components:
         source_url:
           type: string
           nullable: true
+        title_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        description_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
     Error:
       type: object
       properties:
