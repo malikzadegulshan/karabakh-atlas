@@ -1331,7 +1331,7 @@ function showCityDetail(city) {
           [city.latitude, city.longitude],
           [entry.city.latitude, entry.city.longitude],
         ],
-        { color: "#7c5cff", weight: 3, dashArray: "6 6" }
+        { color: "#43756c", weight: 3, dashArray: "6 6" }
       ).addTo(map);
       map.fitBounds(distanceLine.getBounds(), {
         padding: [60, 60], animate: false,
