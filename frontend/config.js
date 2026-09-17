@@ -8,3 +8,8 @@ const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
 window.KBA_API_BASE = isLocalDev
   ? "http://localhost:5000/api/v1"
   : PROD_API_BASE;
+
+// CARTO basemap tiles now require a (free, fair-use-limited) API key —
+// see https://carto.com/basemaps/apikey/. This key is meant to live in
+// client-side code; it's a usage quota, not an access secret.
+window.KBA_CARTO_KEY = "cb1_2wmf_1_e4571e160475685ea6714b5b";
