@@ -16,6 +16,13 @@ const statsCategoriesTitleEl = document.getElementById(
   "stats-categories-title");
 const statsCategoriesListEl = document.getElementById(
   "stats-categories-list");
+const statsCompositionEl = document.getElementById("stats-composition");
+const statsCompositionTitleEl = document.getElementById(
+  "stats-composition-title");
+const statsCompositionBarEl = document.getElementById(
+  "stats-composition-bar");
+const statsCompositionLegendEl = document.getElementById(
+  "stats-composition-legend");
 
 // Maps each tile's DOM id to the matching key in GET /stats's response
 // and the i18n key for its label.
@@ -25,6 +32,21 @@ const STAT_TILES = [
   { id: "stat-pois", key: "points_of_interest", labelKey: "statsPois" },
   { id: "stat-events", key: "historical_events", labelKey: "statsEvents" },
   { id: "stat-posts", key: "forum_posts", labelKey: "statsPosts" },
+];
+
+// The composition bar's four series — everything in STAT_TILES except
+// "regions", which is a structural/organizational count rather than
+// atlas *content*, so it doesn't belong in a part-to-whole breakdown
+// of what's in the atlas. Colors are --viz-series-1..4 (style.css): the
+// brand teal at four lightness steps rather than a multi-hue
+// categorical palette, so the bar reads as part of the app — validated
+// as an ordinal ramp (monotone lightness, adjacent step >= 0.06, light
+// end clears 2:1 contrast), fixed order, never reassigned per-render.
+const STATS_COMPOSITION_SLOTS = [
+  { key: "cities", labelKey: "statsCities", colorVar: "--viz-series-1" },
+  { key: "points_of_interest", labelKey: "statsPois", colorVar: "--viz-series-2" },
+  { key: "historical_events", labelKey: "statsEvents", colorVar: "--viz-series-3" },
+  { key: "forum_posts", labelKey: "statsPosts", colorVar: "--viz-series-4" },
 ];
 
 // Fetched once per page load and reused on every reopen — these
@@ -37,9 +59,60 @@ function applyStatsStaticTranslations() {
   statsTitleEl.textContent = t("statsTitle");
   statsLoadingEl.textContent = t("loading");
   statsCategoriesTitleEl.textContent = t("statsByCategory");
+  statsCompositionTitleEl.textContent = t("statsComposition");
   STAT_TILES.forEach((tile) => {
     document.getElementById(`${tile.id}-label`).textContent =
       t(tile.labelKey);
+  });
+}
+
+// Part-to-whole composition bar — cities/POIs/events/posts as one
+// segmented bar, colored by the fixed teal-shade slots in
+// STATS_COMPOSITION_SLOTS. The bar itself is aria-hidden (see
+// index.html): it's a visual restatement of exactly what the legend
+// list already says, so nothing is screen-reader-only or gated behind
+// hover — the legend is the accessible source of truth, the bar (plus
+// its title-attribute hover) is a sighted-user bonus.
+function renderComposition(data) {
+  statsCompositionBarEl.innerHTML = "";
+  statsCompositionLegendEl.innerHTML = "";
+  const slots = STATS_COMPOSITION_SLOTS.map((slot) => ({
+    ...slot,
+    count: data[slot.key] || 0,
+  }));
+  const total = slots.reduce((sum, slot) => sum + slot.count, 0);
+  statsCompositionEl.hidden = total === 0;
+  if (total === 0) {
+    return;
+  }
+  slots.forEach((slot) => {
+    const color = `var(${slot.colorVar})`;
+    const label = t(slot.labelKey);
+    const pct = Math.round((slot.count / total) * 100);
+
+    if (slot.count > 0) {
+      const segment = document.createElement("div");
+      segment.className = "stats-composition-segment";
+      segment.style.background = color;
+      segment.style.flexGrow = String(slot.count);
+      segment.title = `${label}: ${slot.count} (${pct}%)`;
+      statsCompositionBarEl.appendChild(segment);
+    }
+
+    const li = document.createElement("li");
+    li.className = "stats-legend-row";
+    const swatch = document.createElement("span");
+    swatch.className = "stats-legend-swatch";
+    swatch.style.background = color;
+    const text = document.createElement("span");
+    text.textContent = label;
+    const countEl = document.createElement("span");
+    countEl.className = "stats-legend-count";
+    countEl.textContent = String(slot.count);
+    li.appendChild(swatch);
+    li.appendChild(text);
+    li.appendChild(countEl);
+    statsCompositionLegendEl.appendChild(li);
   });
 }
 
@@ -93,6 +166,7 @@ async function loadStats() {
       document.getElementById(tile.id).textContent = String(
         data[tile.key] || 0);
     });
+    renderComposition(data);
     renderCategoryBreakdown(data.categories);
     statsLoadingEl.hidden = true;
     statsGridEl.hidden = false;
