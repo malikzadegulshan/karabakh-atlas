@@ -25,7 +25,7 @@ CITY_CATEGORIES = {
     "city", "road", "cafe", "restaurant", "hotel", "landmark", "museum",
     "park", "university", "school", "hospital", "pharmacy", "bank",
     "government", "police", "fire_station", "mosque", "church",
-    "fuel_station", "parking", "shop", "other",
+    "fuel_station", "parking", "shop", "grocery_store", "other",
 }
 
 CITY_FIELDS = {

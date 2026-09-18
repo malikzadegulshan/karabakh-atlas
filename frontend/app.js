@@ -239,6 +239,7 @@ const POI_TONES = {
   fuel_station: 2,
   parking: 2,
   road: 2,
+  grocery_store: 2,
   // Leisure
   cafe: 3,
   restaurant: 3,
