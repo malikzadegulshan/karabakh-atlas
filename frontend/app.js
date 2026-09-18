@@ -352,63 +352,41 @@ function updateYearLabel() {
   yearLabelEl.textContent = t("yearLabel")(selectedYear);
 }
 
+// A range input's "input" event fires on every pixel of drag movement
+// — dozens of times a second — so anything that reloads tiles has to
+// be debounced, not called straight from the listener. Without this,
+// dragging fires a burst of setUrl() calls (each one clears and
+// re-fetches every tile in the layer), which can flood the browser's
+// connection limit to the tile host badly enough to stall tile loading
+// for several seconds. The label/marker updates stay immediate since
+// those are cheap, local, and should track the drag live; only the
+// network call waits for the drag to pause.
+function debounce(fn, delayMs) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delayMs);
+  };
+}
+const TILE_RELOAD_DEBOUNCE_MS = 250;
+const debouncedApplySelectedYear = debounce(applySelectedYear, TILE_RELOAD_DEBOUNCE_MS);
+
 yearSliderEl.addEventListener("input", () => {
   selectedYear = Number(yearSliderEl.value);
   updateYearLabel();
-  applySelectedYear();
+  debouncedApplySelectedYear();
   updateEventMarkersVisibility();
 });
 
-// Before/after satellite-imagery compare: a second Wayback tile layer
-// (an earlier year) sits beneath historicalLayer, and a draggable
-// divider clips historicalLayer via clip-path — dragging left reveals
-// more of compareLayer's year, dragging right reveals more of the
-// year the main slider is on. Only meaningful while Historical is the
-// active base layer; updateTimelineVisibility() below turns it off if
-// the base layer changes away from Historical.
-const compareToggleEl = document.getElementById("compare-toggle");
-const compareToggleTextEl = document.getElementById("compare-toggle-text");
-const compareControlsEl = document.getElementById("compare-controls");
-const compareYearSliderEl = document.getElementById("compare-year-slider");
-const compareYearLabelEl = document.getElementById("compare-year-label");
-
-const compareLayer = L.tileLayer("", { maxZoom: 19 });
-let compareYear = null;
-let mapCompareDividerEl = null;
-let mapCompareSlider = null;
-
-function updateCompareYearLabel() {
-  compareYearLabelEl.textContent = t("compareYearLabel")(compareYear);
-}
-
-function applyCompareYear() {
-  if (waybackReleases.length === 0 || compareYear === null) {
-    return;
-  }
-  compareLayer.setUrl(releaseForYear(compareYear).urlTemplate);
-}
-
-compareYearSliderEl.addEventListener("input", () => {
-  compareYear = Number(compareYearSliderEl.value);
-  updateCompareYearLabel();
-  applyCompareYear();
-});
-
-// Shared by the map compare above and the before/after place-photo
-// slider in buildDetailCardHtml()/showCityDetail() below: turns a
-// container + a divider element inside it into a draggable (and
-// arrow-key-operable) 0-100 slider, calling onChange(percent) on every
-// move. What 0/100 actually reveal is entirely up to the caller.
+// Shared drag/keyboard helper for the before/after place-photo slider
+// in buildDetailCardHtml()/showCityDetail() below: turns a container +
+// a divider element inside it into a draggable (and arrow-key-operable)
+// 0-100 slider, calling onChange(percent) on every move. What 0/100
+// actually reveal is entirely up to the caller.
 //
-// onDragStart/onDragEnd exist purely for the map case: the divider
-// lives inside Leaflet's own map container, which has its own
-// mousedown/touchstart listener for panning the map — without
-// stopPropagation() *and* onDragStart disabling map.dragging for the
-// duration, a drag on the divider also starts a map pan, and the two
-// fight each other (the divider's clip-path updates correctly
-// underneath, but panning the whole map moves both layers together,
-// making it look like dragging does nothing). The photo slider isn't
-// inside a Leaflet map, so it just omits these.
+// onDragStart/onDragEnd are accepted for generality (e.g. a divider
+// living inside an interactive container that has its own drag
+// behavior to suspend) but the photo slider doesn't need either.
 function wireCompareSlider(container, dividerEl, onChange, { onDragStart, onDragEnd } = {}) {
   function setPercent(percent) {
     const clamped = Math.max(0, Math.min(100, percent));
@@ -454,95 +432,6 @@ function wireCompareSlider(container, dividerEl, onChange, { onDragStart, onDrag
   setPercent(50);
   return { setPercent };
 }
-
-function ensureMapCompareDivider() {
-  if (mapCompareDividerEl) {
-    return;
-  }
-  mapCompareDividerEl = document.createElement("div");
-  mapCompareDividerEl.className = "compare-divider";
-  mapCompareDividerEl.hidden = true;
-  mapCompareDividerEl.tabIndex = 0;
-  mapCompareDividerEl.setAttribute("role", "slider");
-  mapCompareDividerEl.setAttribute("aria-valuemin", "0");
-  mapCompareDividerEl.setAttribute("aria-valuemax", "100");
-  mapCompareDividerEl.setAttribute("aria-label", t("compareMapLabel"));
-  const handle = document.createElement("div");
-  handle.className = "compare-divider-handle";
-  mapCompareDividerEl.appendChild(handle);
-  map.getContainer().appendChild(mapCompareDividerEl);
-  mapCompareSlider = wireCompareSlider(
-    map.getContainer(), mapCompareDividerEl,
-    (percent) => {
-      const afterContainer = historicalLayer.getContainer();
-      if (afterContainer) {
-        // A tile layer's container has no intrinsic size (each tile
-        // positions itself independently inside it via its own
-        // transform, so the container reports getBoundingClientRect()
-        // width/height of 0) — clip-path: inset() computes its visible
-        // region as (the element's OWN size) minus the insets, so on a
-        // 0×0 box that's always zero or negative: the layer ends up
-        // fully invisible at every position, not just clipped to the
-        // wrong spot, silently leaving only compareLayer visible
-        // underneath, everywhere, at all times. The older `clip: rect()`
-        // property doesn't have this problem — it takes absolute
-        // coordinates in the element's own coordinate space rather than
-        // insets relative to its size, so it clips correctly even
-        // though the container reports zero size. Deprecated in favor
-        // of clip-path, but still supported everywhere, and exactly
-        // what dedicated Leaflet compare-slider plugins use for this
-        // same reason.
-        const size = map.getSize();
-        const offsetPx = (size.x * percent) / 100;
-        afterContainer.style.clip =
-          `rect(0px, ${size.x}px, ${size.y}px, ${offsetPx}px)`;
-      }
-    },
-    {
-      onDragStart: () => map.dragging.disable(),
-      onDragEnd: () => map.dragging.enable(),
-    }
-  );
-}
-
-function enableMapCompare() {
-  ensureMapCompareDivider();
-  compareYear = waybackReleases.length
-    ? waybackReleases[0].date.getFullYear()
-    : WAYBACK_FALLBACK_MIN_YEAR;
-  compareYearSliderEl.min = yearSliderEl.min;
-  compareYearSliderEl.max = yearSliderEl.max;
-  compareYearSliderEl.value = compareYear;
-  updateCompareYearLabel();
-  applyCompareYear();
-  compareLayer.addTo(map);
-  historicalLayer.bringToFront();
-  mapCompareDividerEl.hidden = false;
-  compareControlsEl.hidden = false;
-  mapCompareSlider.setPercent(50);
-}
-
-function disableMapCompare() {
-  if (map.hasLayer(compareLayer)) {
-    map.removeLayer(compareLayer);
-  }
-  if (mapCompareDividerEl) {
-    mapCompareDividerEl.hidden = true;
-  }
-  compareControlsEl.hidden = true;
-  const afterContainer = historicalLayer.getContainer();
-  if (afterContainer) {
-    afterContainer.style.clip = "";
-  }
-}
-
-compareToggleEl.addEventListener("change", () => {
-  if (compareToggleEl.checked) {
-    enableMapCompare();
-  } else {
-    disableMapCompare();
-  }
-});
 
 // Historical-timeline event markers: notable events pinned to a place
 // and a year, shown only while the Historical layer is active (same as
@@ -627,14 +516,8 @@ function updateTimelineVisibility(activeLayer) {
     if (!map.hasLayer(eventMarkersLayer)) {
       map.addLayer(eventMarkersLayer);
     }
-  } else {
-    if (map.hasLayer(eventMarkersLayer)) {
-      map.removeLayer(eventMarkersLayer);
-    }
-    if (compareToggleEl.checked) {
-      compareToggleEl.checked = false;
-      disableMapCompare();
-    }
+  } else if (map.hasLayer(eventMarkersLayer)) {
+    map.removeLayer(eventMarkersLayer);
   }
 }
 
@@ -743,13 +626,6 @@ function applyStaticTranslations() {
   detailBackEl.setAttribute("aria-label", t("detailBack"));
   detailBackEl.title = t("detailBack");
   updateYearLabel();
-  compareToggleTextEl.textContent = t("compareToggle");
-  if (compareYear !== null) {
-    updateCompareYearLabel();
-  }
-  if (mapCompareDividerEl) {
-    mapCompareDividerEl.setAttribute("aria-label", t("compareMapLabel"));
-  }
   panelToggleEl.setAttribute(
     "aria-label",
     panelEl.classList.contains("collapsed") ? t("sidebarOpen") : t("sidebarClose")
@@ -1290,9 +1166,8 @@ function buildDetailCardHtml(city) {
     if (hasBeforePhoto) {
       // A before/after compare slider needs two full <img>s stacked in
       // the same box (see .has-compare in style.css) rather than the
-      // single <img> below — wireDetailPhotoCompare() in
-      // showCityDetail() clips .compare-after via the shared
-      // wireCompareSlider() helper once this is in the DOM.
+      // single <img> below — showCityDetail() clips .compare-after via
+      // the shared wireCompareSlider() helper once this is in the DOM.
       const beforeSrc = compressedImageUrl(
         city.image_url_before, DETAIL_HERO_WIDTH, DETAIL_HERO_HEIGHT);
       parts.push(
@@ -1524,9 +1399,7 @@ function showCityDetail(city) {
     );
   });
   // Before/after place-photo slider — see the has-compare markup in
-  // buildDetailCardHtml() above. Reuses the same drag/keyboard helper
-  // the map's satellite-imagery compare uses, just clipping an <img>
-  // instead of a Leaflet tile layer's container.
+  // buildDetailCardHtml() above.
   const photoCompareDivider = detailEl.querySelector(
     ".detail-hero.has-compare .compare-divider");
   if (photoCompareDivider) {
