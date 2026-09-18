@@ -72,6 +72,15 @@
   --color-warn-bg-hover: #fde68a;
   --color-warn-text: #92400e;
   --shadow-color: rgba(0, 0, 0, 0.25);
+  /* Stats composition bar — one hue (the brand teal), monotone
+     lightness steps rather than the usual multi-hue categorical
+     palette, so the bar reads as part of the app instead of a
+     stock chart. Ordinal-ramp validated: adjacent ΔL >= 0.06,
+     light-end contrast >= 2:1 vs the chart surface. */
+  --viz-series-1: #2d4e48;
+  --viz-series-2: #43756c;
+  --viz-series-3: #599b8f;
+  --viz-series-4: #7db5aa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -96,6 +105,10 @@
     --color-warn-bg-hover: #5a3a08;
     --color-warn-text: #fbbf24;
     --shadow-color: rgba(0, 0, 0, 0.55);
+    --viz-series-1: #477b72;
+    --viz-series-2: #5da295;
+    --viz-series-3: #84b8af;
+    --viz-series-4: #abcfc8;
   }
 }
 
@@ -120,6 +133,10 @@
   --color-warn-bg-hover: #5a3a08;
   --color-warn-text: #fbbf24;
   --shadow-color: rgba(0, 0, 0, 0.55);
+  --viz-series-1: #477b72;
+  --viz-series-2: #5da295;
+  --viz-series-3: #84b8af;
+  --viz-series-4: #abcfc8;
 }
 
 body {
@@ -1645,6 +1662,77 @@ main {
 
 .stat-label {
   font-size: 0.78rem;
+  color: var(--color-text-faint);
+}
+
+#stats-composition {
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+#stats-composition[hidden] {
+  display: none;
+}
+
+#stats-composition-title {
+  margin: 0.5rem 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+/* Single stacked bar — part-to-whole across cities/POIs/events/posts.
+   2px gaps between segments (the CSS-viz "surface gap" spacer, done
+   with flex `gap` rather than manual margins) separate touching
+   segments instead of a border; segment widths use the raw counts as
+   flex-grow factors, so the ratio is always exact with no percentage
+   rounding to reconcile. Rounded outer ends come from clipping the
+   whole bar, not from rounding each segment. */
+#stats-composition-bar {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-bg-muted);
+}
+
+.stats-composition-segment {
+  /* flex-grow is set inline per element (renderComposition() in
+     stats.js), to the segment's raw count — flex resolves the exact
+     ratio itself, no percentage math to round. */
+  flex-shrink: 0;
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.stats-composition-segment:hover {
+  filter: brightness(1.12);
+}
+
+#stats-composition-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+
+.stats-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-text);
+}
+
+.stats-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.stats-legend-count {
   color: var(--color-text-faint);
 }
 
