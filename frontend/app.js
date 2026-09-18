@@ -248,12 +248,19 @@ const POI_TONES = {
   other: 3,
 };
 
-// The ramp flips wholesale between color schemes: dark circles read on
-// the light basemap, light circles on the dark one. Both directions
-// keep every tone at 4.5:1 or better against its own glyph color below.
+// Four lightness steps of the brand teal (H=169°, S=27%, the same hue
+// as --color-accent) instead of a flat gray ramp, so the markers read
+// as part of the app rather than a generic icon set. The ramp flips
+// wholesale between color schemes: dark circles read on the light
+// basemap, light circles on the dark one. Both directions keep every
+// tone at 4.5:1 or better against its own glyph color below — the
+// light ramp's lightest tone (tier 3) is the brand color itself.
+// Validated as an ordinal ramp (monotone lightness, adjacent step >=
+// 0.06, light end clears 2:1 contrast) via the dataviz skill's
+// validate_palette.js.
 const POI_TONE_RAMP = {
-  light: ["#18181b", "#3f3f46", "#52525b", "#71717a"],
-  dark: ["#fafafa", "#d4d4d8", "#b4b4ba", "#96969c"],
+  light: ["#162724", "#25413c", "#345b54", "#43756c"],
+  dark: ["#dbebe8", "#b1d2cc", "#87bab1", "#5da295"],
 };
 
 // Glyph drawn inside the circle, and the ring separating it from the
