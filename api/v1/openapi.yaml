@@ -124,7 +124,7 @@ components:
           enum: [city, road, cafe, restaurant, hotel, landmark, museum,
                   park, university, school, hospital, pharmacy, bank,
                   government, police, fire_station, mosque, church,
-                  fuel_station, parking, shop, other]
+                  fuel_station, parking, shop, grocery_store, other]
           default: city
         name_i18n:
           type: object
@@ -194,7 +194,7 @@ components:
           enum: [city, road, cafe, restaurant, hotel, landmark, museum,
                   park, university, school, hospital, pharmacy, bank,
                   government, police, fire_station, mosque, church,
-                  fuel_station, parking, shop, other]
+                  fuel_station, parking, shop, grocery_store, other]
         name_i18n:
           type: object
           nullable: true
