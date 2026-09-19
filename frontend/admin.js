@@ -132,12 +132,7 @@ const adminPanelEl = document.getElementById("admin-panel");
 const adminTitleEl = document.getElementById("admin-title");
 const adminCloseEl = document.getElementById("admin-close");
 const adminMessageEl = document.getElementById("admin-message");
-const adminAddRegionTitleEl = document.getElementById("admin-add-region-title");
 const adminRegionsTitleEl = document.getElementById("admin-regions-title");
-const regionFormEl = document.getElementById("region-form");
-const regionNameInputEl = document.getElementById("region-name-input");
-const regionDescriptionInputEl = document.getElementById("region-description-input");
-const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 const adminRegionsSearchEl = document.getElementById("admin-regions-search");
 const adminDataListViewEl = document.getElementById("admin-data-list-view");
@@ -252,8 +247,6 @@ function applyAdminStaticTranslations() {
   adminToggleEl.title = t("adminToggle");
   adminTitleEl.textContent = t("adminTitle");
   adminCloseEl.setAttribute("aria-label", t("adminClose"));
-  adminAddRegionTitleEl.textContent = t("adminAddRegionTitle");
-  regionFormSubmitEl.textContent = t("adminAddRegionSubmit");
   adminRegionsTitleEl.textContent = t("adminRegionsTitle");
   setPlaceholderLabel(
     adminRegionsSearchEl, t("adminRegionsSearchPlaceholder"));
@@ -489,29 +482,6 @@ function buildImageUploadField(urlInput) {
   wrapper.appendChild(status);
   return wrapper;
 }
-
-regionFormEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const name = regionNameInputEl.value.trim();
-  if (!name) {
-    showAdminMessage(t("regionNameEmpty"), true);
-    return;
-  }
-  regionFormSubmitEl.disabled = true;
-  try {
-    await apiRequest("POST", "/regions", {
-      name,
-      description: regionDescriptionInputEl.value.trim() || null,
-    });
-    showAdminMessage(t("regionCreated")(name), false);
-    regionFormEl.reset();
-    await refreshAdminData();
-  } catch (err) {
-    showAdminMessage(err.message, true);
-  } finally {
-    regionFormSubmitEl.disabled = false;
-  }
-});
 
 // The region/city list is hidden until searched (see
 // renderAdminRegions() below) rather than always listing everything —
