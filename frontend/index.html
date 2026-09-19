@@ -71,6 +71,7 @@
           <button type="button" data-lang="ru" role="menuitem" aria-label="Русский">RU</button>
         </div>
       </div>
+      <button type="button" id="tour-toggle" class="rail-btn" data-icon="rail_tour" aria-label="Take the tour"></button>
       <button type="button" id="stats-toggle" class="rail-btn" data-icon="rail_stats" aria-label="About this atlas"></button>
       <button type="button" id="theme-toggle" class="rail-btn" data-icon="theme_light" aria-pressed="false" aria-label="Toggle dark mode"></button>
       <div id="account-widget" class="rail-widget">
@@ -196,6 +197,31 @@
     </div>
   </div>
 
+  <!-- Guided tour: a spotlight cut into a dimmed backdrop (see
+       #tour-spotlight's box-shadow trick in style.css) plus a tooltip
+       card, both repositioned per step in tour.js from the real
+       target element's getBoundingClientRect() — never hardcoded
+       coordinates, so it stays correct across viewport sizes and
+       languages. Clicking the dimmed backdrop ends the tour, same as
+       every other overlay here. -->
+  <div id="tour-overlay" hidden>
+    <div id="tour-spotlight"></div>
+    <div id="tour-tooltip" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body">
+      <div id="tour-tooltip-head">
+        <div id="tour-dots"></div>
+        <span id="tour-step-label"></span>
+      </div>
+      <h3 id="tour-title"></h3>
+      <p id="tour-body"></p>
+      <div id="tour-actions">
+        <button type="button" id="tour-skip">Skip</button>
+        <div class="tour-spacer"></div>
+        <button type="button" id="tour-back">Back</button>
+        <button type="button" id="tour-next">Next</button>
+      </div>
+    </div>
+  </div>
+
   <div id="stats-overlay" hidden>
     <div id="stats-panel" role="dialog" aria-modal="true" aria-labelledby="stats-title">
       <div class="admin-panel-header">
@@ -286,7 +312,7 @@
     </div>
   </div>
 
-  <!-- defer: lets the browser fetch all ten in parallel instead of one
+  <!-- defer: lets the browser fetch these in parallel instead of one
        at a time (each currently blocks on the previous finishing both
        download and execution) while still guaranteeing they run in
        this exact order right before DOMContentLoaded, same as today —
@@ -305,6 +331,7 @@
   <script src="forum.js" defer></script>
   <script src="favorites.js" defer></script>
   <script src="stats.js" defer></script>
+  <script src="tour.js" defer></script>
   <script src="register-sw.js" defer></script>
 </body>
 </html>

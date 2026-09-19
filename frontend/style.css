@@ -1584,6 +1584,132 @@ main {
   color: var(--color-danger);
 }
 
+/* Guided tour — see tour.js. Not the centered-panel pattern the other
+   overlays here use: #tour-spotlight and #tour-tooltip are both
+   positioned in JS from the real target element's own
+   getBoundingClientRect() on every step, so only their look (not
+   their position) belongs in CSS. The overlay itself sits above the
+   2000-tier overlays since it can point at elements that live behind
+   them (in practice only one is ever open at a time). */
+#tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+}
+
+#tour-overlay[hidden] {
+  display: none;
+}
+
+#tour-spotlight {
+  position: fixed;
+  box-shadow: 0 0 0 9999px rgba(10, 12, 14, 0.62);
+  pointer-events: none;
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease,
+    height 0.25s ease, border-radius 0.25s ease;
+}
+
+#tour-tooltip {
+  position: fixed;
+  max-width: 340px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  padding: 1rem 1.1rem;
+  box-sizing: border-box;
+  transition: top 0.25s ease, left 0.25s ease;
+}
+
+#tour-tooltip-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+#tour-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+#tour-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+#tour-dots span.active {
+  background: var(--color-accent);
+}
+
+#tour-step-label {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
+}
+
+#tour-tooltip h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+#tour-tooltip p {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+#tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.tour-spacer {
+  flex-grow: 1;
+}
+
+#tour-skip {
+  border: none;
+  background: none;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+
+#tour-back {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#tour-back[hidden] {
+  display: none;
+}
+
+#tour-next {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* "About this atlas" stats dashboard — same overlay/panel/header
    pattern as the account panel above. */
 
