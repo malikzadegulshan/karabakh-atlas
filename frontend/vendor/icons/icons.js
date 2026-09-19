@@ -44,6 +44,9 @@ const KBA_ICON_PATHS = {
   // height on a baseline, kept intentionally simple (no borrowed
   // vendor path) since it's just straight lines.
   rail_stats: '<path d="M4 20v-6" /><path d="M10 20v-10" /><path d="M16 20v-4" /><path d="M4 20h16" />',
+  // guided-tour toggle (frontend/tour.js) — a compass, since the tour
+  // is a pointer walking someone around the map's own features.
+  rail_tour: '<path d="M8 16l2 -6l6 -2l-2 6l-6 2" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />',
   // place-detail card (#city-detail in app.js: back button, Call/Website
   // contact buttons)
   detail_back: '<path d="M15 6l-6 6l6 6" />',
