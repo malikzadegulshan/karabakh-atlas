@@ -238,37 +238,19 @@
         </div>
 
         <div id="admin-view-data" class="admin-view">
-          <div id="admin-data-list-view">
-            <section class="admin-section">
-              <h3 id="admin-regions-title">Regions &amp; cities</h3>
-              <input type="search" id="admin-regions-search" placeholder="Search regions or places…" aria-label="Search regions or places…">
-              <div id="admin-regions-list"></div>
-            </section>
-          </div>
-          <div id="admin-edit-view" hidden>
-            <button type="button" id="admin-edit-back" class="admin-edit-back">
-              <span aria-hidden="true">←</span> <span id="admin-edit-back-label">Back</span>
-            </button>
-            <div id="admin-edit-view-body"></div>
-          </div>
+          <section class="admin-section">
+            <h3 id="admin-regions-title">Regions &amp; cities</h3>
+            <input type="search" id="admin-regions-search" placeholder="Search regions or places…" aria-label="Search regions or places…">
+            <button type="button" id="admin-add-place-toggle" class="admin-add-new-btn">+ Add new place</button>
+            <div id="admin-regions-list"></div>
+          </section>
         </div>
 
         <div id="admin-view-events" class="admin-view" hidden>
           <section class="admin-section">
-            <h3 id="admin-add-event-title">Add timeline event</h3>
-            <form id="event-form" class="admin-form">
-              <input type="text" id="event-title-input" required maxlength="200">
-              <input type="number" id="event-year-input" required step="1">
-              <input type="number" id="event-lat-input" step="any" required>
-              <input type="number" id="event-lng-input" step="any" required>
-              <button type="button" id="event-pick-on-map" class="pick-on-map">Pick on map</button>
-              <textarea id="event-description-input" rows="2"></textarea>
-              <input type="url" id="event-source-input" maxlength="500">
-              <button type="submit" id="event-form-submit">Add event</button>
-            </form>
-          </section>
-          <section class="admin-section">
             <h3 id="admin-events-title">Timeline events</h3>
+            <input type="search" id="admin-events-search" placeholder="Search events…" aria-label="Search events…">
+            <button type="button" id="admin-add-event-toggle" class="admin-add-new-btn">+ Add new event</button>
             <div id="admin-events-list"></div>
           </section>
         </div>
@@ -278,6 +260,13 @@
             <h3 id="admin-forum-title">Forum moderation</h3>
             <div id="admin-forum-list"></div>
           </section>
+        </div>
+
+        <div id="admin-edit-view" hidden>
+          <button type="button" id="admin-edit-back" class="admin-edit-back">
+            <span aria-hidden="true">←</span> <span id="admin-edit-back-label">Back</span>
+          </button>
+          <div id="admin-edit-view-body"></div>
         </div>
       </div>
     </div>
