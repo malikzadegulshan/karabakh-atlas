@@ -33,20 +33,26 @@
   <meta name="theme-color" content="#43756c" />
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Starts the DNS/TLS handshake for the hosts the map fetches from
-       immediately on load, before the tile <img>s or fetch() calls
-       that need them are even discovered — the default basemap
-       (CARTO, subdomains a-d), the historical-imagery release config
-       (S3), and the weather panel (Open-Meteo). Satellite tiles and
-       the photo proxy aren't included: they're not fetched until the
-       visitor switches layers or opens a place, so preconnecting to
-       them here would just hold a connection open unused. -->
+  <!-- One real preconnect (full TCP/TLS handshake) for the default
+       basemap host — the tile fetches that are actually on the
+       critical path to first paint. The a/b/c/d subdomain split
+       CARTO's URLs use is an HTTP/1.1-era trick to dodge the old
+       6-connections-per-host cap; under HTTP/2 (what CARTO's CDN
+       actually serves over) opening all four upfront just forces four
+       separate handshakes that compete with this page's own HTML/CSS/
+       JS for bandwidth, instead of letting the browser potentially
+       coalesce them onto one connection — so only the first subdomain
+       gets a real preconnect. The historical-imagery config (S3) and
+       weather panel (Open-Meteo) hosts get the much cheaper
+       dns-prefetch instead: those fetches happen a beat later (after
+       cities/the Wayback config load), so resolving their DNS ahead
+       of time is worth it, but committing a full connection to them
+       this early isn't. Satellite tiles and the photo proxy aren't
+       hinted at all — not fetched until the visitor switches layers
+       or opens a place. -->
   <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
-  <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
-  <link rel="preconnect" href="https://c.basemaps.cartocdn.com" />
-  <link rel="preconnect" href="https://d.basemaps.cartocdn.com" />
-  <link rel="preconnect" href="https://s3-us-west-2.amazonaws.com" crossorigin />
-  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
+  <link rel="dns-prefetch" href="https://s3-us-west-2.amazonaws.com" />
+  <link rel="dns-prefetch" href="https://api.open-meteo.com" />
   <script src="theme-init.js"></script>
 </head>
 <body>
