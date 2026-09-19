@@ -132,13 +132,14 @@ const adminPanelEl = document.getElementById("admin-panel");
 const adminTitleEl = document.getElementById("admin-title");
 const adminCloseEl = document.getElementById("admin-close");
 const adminMessageEl = document.getElementById("admin-message");
-const adminAddRegionTitleEl = document.getElementById("admin-add-region-title");
 const adminRegionsTitleEl = document.getElementById("admin-regions-title");
-const regionFormEl = document.getElementById("region-form");
-const regionNameInputEl = document.getElementById("region-name-input");
-const regionDescriptionInputEl = document.getElementById("region-description-input");
-const regionFormSubmitEl = document.getElementById("region-form-submit");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
+const adminRegionsSearchEl = document.getElementById("admin-regions-search");
+const adminDataListViewEl = document.getElementById("admin-data-list-view");
+const adminEditViewEl = document.getElementById("admin-edit-view");
+const adminEditViewBodyEl = document.getElementById("admin-edit-view-body");
+const adminEditBackEl = document.getElementById("admin-edit-back");
+const adminEditBackLabelEl = document.getElementById("admin-edit-back-label");
 const adminForumTitleEl = document.getElementById("admin-forum-title");
 const adminForumListEl = document.getElementById("admin-forum-list");
 const adminTabDataEl = document.getElementById("admin-tab-data");
@@ -246,9 +247,10 @@ function applyAdminStaticTranslations() {
   adminToggleEl.title = t("adminToggle");
   adminTitleEl.textContent = t("adminTitle");
   adminCloseEl.setAttribute("aria-label", t("adminClose"));
-  adminAddRegionTitleEl.textContent = t("adminAddRegionTitle");
-  regionFormSubmitEl.textContent = t("adminAddRegionSubmit");
   adminRegionsTitleEl.textContent = t("adminRegionsTitle");
+  setPlaceholderLabel(
+    adminRegionsSearchEl, t("adminRegionsSearchPlaceholder"));
+  adminEditBackLabelEl.textContent = t("adminBack");
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
   adminForumTitleEl.textContent = t("adminForumTitle");
@@ -269,6 +271,29 @@ function applyAdminStaticTranslations() {
   eventFormSubmitEl.textContent = t("adminAddEventSubmit");
 }
 
+// Editing a region or place opens as its own "page" in place of the
+// region/city list (rather than expanding inline where the Edit
+// button was clicked) — see startEditRegion()/startEditCity() below,
+// which call this with a freshly-built edit form instead of doing
+// their own replaceWith(). Closing it (Back, Cancel, or a successful
+// Save) always goes through closeAdminEditView(), which restores the
+// list view — refreshAdminData() re-renders #admin-regions-list while
+// it's hidden, so the list is current the moment it's shown again.
+function openAdminEditView(form) {
+  adminDataListViewEl.hidden = true;
+  adminEditViewBodyEl.innerHTML = "";
+  adminEditViewBodyEl.appendChild(form);
+  adminEditViewEl.hidden = false;
+}
+
+function closeAdminEditView() {
+  adminEditViewEl.hidden = true;
+  adminEditViewBodyEl.innerHTML = "";
+  adminDataListViewEl.hidden = false;
+}
+
+adminEditBackEl.addEventListener("click", closeAdminEditView);
+
 // Three tabs sharing the same modal, same pattern as the sign-in/register
 // tabs in auth.js (.active class + hidden toggling).
 function selectAdminTab(tab) {
@@ -278,6 +303,9 @@ function selectAdminTab(tab) {
   adminViewDataEl.hidden = tab !== "data";
   adminViewEventsEl.hidden = tab !== "events";
   adminViewForumEl.hidden = tab !== "forum";
+  // Leaving the data tab (or reopening it) shouldn't leave a stale
+  // edit form open underneath the tab switch.
+  closeAdminEditView();
 }
 
 adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
@@ -455,27 +483,19 @@ function buildImageUploadField(urlInput) {
   return wrapper;
 }
 
-regionFormEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const name = regionNameInputEl.value.trim();
-  if (!name) {
-    showAdminMessage(t("regionNameEmpty"), true);
-    return;
-  }
-  regionFormSubmitEl.disabled = true;
-  try {
-    await apiRequest("POST", "/regions", {
-      name,
-      description: regionDescriptionInputEl.value.trim() || null,
-    });
-    showAdminMessage(t("regionCreated")(name), false);
-    regionFormEl.reset();
-    await refreshAdminData();
-  } catch (err) {
-    showAdminMessage(err.message, true);
-  } finally {
-    regionFormSubmitEl.disabled = false;
-  }
+// The region/city list is hidden until searched (see
+// renderAdminRegions() below) rather than always listing everything —
+// with no pagination, that list would become an unusably long scroll
+// on every "Manage Data" open once there are enough places. Cached
+// here so typing in the search box re-filters instantly instead of
+// re-fetching on every keystroke.
+let adminRegionsCache = [];
+let adminCitiesCache = [];
+let adminRegionsQuery = "";
+
+adminRegionsSearchEl.addEventListener("input", () => {
+  adminRegionsQuery = adminRegionsSearchEl.value;
+  renderAdminRegions(adminRegionsCache, adminCitiesCache, adminRegionsQuery);
 });
 
 async function refreshAdminData() {
@@ -485,7 +505,9 @@ async function refreshAdminData() {
       apiRequest("GET", "/regions"),
       apiRequest("GET", "/cities"),
     ]);
-    renderAdminRegions(regions, cities);
+    adminRegionsCache = regions;
+    adminCitiesCache = cities;
+    renderAdminRegions(adminRegionsCache, adminCitiesCache, adminRegionsQuery);
   } catch (err) {
     adminRegionsListEl.textContent = "";
     showAdminMessage(err.message, true);
@@ -795,7 +817,28 @@ async function moderateForumPost(post, status) {
   }
 }
 
-function renderAdminRegions(regions, cities) {
+// A region is a match if its own name matches (showing all of its
+// places), or if it has at least one place whose name matches
+// (showing only those places) — so searching "hotel" surfaces every
+// region with a hotel in it, each showing just its hotel(s).
+function filterAdminRegions(regions, cities, query) {
+  const q = query.trim().toLowerCase();
+  return regions
+    .map((region) => {
+      const regionMatches = region.name.toLowerCase().includes(q);
+      const regionCities = cities.filter((c) => c.region_id === region.id);
+      const shownCities = regionMatches
+        ? regionCities
+        : regionCities.filter((c) => c.name.toLowerCase().includes(q));
+      if (!regionMatches && shownCities.length === 0) {
+        return null;
+      }
+      return { region, cities: shownCities };
+    })
+    .filter(Boolean);
+}
+
+function renderAdminRegions(regions, cities, query) {
   adminRegionsListEl.innerHTML = "";
   if (regions.length === 0) {
     const empty = document.createElement("p");
@@ -804,10 +847,25 @@ function renderAdminRegions(regions, cities) {
     adminRegionsListEl.appendChild(empty);
     return;
   }
-  regions.forEach((region) => {
-    const regionCities = cities.filter((c) => c.region_id === region.id);
-    adminRegionsListEl.appendChild(buildAdminRegionCard(region, regionCities));
-  });
+  const q = (query || "").trim();
+  if (!q) {
+    const hint = document.createElement("p");
+    hint.className = "admin-empty";
+    hint.textContent = t("adminRegionsSearchHint");
+    adminRegionsListEl.appendChild(hint);
+    return;
+  }
+  const matches = filterAdminRegions(regions, cities, q);
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminRegionsNoMatches");
+    adminRegionsListEl.appendChild(empty);
+    return;
+  }
+  matches.forEach(({ region, cities: regionCities }) =>
+    adminRegionsListEl.appendChild(
+      buildAdminRegionCard(region, regionCities)));
 }
 
 function buildAdminRegionCard(region, regionCities) {
@@ -1046,12 +1104,6 @@ function buildAddCityForm(region) {
 }
 
 function startEditRegion(region) {
-  const card = adminRegionsListEl.querySelector(
-    `.admin-region[data-region-id="${region.id}"]`);
-  if (!card) {
-    return;
-  }
-
   const form = document.createElement("form");
   form.className = "admin-form admin-edit-form";
 
@@ -1075,7 +1127,10 @@ function startEditRegion(region) {
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = t("adminCancel");
-  cancelBtn.addEventListener("click", refreshAdminData);
+  cancelBtn.addEventListener("click", () => {
+    closeAdminEditView();
+    refreshAdminData();
+  });
 
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
@@ -1096,6 +1151,7 @@ function startEditRegion(region) {
         name, description: descInput.value.trim() || null,
       });
       showAdminMessage(t("regionUpdated")(name), false);
+      closeAdminEditView();
       await refreshAdminData();
       await loadCities();
     } catch (err) {
@@ -1104,16 +1160,10 @@ function startEditRegion(region) {
     }
   });
 
-  card.replaceWith(form);
+  openAdminEditView(form);
 }
 
 function startEditCity(city) {
-  const li = adminRegionsListEl.querySelector(
-    `.admin-city[data-city-id="${city.id}"]`);
-  if (!li) {
-    return;
-  }
-
   const form = document.createElement("form");
   form.className = "admin-form admin-edit-form admin-edit-city-form";
 
@@ -1205,7 +1255,10 @@ function startEditCity(city) {
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = t("adminCancel");
-  cancelBtn.addEventListener("click", refreshAdminData);
+  cancelBtn.addEventListener("click", () => {
+    closeAdminEditView();
+    refreshAdminData();
+  });
 
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
@@ -1256,6 +1309,7 @@ function startEditCity(city) {
         description_i18n: descriptionI18n.collect(),
       });
       showAdminMessage(t("cityUpdated")(name), false);
+      closeAdminEditView();
       await refreshAdminData();
       await loadCities();
     } catch (err) {
@@ -1264,7 +1318,7 @@ function startEditCity(city) {
     }
   });
 
-  li.replaceWith(form);
+  openAdminEditView(form);
 }
 
 async function deleteRegion(region) {

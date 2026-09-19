@@ -1851,7 +1851,8 @@ main {
 }
 
 .admin-form input,
-.admin-form textarea {
+.admin-form textarea,
+#admin-regions-search {
   width: 100%;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
@@ -1977,6 +1978,28 @@ main {
   color: var(--color-text-faint);
   font-style: italic;
   margin: 0.4rem 0;
+}
+
+/* Edit "page": takes over #admin-view-data in place of the region/city
+   list (see openAdminEditView() in admin.js) rather than expanding the
+   list inline, so editing a region or place with a long list above it
+   doesn't require scrolling back up to find the form. */
+.admin-edit-back {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: -0.2rem 0 0.9rem -0.3rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.admin-edit-back:hover {
+  text-decoration: underline;
 }
 
 .admin-add-city-form {
