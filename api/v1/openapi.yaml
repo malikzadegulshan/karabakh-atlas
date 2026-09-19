@@ -986,3 +986,58 @@ paths:
           description: Admin privileges required
         "404":
           description: Not found
+  /images:
+    post:
+      summary: >
+        Upload an image (JPEG/PNG/GIF/WebP, 4MB max) and get back a URL
+        to put in City.image_url or image_url_before.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+        "400":
+          description: Missing file, or not a JPEG/PNG/GIF/WebP image
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "413":
+          description: Image larger than 4MB
+  /images/{image_id}:
+    parameters:
+      - name: image_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Fetch a previously uploaded image's bytes
+      responses:
+        "200":
+          description: The image
+          content:
+            image/jpeg: {}
+            image/png: {}
+            image/gif: {}
+            image/webp: {}
+        "404":
+          description: Not found

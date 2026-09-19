@@ -1886,6 +1886,29 @@ main {
   gap: 0.5rem;
 }
 
+.image-upload-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: -0.15rem;
+}
+
+.image-upload-field input[type="file"] {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.76rem;
+}
+
+.image-upload-status {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.image-upload-status.error {
+  color: var(--color-danger);
+}
+
 .admin-form-actions button[type="button"] {
   background: var(--color-border);
   color: var(--color-text);

@@ -390,6 +390,71 @@ async function apiRequest(method, path, body) {
   return data;
 }
 
+// Matches MAX_IMAGE_BYTES in api/v1/views/images.py — checked
+// client-side too so an oversized file is rejected instantly instead
+// of after a slow upload the server was always going to reject anyway.
+const MAX_UPLOAD_IMAGE_BYTES = 4 * 1024 * 1024;
+
+// A file-upload control paired with an existing image_url/
+// image_url_before text input: on choosing a file, POSTs it to
+// /images and fills the paired input with the URL that comes back —
+// the same field a pasted external URL would go in, so nothing else
+// about the form (or what gets sent on submit) needs to change.
+function buildImageUploadField(urlInput) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-upload-field";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/jpeg,image/png,image/webp,image/gif";
+  fileInput.setAttribute("aria-label", t("fieldImageUpload"));
+
+  const status = document.createElement("span");
+  status.className = "image-upload-status";
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) {
+      return;
+    }
+    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+      status.textContent = t("imageTooLarge");
+      status.classList.add("error");
+      fileInput.value = "";
+      return;
+    }
+    fileInput.disabled = true;
+    status.classList.remove("error");
+    status.textContent = t("imageUploading");
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`${API_BASE}/images`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          (data && data.error) || `Upload failed (${res.status})`);
+      }
+      urlInput.value = data.url;
+      status.textContent = t("imageUploaded");
+    } catch (err) {
+      status.textContent = err.message;
+      status.classList.add("error");
+    } finally {
+      fileInput.disabled = false;
+      fileInput.value = "";
+    }
+  });
+
+  wrapper.appendChild(fileInput);
+  wrapper.appendChild(status);
+  return wrapper;
+}
+
 regionFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = regionNameInputEl.value.trim();
@@ -922,8 +987,10 @@ function buildAddCityForm(region) {
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
+  form.appendChild(buildImageUploadField(imageUrlInput));
   form.appendChild(imageCreditInput);
   form.appendChild(imageUrlBeforeInput);
+  form.appendChild(buildImageUploadField(imageUrlBeforeInput));
   form.appendChild(imageBeforeCreditInput);
   form.appendChild(phoneInput);
   form.appendChild(websiteInput);
@@ -1149,8 +1216,10 @@ function startEditCity(city) {
   form.appendChild(pickOnMapBtn);
   form.appendChild(categoryPicker);
   form.appendChild(imageUrlInput);
+  form.appendChild(buildImageUploadField(imageUrlInput));
   form.appendChild(imageCreditInput);
   form.appendChild(imageUrlBeforeInput);
+  form.appendChild(buildImageUploadField(imageUrlBeforeInput));
   form.appendChild(imageBeforeCreditInput);
   form.appendChild(phoneInput);
   form.appendChild(websiteInput);

@@ -11,10 +11,11 @@ from models.user import User
 from models.forum_post import ForumPost
 from models.historical_event import HistoricalEvent
 from models.favorite import Favorite
+from models.image import Image
 
 classes = {
     "Region": Region, "City": City, "User": User, "ForumPost": ForumPost,
-    "HistoricalEvent": HistoricalEvent, "Favorite": Favorite,
+    "HistoricalEvent": HistoricalEvent, "Favorite": Favorite, "Image": Image,
 }
 
 logger = logging.getLogger(__name__)
