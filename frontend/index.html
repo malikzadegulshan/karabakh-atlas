@@ -33,6 +33,20 @@
   <meta name="theme-color" content="#43756c" />
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Starts the DNS/TLS handshake for the hosts the map fetches from
+       immediately on load, before the tile <img>s or fetch() calls
+       that need them are even discovered — the default basemap
+       (CARTO, subdomains a-d), the historical-imagery release config
+       (S3), and the weather panel (Open-Meteo). Satellite tiles and
+       the photo proxy aren't included: they're not fetched until the
+       visitor switches layers or opens a place, so preconnecting to
+       them here would just hold a connection open unused. -->
+  <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+  <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
+  <link rel="preconnect" href="https://c.basemaps.cartocdn.com" />
+  <link rel="preconnect" href="https://d.basemaps.cartocdn.com" />
+  <link rel="preconnect" href="https://s3-us-west-2.amazonaws.com" crossorigin />
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
   <script src="theme-init.js"></script>
 </head>
 <body>
@@ -272,16 +286,25 @@
     </div>
   </div>
 
-  <script src="vendor/leaflet/leaflet.js"></script>
-  <script src="vendor/icons/icons.js"></script>
-  <script src="config.js"></script>
-  <script src="i18n.js"></script>
-  <script src="app.js"></script>
-  <script src="auth.js"></script>
-  <script src="admin.js"></script>
-  <script src="forum.js"></script>
-  <script src="favorites.js"></script>
-  <script src="stats.js"></script>
-  <script src="register-sw.js"></script>
+  <!-- defer: lets the browser fetch all ten in parallel instead of one
+       at a time (each currently blocks on the previous finishing both
+       download and execution) while still guaranteeing they run in
+       this exact order right before DOMContentLoaded, same as today —
+       later files rely on globals (map, t(), API_BASE, ...) earlier
+       ones define, and defer preserves document order regardless of
+       which one's request comes back first. theme-init.js above is
+       deliberately left un-deferred; it has to run before first paint
+       to avoid a flash of the wrong theme. -->
+  <script src="vendor/leaflet/leaflet.js" defer></script>
+  <script src="vendor/icons/icons.js" defer></script>
+  <script src="config.js" defer></script>
+  <script src="i18n.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="admin.js" defer></script>
+  <script src="forum.js" defer></script>
+  <script src="favorites.js" defer></script>
+  <script src="stats.js" defer></script>
+  <script src="register-sw.js" defer></script>
 </body>
 </html>
