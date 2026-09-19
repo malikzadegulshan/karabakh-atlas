@@ -7,6 +7,7 @@ import time
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
+from werkzeug.middleware.proxy_fix import ProxyFix
 from models import storage
 from models.user import User
 from api.v1.views import app_views
@@ -18,7 +19,8 @@ WRITE_METHODS = {"POST", "PUT", "DELETE"}
 # logged out), and /forum/* enforces login (and admin, for moderation)
 # itself via decorators instead of this prefix list.
 ADMIN_GATED_PREFIXES = (
-    "/api/v1/regions", "/api/v1/cities", "/api/v1/historical-events")
+    "/api/v1/regions", "/api/v1/cities", "/api/v1/historical-events",
+    "/api/v1/images")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
 
@@ -37,6 +39,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+# Render (and most PaaS hosts) terminate HTTPS and forward to this app
+# over plain HTTP, setting X-Forwarded-Proto/Host instead — without
+# this, request.host_url would report "http://" even for a real HTTPS
+# visitor, which would leak into the absolute image URLs POST
+# /api/v1/images hands back (see api/v1/views/images.py).
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.register_blueprint(app_views)
 app.register_blueprint(
     get_swaggerui_blueprint(

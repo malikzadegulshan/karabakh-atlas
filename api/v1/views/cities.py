@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """RESTful API views for City objects."""
+import re
 from api.v1.views import app_views
 from flask import jsonify, abort, request
 from models import storage
@@ -7,6 +8,7 @@ from models.region import Region
 from models.city import City
 from models.forum_post import ForumPost
 from models.favorite import Favorite
+from models.image import Image
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
@@ -17,6 +19,27 @@ from api.v1.validation import (
     optional_enum,
     only_allowed_fields,
 )
+
+# Matches the URL POST /images (api/v1/views/images.py) hands back, so
+# an old photo can be told apart from a pasted external link — deleting
+# or replacing one of *our* uploads should also drop the underlying
+# Image row; a link to somewhere else isn't ours to delete.
+_UPLOADED_IMAGE_ID_RE = re.compile(r"/api/v1/images/([^/?#]+)/?$")
+
+
+def _delete_uploaded_image_if_ours(url):
+    """Delete the Image row url points at, if it's one of our own
+    uploads (no-op for an external link, a blank field, or an id that's
+    already gone)."""
+    if not url:
+        return
+    match = _UPLOADED_IMAGE_ID_RE.search(url)
+    if not match:
+        return
+    image = storage.all(Image).get("Image.{}".format(match.group(1)))
+    if image is not None:
+        image.delete()
+
 
 # "city" renders as a persistent map label; every other value is a
 # user-added point of interest, rendered as a small marker only when
@@ -129,6 +152,8 @@ def delete_city(city_id):
     for favorite in [f for f in storage.all(Favorite).values()
                      if f.city_id == city_id]:
         favorite.delete()
+    _delete_uploaded_image_if_ours(city.image_url)
+    _delete_uploaded_image_if_ours(city.image_url_before)
     city.delete()
     storage.save()
     return jsonify({}), 200
@@ -147,7 +172,10 @@ def update_city(city_id):
         _validate_city_data(data, require_required_fields=False)
     except ValidationError as error:
         abort(400, description=error.message)
+    image_url_fields = ("image_url", "image_url_before")
     for key, value in data.items():
+        if key in image_url_fields and value != getattr(city, key):
+            _delete_uploaded_image_if_ours(getattr(city, key))
         setattr(city, key, value)
     city.save()
     return jsonify(city.to_dict()), 200
