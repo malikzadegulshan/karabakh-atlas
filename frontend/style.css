@@ -1852,7 +1852,8 @@ main {
 
 .admin-form input,
 .admin-form textarea,
-#admin-regions-search {
+#admin-regions-search,
+#admin-events-search {
   width: 100%;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
@@ -1862,6 +1863,23 @@ main {
   background: var(--color-bg);
   color: var(--color-text);
   margin-top: 10px
+}
+
+/* "+ Add new place" / "+ Add new event" — sits below the search box,
+   opens the same shared #admin-edit-view "page" as an Edit click does
+   (see openAdminEditView() in admin.js). */
+.admin-add-new-btn {
+  display: block;
+  width: 100%;
+  margin: 0.6rem 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .admin-form button,

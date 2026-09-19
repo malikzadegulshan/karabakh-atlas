@@ -135,7 +135,7 @@ const adminMessageEl = document.getElementById("admin-message");
 const adminRegionsTitleEl = document.getElementById("admin-regions-title");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 const adminRegionsSearchEl = document.getElementById("admin-regions-search");
-const adminDataListViewEl = document.getElementById("admin-data-list-view");
+const adminAddPlaceToggleEl = document.getElementById("admin-add-place-toggle");
 const adminEditViewEl = document.getElementById("admin-edit-view");
 const adminEditViewBodyEl = document.getElementById("admin-edit-view-body");
 const adminEditBackEl = document.getElementById("admin-edit-back");
@@ -148,17 +148,9 @@ const adminTabForumEl = document.getElementById("admin-tab-forum");
 const adminViewDataEl = document.getElementById("admin-view-data");
 const adminViewEventsEl = document.getElementById("admin-view-events");
 const adminViewForumEl = document.getElementById("admin-view-forum");
-const adminAddEventTitleEl = document.getElementById("admin-add-event-title");
 const adminEventsTitleEl = document.getElementById("admin-events-title");
-const eventFormEl = document.getElementById("event-form");
-const eventTitleInputEl = document.getElementById("event-title-input");
-const eventYearInputEl = document.getElementById("event-year-input");
-const eventLatInputEl = document.getElementById("event-lat-input");
-const eventLngInputEl = document.getElementById("event-lng-input");
-const eventPickOnMapEl = document.getElementById("event-pick-on-map");
-const eventDescriptionInputEl = document.getElementById("event-description-input");
-const eventSourceInputEl = document.getElementById("event-source-input");
-const eventFormSubmitEl = document.getElementById("event-form-submit");
+const adminEventsSearchEl = document.getElementById("admin-events-search");
+const adminAddEventToggleEl = document.getElementById("admin-add-event-toggle");
 const adminEventsListEl = document.getElementById("admin-events-list");
 
 // The historical-imagery timeline only reaches back to ~2014 (see
@@ -221,26 +213,6 @@ function buildTitleI18nInputs(existingTitleI18n) {
 
 const EVENT_YEAR_MIN = 2014;
 const eventYearMax = new Date().getFullYear();
-eventYearInputEl.min = EVENT_YEAR_MIN;
-eventYearInputEl.max = eventYearMax;
-
-// Unlike the add-city form (rebuilt from scratch on every render, so it
-// always picks up the current language), this add-event form is static
-// markup — built once. Its az/tr/ru inputs are injected here rather
-// than hardcoded in index.html so they share buildTitleI18nInputs()/
-// buildDescriptionI18nInputs() with the edit-event form below, and
-// their placeholders are refreshed explicitly in
-// applyAdminStaticTranslations() since they're never rebuilt.
-const eventTitleI18n = buildTitleI18nInputs(null);
-eventTitleInputEl.after(...eventTitleI18n.elements);
-const eventDescriptionI18n = buildDescriptionI18nInputs(null);
-eventDescriptionInputEl.after(...eventDescriptionI18n.elements);
-
-function refreshI18nPlaceholders(elements, labelKey) {
-  elements.forEach((el, i) => {
-    setPlaceholderLabel(el, `${t(labelKey)} (${NAME_I18N_LANGS[i].toUpperCase()})`);
-  });
-}
 
 function applyAdminStaticTranslations() {
   adminToggleEl.setAttribute("aria-label", t("adminToggle"));
@@ -250,6 +222,7 @@ function applyAdminStaticTranslations() {
   adminRegionsTitleEl.textContent = t("adminRegionsTitle");
   setPlaceholderLabel(
     adminRegionsSearchEl, t("adminRegionsSearchPlaceholder"));
+  adminAddPlaceToggleEl.textContent = t("adminAddPlaceButton");
   adminEditBackLabelEl.textContent = t("adminBack");
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
@@ -257,30 +230,28 @@ function applyAdminStaticTranslations() {
   adminTabDataEl.textContent = t("adminRegionsTitle");
   adminTabEventsEl.textContent = t("adminEventsTitle");
   adminTabForumEl.textContent = t("adminForumTitle");
-  adminAddEventTitleEl.textContent = t("adminAddEventTitle");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
-  setPlaceholderLabel(eventTitleInputEl, t("fieldTitle"));
-  refreshI18nPlaceholders(eventTitleI18n.elements, "fieldTitle");
-  setPlaceholderLabel(eventYearInputEl, t("fieldYear"));
-  setPlaceholderLabel(eventLatInputEl, t("fieldLatitude"));
-  setPlaceholderLabel(eventLngInputEl, t("fieldLongitude"));
-  eventPickOnMapEl.textContent = t("adminPickOnMap");
-  setPlaceholderLabel(eventDescriptionInputEl, t("fieldDescription"));
-  refreshI18nPlaceholders(eventDescriptionI18n.elements, "fieldDescription");
-  setPlaceholderLabel(eventSourceInputEl, t("fieldSourceUrl"));
-  eventFormSubmitEl.textContent = t("adminAddEventSubmit");
+  setPlaceholderLabel(adminEventsSearchEl, t("adminEventsSearchPlaceholder"));
+  adminAddEventToggleEl.textContent = t("adminAddEventButton");
 }
 
-// Editing a region or place opens as its own "page" in place of the
-// region/city list (rather than expanding inline where the Edit
-// button was clicked) — see startEditRegion()/startEditCity() below,
-// which call this with a freshly-built edit form instead of doing
-// their own replaceWith(). Closing it (Back, Cancel, or a successful
-// Save) always goes through closeAdminEditView(), which restores the
-// list view — refreshAdminData() re-renders #admin-regions-list while
-// it's hidden, so the list is current the moment it's shown again.
+// One shared "page" (outside all three .admin-view tabs, see
+// index.html) for adding or editing a region, place, or event —
+// rather than a form expanding inline where an Edit/Add button was
+// clicked, which pushes a potentially long list around. Used by
+// startEditRegion()/startEditCity()/startEditEvent() and the "+ Add
+// new place"/"+ Add new event" buttons below, each passing in a
+// freshly-built form. Closing it (Back, Cancel, or a successful save)
+// always goes through closeAdminEditView(), which restores whichever
+// tab was active — refreshAdminData()/refreshAdminEvents() re-render
+// their list while it's hidden, so it's current the moment it's shown
+// again.
+let adminActiveTab = "data";
+
 function openAdminEditView(form) {
-  adminDataListViewEl.hidden = true;
+  adminViewDataEl.hidden = true;
+  adminViewEventsEl.hidden = true;
+  adminViewForumEl.hidden = true;
   adminEditViewBodyEl.innerHTML = "";
   adminEditViewBodyEl.appendChild(form);
   adminEditViewEl.hidden = false;
@@ -289,7 +260,9 @@ function openAdminEditView(form) {
 function closeAdminEditView() {
   adminEditViewEl.hidden = true;
   adminEditViewBodyEl.innerHTML = "";
-  adminDataListViewEl.hidden = false;
+  adminViewDataEl.hidden = adminActiveTab !== "data";
+  adminViewEventsEl.hidden = adminActiveTab !== "events";
+  adminViewForumEl.hidden = adminActiveTab !== "forum";
 }
 
 adminEditBackEl.addEventListener("click", closeAdminEditView);
@@ -297,15 +270,18 @@ adminEditBackEl.addEventListener("click", closeAdminEditView);
 // Three tabs sharing the same modal, same pattern as the sign-in/register
 // tabs in auth.js (.active class + hidden toggling).
 function selectAdminTab(tab) {
+  adminActiveTab = tab;
   adminTabDataEl.classList.toggle("active", tab === "data");
   adminTabEventsEl.classList.toggle("active", tab === "events");
   adminTabForumEl.classList.toggle("active", tab === "forum");
+  // Leaving a tab (or reopening one) shouldn't leave a stale edit/add
+  // form open underneath the tab switch — also restores the right
+  // tab's visibility, so the explicit hidden= sets below are just
+  // reasserting the same values.
+  closeAdminEditView();
   adminViewDataEl.hidden = tab !== "data";
   adminViewEventsEl.hidden = tab !== "events";
   adminViewForumEl.hidden = tab !== "forum";
-  // Leaving the data tab (or reopening it) shouldn't leave a stale
-  // edit form open underneath the tab switch.
-  closeAdminEditView();
 }
 
 adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
@@ -498,6 +474,18 @@ adminRegionsSearchEl.addEventListener("input", () => {
   renderAdminRegions(adminRegionsCache, adminCitiesCache, adminRegionsQuery);
 });
 
+// A new place always belongs to the one region this app manages (see
+// the "Add region" form's removal) — adminRegionsCache[0] rather than
+// asking which region, since there's normally only ever the one.
+adminAddPlaceToggleEl.addEventListener("click", () => {
+  const region = adminRegionsCache[0];
+  if (!region) {
+    showAdminMessage(t("adminNoRegionForNewPlace"), true);
+    return;
+  }
+  openAdminEditView(buildAddCityForm(region));
+});
+
 async function refreshAdminData() {
   adminRegionsListEl.textContent = t("adminLoading");
   try {
@@ -516,18 +504,37 @@ async function refreshAdminData() {
   await refreshAdminForumQueue();
 }
 
+// Same hidden-until-searched treatment as the region/city list above,
+// and for the same reason — no pagination, so an always-shown list
+// only gets more unwieldy as events get added.
+let adminEventsCache = [];
+let adminEventsQuery = "";
+
+adminEventsSearchEl.addEventListener("input", () => {
+  adminEventsQuery = adminEventsSearchEl.value;
+  renderAdminEvents(adminEventsCache, adminEventsQuery);
+});
+
 async function refreshAdminEvents() {
   adminEventsListEl.textContent = t("adminLoading");
   try {
-    const events = await apiRequest("GET", "/historical-events");
-    renderAdminEvents(events);
+    adminEventsCache = await apiRequest("GET", "/historical-events");
+    renderAdminEvents(adminEventsCache, adminEventsQuery);
   } catch (err) {
     adminEventsListEl.textContent = "";
     showAdminMessage(err.message, true);
   }
 }
 
-function renderAdminEvents(events) {
+// Matches by title or year — "2020" finds every event pinned to that
+// year, not just one whose title happens to contain the digits.
+function filterAdminEvents(events, query) {
+  const q = query.trim().toLowerCase();
+  return events.filter((event) =>
+    event.title.toLowerCase().includes(q) || String(event.year).includes(q));
+}
+
+function renderAdminEvents(events, query) {
   adminEventsListEl.innerHTML = "";
   if (events.length === 0) {
     const empty = document.createElement("p");
@@ -536,7 +543,23 @@ function renderAdminEvents(events) {
     adminEventsListEl.appendChild(empty);
     return;
   }
-  events.forEach((event) => adminEventsListEl.appendChild(buildAdminEventRow(event)));
+  const q = (query || "").trim();
+  if (!q) {
+    const hint = document.createElement("p");
+    hint.className = "admin-empty";
+    hint.textContent = t("adminEventsSearchHint");
+    adminEventsListEl.appendChild(hint);
+    return;
+  }
+  const matches = filterAdminEvents(events, q);
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminSearchNoMatches");
+    adminEventsListEl.appendChild(empty);
+    return;
+  }
+  matches.forEach((event) => adminEventsListEl.appendChild(buildAdminEventRow(event)));
 }
 
 function buildAdminEventRow(event) {
@@ -581,12 +604,6 @@ function buildAdminEventRow(event) {
 }
 
 function startEditEvent(event) {
-  const row = adminEventsListEl.querySelector(
-    `.admin-event-row[data-event-id="${event.id}"]`);
-  if (!row) {
-    return;
-  }
-
   const form = document.createElement("form");
   form.className = "admin-form admin-edit-form";
 
@@ -647,7 +664,10 @@ function startEditEvent(event) {
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = t("adminCancel");
-  cancelBtn.addEventListener("click", refreshAdminEvents);
+  cancelBtn.addEventListener("click", () => {
+    closeAdminEditView();
+    refreshAdminEvents();
+  });
 
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
@@ -683,6 +703,7 @@ function startEditEvent(event) {
         description_i18n: descriptionI18n.collect(),
       });
       showAdminMessage(t("eventUpdated")(title), false);
+      closeAdminEditView();
       await refreshAdminEvents();
       await loadHistoricalEvents();
     } catch (err) {
@@ -691,7 +712,7 @@ function startEditEvent(event) {
     }
   });
 
-  row.replaceWith(form);
+  openAdminEditView(form);
 }
 
 async function deleteEvent(event) {
@@ -709,39 +730,119 @@ async function deleteEvent(event) {
   }
 }
 
-eventPickOnMapEl.addEventListener("click", () =>
-  startPickingLocation(eventLatInputEl, eventLngInputEl));
+// Built fresh per click (like buildAddCityForm) rather than static
+// markup, so its i18n inputs always reflect the current language with
+// no separate "refresh on language switch" step needed.
+function buildAddEventForm() {
+  const form = document.createElement("form");
+  form.className = "admin-form admin-add-event-form";
 
-eventFormEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const title = eventTitleInputEl.value.trim();
-  const year = parseInt(eventYearInputEl.value, 10);
-  const latitude = parseFloat(eventLatInputEl.value);
-  const longitude = parseFloat(eventLngInputEl.value);
-  if (!title || Number.isNaN(year) || Number.isNaN(latitude) ||
-      Number.isNaN(longitude)) {
-    showAdminMessage(t("invalidEventFields"), true);
-    return;
-  }
-  eventFormSubmitEl.disabled = true;
-  try {
-    await apiRequest("POST", "/historical-events", {
-      title, year, latitude, longitude,
-      description: eventDescriptionInputEl.value.trim() || null,
-      source_url: eventSourceInputEl.value.trim() || null,
-      title_i18n: eventTitleI18n.collect(),
-      description_i18n: eventDescriptionI18n.collect(),
-    });
-    showAdminMessage(t("eventAdded")(title), false);
-    eventFormEl.reset();
-    await refreshAdminEvents();
-    await loadHistoricalEvents();
-  } catch (err) {
-    showAdminMessage(err.message, true);
-  } finally {
-    eventFormSubmitEl.disabled = false;
-  }
-});
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  setPlaceholderLabel(titleInput, t("fieldTitle"));
+  titleInput.required = true;
+  titleInput.maxLength = 200;
+
+  const titleI18n = buildTitleI18nInputs(null);
+
+  const yearInput = document.createElement("input");
+  yearInput.type = "number";
+  yearInput.step = "1";
+  yearInput.min = EVENT_YEAR_MIN;
+  yearInput.max = eventYearMax;
+  setPlaceholderLabel(yearInput, t("fieldYear"));
+  yearInput.required = true;
+
+  const latInput = document.createElement("input");
+  latInput.type = "number";
+  latInput.step = "any";
+  setPlaceholderLabel(latInput, t("fieldLatitude"));
+  latInput.required = true;
+
+  const lngInput = document.createElement("input");
+  lngInput.type = "number";
+  lngInput.step = "any";
+  setPlaceholderLabel(lngInput, t("fieldLongitude"));
+  lngInput.required = true;
+
+  const pickOnMapBtn = document.createElement("button");
+  pickOnMapBtn.type = "button";
+  pickOnMapBtn.className = "pick-on-map";
+  pickOnMapBtn.textContent = t("adminPickOnMap");
+  pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
+
+  const descInput = document.createElement("textarea");
+  descInput.rows = 2;
+  setPlaceholderLabel(descInput, t("fieldDescription"));
+
+  const descriptionI18n = buildDescriptionI18nInputs(null);
+
+  const sourceInput = document.createElement("input");
+  sourceInput.type = "url";
+  setPlaceholderLabel(sourceInput, t("fieldSourceUrl"));
+  sourceInput.maxLength = 500;
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.textContent = t("adminAddEventSubmit");
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t("adminCancel");
+  cancelBtn.addEventListener("click", closeAdminEditView);
+
+  actions.appendChild(submit);
+  actions.appendChild(cancelBtn);
+  form.appendChild(titleInput);
+  titleI18n.elements.forEach((el) => form.appendChild(el));
+  form.appendChild(yearInput);
+  form.appendChild(latInput);
+  form.appendChild(lngInput);
+  form.appendChild(pickOnMapBtn);
+  form.appendChild(descInput);
+  descriptionI18n.elements.forEach((el) => form.appendChild(el));
+  form.appendChild(sourceInput);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = titleInput.value.trim();
+    const year = parseInt(yearInput.value, 10);
+    const latitude = parseFloat(latInput.value);
+    const longitude = parseFloat(lngInput.value);
+    if (!title || Number.isNaN(year) || Number.isNaN(latitude) ||
+        Number.isNaN(longitude)) {
+      showAdminMessage(t("invalidEventFields"), true);
+      return;
+    }
+    submit.disabled = true;
+    try {
+      await apiRequest("POST", "/historical-events", {
+        title, year, latitude, longitude,
+        description: descInput.value.trim() || null,
+        source_url: sourceInput.value.trim() || null,
+        title_i18n: titleI18n.collect(),
+        description_i18n: descriptionI18n.collect(),
+      });
+      showAdminMessage(t("eventAdded")(title), false);
+      closeAdminEditView();
+      await refreshAdminEvents();
+      await loadHistoricalEvents();
+    } catch (err) {
+      showAdminMessage(err.message, true);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  return form;
+}
+
+adminAddEventToggleEl.addEventListener("click", () =>
+  openAdminEditView(buildAddEventForm()));
 
 async function refreshAdminForumQueue() {
   adminForumListEl.textContent = t("adminLoading");
@@ -859,7 +960,7 @@ function renderAdminRegions(regions, cities, query) {
   if (matches.length === 0) {
     const empty = document.createElement("p");
     empty.className = "admin-empty";
-    empty.textContent = t("adminRegionsNoMatches");
+    empty.textContent = t("adminSearchNoMatches");
     adminRegionsListEl.appendChild(empty);
     return;
   }
@@ -917,7 +1018,6 @@ function buildAdminRegionCard(region, regionCities) {
     regionCities.forEach((city) => cityList.appendChild(buildAdminCityRow(city)));
   }
   card.appendChild(cityList);
-  card.appendChild(buildAddCityForm(region));
 
   return card;
 }
@@ -1034,10 +1134,20 @@ function buildAddCityForm(region) {
   pickOnMapBtn.textContent = t("adminPickOnMap");
   pickOnMapBtn.addEventListener("click", () => startPickingLocation(latInput, lngInput));
 
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+
   const submit = document.createElement("button");
   submit.type = "submit";
   submit.textContent = t("adminAddCity");
 
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t("adminCancel");
+  cancelBtn.addEventListener("click", closeAdminEditView);
+
+  actions.appendChild(submit);
+  actions.appendChild(cancelBtn);
   form.appendChild(nameInput);
   nameI18n.elements.forEach((el) => form.appendChild(el));
   form.appendChild(latInput);
@@ -1054,7 +1164,7 @@ function buildAddCityForm(region) {
   form.appendChild(websiteInput);
   form.appendChild(descInput);
   descriptionI18n.elements.forEach((el) => form.appendChild(el));
-  form.appendChild(submit);
+  form.appendChild(actions);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1091,6 +1201,7 @@ function buildAddCityForm(region) {
     try {
       await apiRequest("POST", `/regions/${region.id}/cities`, payload);
       showAdminMessage(t("cityAdded")(name), false);
+      closeAdminEditView();
       await refreshAdminData();
       await loadCities();
     } catch (err) {
