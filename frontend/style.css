@@ -659,6 +659,10 @@ main {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Nothing in here should ever scroll sideways; without this, any
+     sliver of horizontal overflow (e.g. a bleed that slightly exceeds
+     the padding) shows up as a stray scrollbar above the footer. */
+  overflow-x: hidden;
   /* The panel's padding lives here, inside the scroll box, rather than
      on #panel: .detail-hero bleeds out to the panel's edges with
      negative margins, which this element's overflow would clip if that
