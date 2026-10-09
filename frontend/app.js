@@ -548,6 +548,8 @@ const listEl = document.getElementById("city-list");
 const detailEl = document.getElementById("city-detail");
 const detailViewEl = document.getElementById("detail-view");
 const detailBackEl = document.getElementById("detail-back");
+const panelLegalPrivacyEl = document.getElementById("panel-legal-privacy");
+const panelLegalTermsEl = document.getElementById("panel-legal-terms");
 const searchBoxEl = document.getElementById("search-box");
 const searchResultsEl = document.getElementById("search-results");
 const weatherPanelEl = document.getElementById("weather-panel");
@@ -642,6 +644,8 @@ function applyStaticTranslations() {
   Array.from(langMenuEl.children).forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
   });
+  panelLegalPrivacyEl.textContent = t("accountPrivacyLink");
+  panelLegalTermsEl.textContent = t("accountTermsLink");
 }
 
 langToggleEl.addEventListener("click", (event) => {
