@@ -84,11 +84,12 @@ const streetLayer = L.tileLayer(
 // Past that real ceiling, Esri serves back a flat gray "Map data not
 // available" tile instead of an error, so there's nothing to detect
 // and recover from — capping maxZoom below where that starts is the
-// only fix. 17 is a conservative floor; raise it if real coverage
-// here turns out to reach higher. (CARTO's street basemap below stays
+// only fix. 18 was picked by eye after 17 felt too restrictive; lower it
+// if gray tiles show up again, raise it if real coverage
+// here turns out to reach higher still. (CARTO's street basemap below stays
 // uncapped at 19 — it's vector-rendered, not photographic, so it
 // never runs out of "real" data to zoom into.)
-const SATELLITE_MAX_ZOOM = 17;
+const SATELLITE_MAX_ZOOM = 18;
 
 const satelliteLayer = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
