@@ -114,7 +114,9 @@ def optional_enum(data, field, choices):
     """Raise ValidationError if data[field] is present but not in choices."""
     if field not in data or data[field] is None:
         return
-    if data[field] not in choices:
+    # A list/object here would make the membership test below raise
+    # TypeError (unhashable) and surface as a 500 instead of a 400.
+    if not isinstance(data[field], str) or data[field] not in choices:
         raise ValidationError(
             "{} must be one of: {}".format(field, ", ".join(sorted(choices))))
 

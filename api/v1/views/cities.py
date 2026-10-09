@@ -108,7 +108,7 @@ def create_city(region_id):
     if region is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_city_data(data, require_required_fields=True)
@@ -166,7 +166,7 @@ def update_city(city_id):
     if city is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_city_data(data, require_required_fields=False)

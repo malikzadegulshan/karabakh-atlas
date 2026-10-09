@@ -6,6 +6,7 @@ from models import storage
 from models.region import Region
 from models.city import City
 from models.forum_post import ForumPost
+from models.favorite import Favorite
 from api.v1.forum_utils import delete_forum_posts
 from api.v1.validation import (
     ValidationError,
@@ -34,8 +35,8 @@ def get_region(region_id):
 
 @app_views.route("/regions/<region_id>", methods=["DELETE"])
 def delete_region(region_id):
-    """Delete a Region object, its cities, and any forum posts about
-    those cities, by id, or 404 if not found."""
+    """Delete a Region object, its cities, and any forum posts and
+    favorites about those cities, by id, or 404 if not found."""
     region = storage.all(Region).get("Region.{}".format(region_id))
     if region is None:
         abort(404)
@@ -43,6 +44,9 @@ def delete_region(region_id):
                  if c.region_id == region_id]:
         delete_forum_posts([p for p in storage.all(ForumPost).values()
                             if p.target_city_id == city.id])
+        for favorite in [f for f in storage.all(Favorite).values()
+                         if f.city_id == city.id]:
+            favorite.delete()
         city.delete()
     region.delete()
     storage.save()
@@ -53,7 +57,7 @@ def delete_region(region_id):
 def create_region():
     """Create a new Region object from a JSON body."""
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, REGION_FIELDS)
@@ -73,7 +77,7 @@ def update_region(region_id):
     if region is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, REGION_FIELDS)

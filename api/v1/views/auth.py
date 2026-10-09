@@ -7,6 +7,7 @@ from flask import jsonify, abort, request, session
 from api.v1.views import app_views
 from api.v1.auth_utils import (
     get_current_user,
+    log_in,
     is_login_rate_limited,
     record_login_failure,
     clear_login_failures,
@@ -104,7 +105,7 @@ def register():
         }), 429
 
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, REGISTER_FIELDS)
@@ -127,8 +128,7 @@ def register():
     user.save()
     _send_verification_email(user)
 
-    session.clear()
-    session["user_id"] = user.id
+    log_in(user)
     return jsonify(_serialize_user(user)), 201
 
 
@@ -136,7 +136,7 @@ def register():
 def login():
     """Log in with email + password, starting a session cookie."""
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, LOGIN_FIELDS)
@@ -162,8 +162,7 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     clear_login_failures(rate_key)
-    session.clear()
-    session["user_id"] = user.id
+    log_in(user)
     return jsonify(_serialize_user(user)), 200
 
 
@@ -190,7 +189,7 @@ def verify_email():
     the token (from the user's own inbox) is the proof of ownership.
     """
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, VERIFY_FIELDS)
@@ -244,7 +243,7 @@ def forgot_password():
         }), 429
 
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, FORGOT_PASSWORD_FIELDS)
@@ -269,7 +268,7 @@ def reset_password():
     login proves it by way of the old password.
     """
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, RESET_PASSWORD_FIELDS)
@@ -296,7 +295,9 @@ def reset_password():
 
     password_reset_attempt_limiter.clear(rate_key)
     user.set_password(data["password"])
+    # Sign every other device/cookie out: a reset usually means the old
+    # password (and so possibly an old session) can't be trusted.
+    user.session_epoch = (user.session_epoch or 0) + 1
     user.save()
-    session.clear()
-    session["user_id"] = user.id
+    log_in(user)
     return jsonify(_serialize_user(user)), 200

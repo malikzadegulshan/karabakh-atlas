@@ -70,7 +70,7 @@ def get_historical_events():
 def create_historical_event():
     """Create a new HistoricalEvent object."""
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_event_data(data, require_required_fields=True)
@@ -89,7 +89,7 @@ def update_historical_event(event_id):
     if event is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_event_data(data, require_required_fields=False)

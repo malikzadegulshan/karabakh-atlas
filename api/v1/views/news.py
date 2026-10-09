@@ -69,7 +69,7 @@ def get_news():
 def create_news_item():
     """Create a new NewsItem object."""
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_news_data(data, require_required_fields=True)
@@ -87,7 +87,7 @@ def update_news_item(news_id):
     if item is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         _validate_news_data(data, require_required_fields=False)

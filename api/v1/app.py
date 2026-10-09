@@ -152,6 +152,27 @@ def _start_request_timer():
 
 
 @app.before_request
+def reject_cross_origin_writes():
+    """Refuse a state-changing request whose Origin header names some
+    other site. Browsers always send Origin on cross-site writes, and
+    this closes the one gap CORS leaves: a multipart upload (POST
+    /images) is a "simple" request that needs no preflight, so a hostile
+    page could otherwise make a logged-in admin's browser submit it.
+    Requests with no Origin (curl, server-to-server, the test client) are
+    unaffected, and the API's own origin is allowed so Swagger UI's
+    "Try it out" keeps working.
+    """
+    if request.method not in WRITE_METHODS:
+        return None
+    origin = request.headers.get("Origin")
+    if origin is None:
+        return None
+    if origin in _frontend_origins or origin == request.host_url.rstrip("/"):
+        return None
+    return jsonify({"error": "Cross-origin request blocked"}), 403
+
+
+@app.before_request
 def require_admin_for_writes():
     """Reject region/city/historical-event write requests unless the
     session user is an admin. Read-only GET requests, and every /auth/*

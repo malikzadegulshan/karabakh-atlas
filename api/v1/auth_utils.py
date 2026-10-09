@@ -91,12 +91,28 @@ def clear_login_failures(key):
     login_limiter.clear(key)
 
 
+def log_in(user):
+    """Start a fresh session for `user`: any previous session data is
+    dropped (no session fixation) and the user's current session epoch
+    is recorded, so a later password reset can invalidate it."""
+    session.clear()
+    session["user_id"] = user.id
+    session["epoch"] = user.session_epoch or 0
+
+
 def get_current_user():
     """Return the logged-in User for this request's session, or None."""
     user_id = session.get("user_id")
     if not user_id:
         return None
-    return storage.all(User).get("User.{}".format(user_id))
+    user = storage.all(User).get("User.{}".format(user_id))
+    if user is None:
+        return None
+    # A password reset bumps the epoch, so cookies issued before it
+    # (sessions on other devices, a stolen cookie) stop working.
+    if session.get("epoch", 0) != (user.session_epoch or 0):
+        return None
+    return user
 
 
 def login_required(f):

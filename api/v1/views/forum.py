@@ -130,7 +130,7 @@ def create_forum_post():
         }), 429
 
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, CREATE_FIELDS)
@@ -276,7 +276,7 @@ def moderate_forum_post(post_id):
     if post is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, MODERATE_FIELDS)
