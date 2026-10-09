@@ -12,7 +12,7 @@
 // user text. Every place this file puts one on the page goes through
 // escapeHtml() first — never innerHTML with a raw body.
 
-const forumSectionsEl = document.getElementById("forum-sections");
+const forumViewEl = document.getElementById("forum-view");
 
 // Keep in sync with TOPICS in models/forum_post.py (the real source of
 // truth — the API rejects anything else). Order here is display order.
@@ -31,88 +31,115 @@ function forumTopicLabel(value) {
   return topic ? t(topic.labelKey) : null;
 }
 
-// The forum tab is one collapsible section per topic (not a filter over
-// one mixed list): each header shows the topic name and how many posts
-// it has, and opening it reveals the topic's description, its own
-// posting box, and its posts. Every general post comes back from one
-// request and is grouped client-side by post.topic.
+// The forum tab is a two-level drill-down, like opening a place: a list
+// of topics (name, description, post count), and tapping one replaces
+// the list with just that topic's page — Back button, description, its
+// own posting box, and its posts. Every general post comes back from
+// one request and is grouped client-side by post.topic.
 let forumGeneralPosts = [];
 let forumPostsLoaded = false;
-// Topics currently expanded — kept across re-renders (login, language
-// change, posting) so the list doesn't snap shut under the reader.
-const forumOpenTopics = new Set([FORUM_DEFAULT_TOPIC]);
+// The topic whose page is showing, or null for the topic list. Kept
+// across re-renders (login, language change, posting) so the reader
+// stays where they were.
+let forumCurrentTopic = null;
 
-function buildForumSection(topic) {
-  const posts = forumGeneralPosts.filter((post) => post.topic === topic.value);
-  const isOpen = forumOpenTopics.has(topic.value);
+function forumTopicPosts(topicValue) {
+  return forumGeneralPosts.filter((post) => post.topic === topicValue);
+}
 
-  const section = document.createElement("section");
-  section.className = "forum-section";
+function openForumTopic(topicValue) {
+  forumCurrentTopic = topicValue;
+  renderForumTab();
+  // The panel scrolls as one column, so a long list would otherwise
+  // leave the new page opened partway down.
+  document.getElementById("panel-content").scrollTop = 0;
+}
 
-  const header = document.createElement("button");
-  header.type = "button";
-  header.className = "forum-section-header";
-  header.setAttribute("aria-expanded", String(isOpen));
+function buildForumTopicList() {
+  const list = document.createElement("div");
+  list.className = "forum-topic-list";
+  FORUM_TOPICS.forEach((topic) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "forum-topic-card";
 
-  const name = document.createElement("span");
-  name.className = "forum-section-name";
-  name.textContent = t(topic.labelKey);
-  const count = document.createElement("span");
-  count.className = "forum-section-count";
-  count.textContent = String(posts.length);
-  const chevron = document.createElement("span");
-  chevron.className = "forum-section-chevron";
-  chevron.setAttribute("aria-hidden", "true");
-  header.appendChild(name);
-  header.appendChild(count);
-  header.appendChild(chevron);
+    const text = document.createElement("span");
+    text.className = "forum-topic-card-text";
+    const name = document.createElement("span");
+    name.className = "forum-topic-card-name";
+    name.textContent = t(topic.labelKey);
+    const hint = document.createElement("span");
+    hint.className = "forum-topic-card-hint";
+    hint.textContent = t(topic.hintKey);
+    text.appendChild(name);
+    text.appendChild(hint);
 
-  const body = document.createElement("div");
-  body.className = "forum-section-body";
-  body.hidden = !isOpen;
+    const count = document.createElement("span");
+    count.className = "forum-topic-card-count";
+    count.textContent = String(forumTopicPosts(topic.value).length);
+    const chevron = document.createElement("span");
+    chevron.className = "forum-topic-card-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+
+    card.appendChild(text);
+    card.appendChild(count);
+    card.appendChild(chevron);
+    card.addEventListener("click", () => openForumTopic(topic.value));
+    list.appendChild(card);
+  });
+  return list;
+}
+
+function buildForumTopicPage(topic) {
+  const page = document.createElement("div");
+  page.className = "forum-topic-page";
+
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "forum-topic-back";
+  const arrow = document.createElement("span");
+  arrow.setAttribute("aria-hidden", "true");
+  arrow.textContent = "←";
+  back.appendChild(arrow);
+  back.appendChild(document.createTextNode(` ${t("adminBack")}`));
+  back.addEventListener("click", () => openForumTopic(null));
+  page.appendChild(back);
+
+  const title = document.createElement("h3");
+  title.className = "forum-topic-title";
+  title.textContent = t(topic.labelKey);
+  page.appendChild(title);
 
   const hint = document.createElement("p");
   hint.className = "forum-topic-hint";
   hint.textContent = t(topic.hintKey);
-  body.appendChild(hint);
+  page.appendChild(hint);
 
-  body.appendChild(buildForumComposer(
+  page.appendChild(buildForumComposer(
     "target_city_id", null, loadGeneralForumPosts, "forumSignInPrompt",
     { topic: topic.value }));
 
   const list = document.createElement("ul");
   list.className = "forum-post-list";
-  renderForumList(list, posts, t("forumEmpty"), loadGeneralForumPosts);
-  body.appendChild(list);
-
-  header.addEventListener("click", () => {
-    const open = body.hidden;
-    body.hidden = !open;
-    header.setAttribute("aria-expanded", String(open));
-    if (open) {
-      forumOpenTopics.add(topic.value);
-    } else {
-      forumOpenTopics.delete(topic.value);
-    }
-  });
-
-  section.appendChild(header);
-  section.appendChild(body);
-  return section;
+  renderForumList(
+    list, forumTopicPosts(topic.value), t("forumEmpty"),
+    loadGeneralForumPosts);
+  page.appendChild(list);
+  return page;
 }
 
-function renderForumSections() {
+function renderForumTab() {
   if (!forumPostsLoaded) {
     return;
   }
-  forumSectionsEl.innerHTML = "";
-  FORUM_TOPICS.forEach((topic) => {
-    forumSectionsEl.appendChild(buildForumSection(topic));
-  });
+  forumViewEl.innerHTML = "";
+  const topic = FORUM_TOPICS.find((entry) => entry.value === forumCurrentTopic);
+  forumViewEl.appendChild(
+    topic ? buildForumTopicPage(topic) : buildForumTopicList());
 }
 
 function applyForumStaticTranslations() {
-  renderForumSections();
+  renderForumTab();
 }
 
 function forumDateLabel(isoString) {
@@ -196,7 +223,7 @@ async function loadGeneralForumPosts() {
     forumGeneralPosts = [];
   }
   forumPostsLoaded = true;
-  renderForumSections();
+  renderForumTab();
 }
 
 // Composer for a post tied to one target — a city/POI (targetField
