@@ -41,11 +41,13 @@ from api.v1.contributions import approved_post_count, contribution_tier
 from models import storage
 from models.city import City
 from models.user import User
-from models.forum_post import ForumPost, STATUSES
+from models.forum_post import (
+    ForumPost, STATUSES, TOPICS, DEFAULT_TOPIC,
+)
 from models.news_item import NewsItem
 
 FORUM_BODY_MAX_LENGTH = 2000
-CREATE_FIELDS = {"body", "target_city_id", "target_news_id"}
+CREATE_FIELDS = {"body", "target_city_id", "target_news_id", "topic"}
 MODERATE_FIELDS = {"status"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
 
@@ -62,6 +64,18 @@ def _city_name(city_id):
     return city.name if city else None
 
 
+def _is_general(post):
+    return post.target_city_id is None and post.target_news_id is None
+
+
+def _topic_of(post):
+    """A general post's topic (older ones read as "general"); None for
+    place- and news-scoped posts, which have no topic."""
+    if not _is_general(post):
+        return None
+    return post.topic or DEFAULT_TOPIC
+
+
 def _news_title(news_id):
     item = storage.all(NewsItem).get("NewsItem.{}".format(news_id))
     return item.title if item else None
@@ -74,6 +88,7 @@ def _serialize(post):
         approved_post_count(post.author_id))
     data["target_city_name"] = (
         _city_name(post.target_city_id) if post.target_city_id else None)
+    data["topic"] = _topic_of(post)
     data["target_news_title"] = (
         _news_title(post.target_news_id) if post.target_news_id else None)
     return data
@@ -106,6 +121,7 @@ def create_forum_post():
         only_allowed_fields(data, CREATE_FIELDS)
         require_non_empty_string(
             data, "body", max_length=FORUM_BODY_MAX_LENGTH)
+        optional_enum(data, "topic", set(TOPICS))
     except ValidationError as error:
         abort(400, description=error.message)
 
@@ -127,12 +143,19 @@ def create_forum_post():
                 "NewsItem.{}".format(target_news_id)) is None:
             abort(400, description="target_news_id does not exist")
 
+    topic = data.get("topic")
+    is_general = target_city_id is None and target_news_id is None
+    if topic is not None and not is_general:
+        abort(400, description=(
+            "topic only applies to general posts, not place or news posts"))
+
     if not is_admin:
         forum_post_limiter.record(user.id)
     post = ForumPost(
         author_id=user.id,
         target_city_id=target_city_id,
         target_news_id=target_news_id,
+        topic=(topic or DEFAULT_TOPIC) if is_general else None,
         body=data["body"].strip(),
         status="approved" if is_admin else "pending",
     )
@@ -150,6 +173,10 @@ def list_forum_posts():
     Query params:
       - city_id: only posts about this city/POI.
       - news_id: only comments on this news item.
+      - topic: only general posts in this topic (see TOPICS in
+        models/forum_post.py); older posts without one count as
+        "general". Place- and news-scoped posts have no topic, so any
+        topic filter excludes them.
         (Omit both for general Karabakh-wide opinions — neither a city
         nor a news item targeted.) The one exception is an admin
         passing status= with neither: that's the moderation queue, and
@@ -166,6 +193,9 @@ def list_forum_posts():
     user = get_current_user()
     city_id = request.args.get("city_id")
     news_id = request.args.get("news_id")
+    topic = request.args.get("topic")
+    if topic is not None and topic not in TOPICS:
+        abort(400, description="Invalid topic filter")
     mine = request.args.get("mine") == "true"
     status_param = request.args.get("status")
 
@@ -192,6 +222,9 @@ def list_forum_posts():
         posts = [p for p in posts if p.status == status_param]
     else:
         posts = [p for p in posts if p.status == "approved"]
+
+    if topic is not None:
+        posts = [p for p in posts if _topic_of(p) == topic]
 
     return jsonify([_serialize(p) for p in _sorted_newest_first(posts)])
 

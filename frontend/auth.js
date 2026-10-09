@@ -125,6 +125,11 @@ function renderAccountWidget() {
   if (typeof renderNews === "function") {
     renderNews();
   }
+  // Same for the forum's topic sections: each has its own posting box
+  // (or sign-in prompt) and delete buttons that depend on who's signed in.
+  if (typeof renderForumSections === "function") {
+    renderForumSections();
+  }
 }
 
 accountAvatarToggleEl.addEventListener("click", (event) => {

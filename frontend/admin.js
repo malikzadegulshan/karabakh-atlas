@@ -1079,7 +1079,10 @@ function buildAdminForumCard(post) {
   const subject = post.target_news_title
     ? t("newsCommentOn")(post.target_news_title)
     : t("forumAbout")(about);
-  meta.textContent = `${post.author_name || "?"} — ${subject}`;
+  const topicName = typeof forumTopicLabel === "function" && post.topic
+    ? forumTopicLabel(post.topic) : null;
+  meta.textContent = `${post.author_name || "?"} — ${subject}` +
+    (topicName ? ` · ${topicName}` : "");
   headerRow.appendChild(meta);
 
   const actions = document.createElement("div");

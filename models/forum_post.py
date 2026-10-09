@@ -6,6 +6,13 @@ from models.base_model import BaseModel, Base
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime
 
 STATUSES = ("pending", "approved", "rejected")
+# Discussion topics for general (not place- or news-scoped) posts. Posts
+# that predate topics have topic=None and are treated as "general".
+TOPICS = (
+    "general", "global", "student_life", "about_karabakh",
+    "events_holidays", "introductions",
+)
+DEFAULT_TOPIC = "general"
 
 
 class ForumPost(BaseModel, Base):
@@ -25,6 +32,10 @@ class ForumPost(BaseModel, Base):
     # same moderation queue, rate limit, and author/admin delete rules.
     target_news_id = Column(
         String(60), ForeignKey("news_items.id"), nullable=True)
+    # Only meaningful for general posts (no target_city_id/target_news_id);
+    # null on place and news posts, and on general posts that predate
+    # topics (which read as DEFAULT_TOPIC).
+    topic = Column(String(32), nullable=True)
     body = Column(Text, nullable=False)
     status = Column(String(16), nullable=False, default="pending")
     moderated_by = Column(String(60), ForeignKey("users.id"), nullable=True)

@@ -258,6 +258,14 @@ components:
           type: string
           nullable: true
           readOnly: true
+        topic:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [general, global, student_life, about_karabakh, events_holidays, introductions]
+          description: >
+            The discussion topic of a general post (older posts read as
+            general). Null for place- and news-scoped posts.
         body:
           type: string
           maxLength: 2000
@@ -298,6 +306,12 @@ components:
           description: >
             Comment on this news item. Mutually exclusive with
             target_city_id.
+        topic:
+          type: string
+          enum: [general, global, student_life, about_karabakh, events_holidays, introductions]
+          description: >
+            Topic for a general post (defaults to general). Rejected on
+            place- or news-scoped posts.
     NewsItem:
       type: object
       properties:
@@ -860,6 +874,14 @@ paths:
             news_id for general opinions about Karabakh overall.
           schema:
             type: string
+        - name: topic
+          in: query
+          description: >
+            Only general posts in this topic (older posts count as
+            general).
+          schema:
+            type: string
+            enum: [general, global, student_life, about_karabakh, events_holidays, introductions]
         - name: mine
           in: query
           schema:

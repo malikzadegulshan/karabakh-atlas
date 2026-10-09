@@ -741,7 +741,7 @@ main {
 
 /* #search-box's own "display: flex" otherwise beats the [hidden]
    attribute's default UA rule (same specificity issue called out
-   elsewhere in this file for #lang-menu, #forum-composer, etc.) — without
+   elsewhere in this file for #lang-menu, etc.) — without
    this, openDetailView() hiding it during a place selection wouldn't
    actually work. */
 #search-box[hidden] {
@@ -886,19 +886,90 @@ main {
   white-space: nowrap;
 }
 
-/* Forum: the general-opinions tab (#forum-composer/#forum-list) and the
-   per-city widget appended into #city-detail (#city-forum) share these
-   rules — same post-card look in both places. */
-#forum-composer textarea {
+/* Forum: the topic sections on the Forum tab, the per-city widget
+   appended into #city-detail (#city-forum), and news comments all share
+   these rules — same post-card look everywhere. */
+.forum-section-body textarea,
+#city-forum textarea,
+.news-comments textarea {
   resize: vertical;
 }
 
-/* .admin-form's own "display: flex" otherwise beats the [hidden]
-   attribute's default UA rule (same specificity, author stylesheet
-   wins) — same issue already called out for #login-form/#register-form
-   above. */
-#forum-composer[hidden] {
+/* Forum topics: one collapsible section per topic (forum.js,
+   buildForumSection) — a header button with the topic name, its post
+   count, and a chevron, over a body holding the topic's description,
+   its own posting box, and its posts. */
+.forum-section {
+  margin-bottom: 0.6rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.forum-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.forum-section-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.forum-section-count {
+  padding: 0.05rem 0.5rem;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+  border-radius: 999px;
+}
+
+.forum-section-chevron {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.2rem 0.2rem 0;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.forum-section-header[aria-expanded="true"] .forum-section-chevron {
+  margin-bottom: -0.1rem;
+  transform: rotate(-135deg);
+}
+
+.forum-section-body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+.forum-section-body[hidden] {
   display: none;
+}
+
+.forum-section-body .forum-post-list {
+  margin-top: 0.6rem;
+}
+
+.forum-topic-hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
 }
 
 .forum-signin-btn {
@@ -922,7 +993,6 @@ main {
   background: var(--color-accent-hover);
 }
 
-#forum-pending-notice,
 .forum-pending-notice {
   margin: 0.5rem 0 0;
   padding: 0.5rem 0.7rem;
@@ -932,12 +1002,10 @@ main {
   border-radius: 6px;
 }
 
-#forum-pending-notice[hidden],
 .forum-pending-notice[hidden] {
   display: none;
 }
 
-#forum-list,
 .forum-post-list {
   list-style: none;
   margin: 0.8rem 0 0;

@@ -12,30 +12,108 @@
 // user text. Every place this file puts one on the page goes through
 // escapeHtml() first — never innerHTML with a raw body.
 
-const forumComposerEl = document.getElementById("forum-composer");
-const forumBodyInputEl = document.getElementById("forum-body-input");
-const forumSubmitEl = document.getElementById("forum-submit");
-const forumSigninPromptEl = document.getElementById("forum-signin-prompt");
-const forumPendingNoticeEl = document.getElementById("forum-pending-notice");
-const forumListEl = document.getElementById("forum-list");
+const forumSectionsEl = document.getElementById("forum-sections");
+
+// Keep in sync with TOPICS in models/forum_post.py (the real source of
+// truth — the API rejects anything else). Order here is display order.
+const FORUM_TOPICS = [
+  { value: "general", labelKey: "topicGeneral", hintKey: "topicGeneralHint" },
+  { value: "global", labelKey: "topicGlobal", hintKey: "topicGlobalHint" },
+  { value: "student_life", labelKey: "topicStudentLife", hintKey: "topicStudentLifeHint" },
+  { value: "about_karabakh", labelKey: "topicAboutKarabakh", hintKey: "topicAboutKarabakhHint" },
+  { value: "events_holidays", labelKey: "topicEventsHolidays", hintKey: "topicEventsHolidaysHint" },
+  { value: "introductions", labelKey: "topicIntroductions", hintKey: "topicIntroductionsHint" },
+];
+const FORUM_DEFAULT_TOPIC = "general";
+
+function forumTopicLabel(value) {
+  const topic = FORUM_TOPICS.find((entry) => entry.value === value);
+  return topic ? t(topic.labelKey) : null;
+}
+
+// The forum tab is one collapsible section per topic (not a filter over
+// one mixed list): each header shows the topic name and how many posts
+// it has, and opening it reveals the topic's description, its own
+// posting box, and its posts. Every general post comes back from one
+// request and is grouped client-side by post.topic.
+let forumGeneralPosts = [];
+let forumPostsLoaded = false;
+// Topics currently expanded — kept across re-renders (login, language
+// change, posting) so the list doesn't snap shut under the reader.
+const forumOpenTopics = new Set([FORUM_DEFAULT_TOPIC]);
+
+function buildForumSection(topic) {
+  const posts = forumGeneralPosts.filter((post) => post.topic === topic.value);
+  const isOpen = forumOpenTopics.has(topic.value);
+
+  const section = document.createElement("section");
+  section.className = "forum-section";
+
+  const header = document.createElement("button");
+  header.type = "button";
+  header.className = "forum-section-header";
+  header.setAttribute("aria-expanded", String(isOpen));
+
+  const name = document.createElement("span");
+  name.className = "forum-section-name";
+  name.textContent = t(topic.labelKey);
+  const count = document.createElement("span");
+  count.className = "forum-section-count";
+  count.textContent = String(posts.length);
+  const chevron = document.createElement("span");
+  chevron.className = "forum-section-chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  header.appendChild(name);
+  header.appendChild(count);
+  header.appendChild(chevron);
+
+  const body = document.createElement("div");
+  body.className = "forum-section-body";
+  body.hidden = !isOpen;
+
+  const hint = document.createElement("p");
+  hint.className = "forum-topic-hint";
+  hint.textContent = t(topic.hintKey);
+  body.appendChild(hint);
+
+  body.appendChild(buildForumComposer(
+    "target_city_id", null, loadGeneralForumPosts, "forumSignInPrompt",
+    { topic: topic.value }));
+
+  const list = document.createElement("ul");
+  list.className = "forum-post-list";
+  renderForumList(list, posts, t("forumEmpty"), loadGeneralForumPosts);
+  body.appendChild(list);
+
+  header.addEventListener("click", () => {
+    const open = body.hidden;
+    body.hidden = !open;
+    header.setAttribute("aria-expanded", String(open));
+    if (open) {
+      forumOpenTopics.add(topic.value);
+    } else {
+      forumOpenTopics.delete(topic.value);
+    }
+  });
+
+  section.appendChild(header);
+  section.appendChild(body);
+  return section;
+}
+
+function renderForumSections() {
+  if (!forumPostsLoaded) {
+    return;
+  }
+  forumSectionsEl.innerHTML = "";
+  FORUM_TOPICS.forEach((topic) => {
+    forumSectionsEl.appendChild(buildForumSection(topic));
+  });
+}
 
 function applyForumStaticTranslations() {
-  setPlaceholderLabel(forumBodyInputEl, t("forumComposerPlaceholder"));
-  forumSubmitEl.textContent = t("forumSubmit");
-  forumSigninPromptEl.textContent = t("forumSignInPrompt");
+  renderForumSections();
 }
-
-function updateForumComposerVisibility() {
-  const loggedIn = Boolean(currentUser);
-  forumComposerEl.hidden = !loggedIn;
-  forumSigninPromptEl.hidden = loggedIn;
-}
-
-forumSigninPromptEl.addEventListener("click", () => {
-  if (typeof openAccountPanel === "function") {
-    openAccountPanel();
-  }
-});
 
 function forumDateLabel(isoString) {
   // An absolute, locale-formatted date/time rather than a "3 hours ago"
@@ -112,51 +190,27 @@ function renderForumList(container, posts, emptyMessage, onDeleted) {
 }
 
 async function loadGeneralForumPosts() {
-  updateForumComposerVisibility();
   try {
-    const posts = await apiRequest("GET", "/forum/posts");
-    renderForumList(forumListEl, posts, t("forumEmpty"), loadGeneralForumPosts);
+    forumGeneralPosts = await apiRequest("GET", "/forum/posts");
   } catch (err) {
-    renderForumList(forumListEl, [], t("forumEmpty"), loadGeneralForumPosts);
+    forumGeneralPosts = [];
   }
+  forumPostsLoaded = true;
+  renderForumSections();
 }
-
-forumComposerEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const body = forumBodyInputEl.value.trim();
-  if (!body) {
-    return;
-  }
-  forumSubmitEl.disabled = true;
-  try {
-    const post = await apiRequest("POST", "/forum/posts", { body, target_city_id: null });
-    forumBodyInputEl.value = "";
-    if (post.status === "approved") {
-      // Admins are auto-approved (see api/v1/views/forum.py) — the post
-      // is already live, so refresh the list instead of telling them
-      // it's awaiting review.
-      await loadGeneralForumPosts();
-    } else {
-      forumPendingNoticeEl.textContent = t("forumPendingNotice");
-      forumPendingNoticeEl.hidden = false;
-      setTimeout(() => { forumPendingNoticeEl.hidden = true; }, 6000);
-    }
-  } catch (err) {
-    window.alert(err.message);
-  } finally {
-    forumSubmitEl.disabled = false;
-  }
-});
 
 // Composer for a post tied to one target — a city/POI (targetField
 // "target_city_id", the per-place opinions widget appended under the
-// city detail panel, see showCityDetail() in app.js) or a news item
-// (targetField "target_news_id", its comments in news.js). Built fresh
+// city detail panel, see showCityDetail() in app.js), a news item
+// (targetField "target_news_id", its comments in news.js), or — with a
+// null targetId — a general post in one forum topic (extraPayload
+// carries {topic}, see buildForumSection() above). Built fresh
 // every time: the detail panel's whole content gets replaced
 // (detailEl.innerHTML = ...) on every city selection, and each news
 // card builds its own, so there's no persistent DOM to reuse here.
 function buildForumComposer(
-  targetField, targetId, onApprovedPost, signInKey = "forumSignInPrompt") {
+  targetField, targetId, onApprovedPost, signInKey = "forumSignInPrompt",
+  extraPayload = {}) {
   const wrapper = document.createElement("div");
 
   if (!currentUser) {
@@ -203,7 +257,8 @@ function buildForumComposer(
     submit.disabled = true;
     try {
       const post = await apiRequest(
-        "POST", "/forum/posts", { body, [targetField]: targetId });
+        "POST", "/forum/posts",
+        { body, [targetField]: targetId, ...extraPayload });
       textarea.value = "";
       if (post.status === "approved") {
         // Admins are auto-approved — it's already live, so refresh the
@@ -262,4 +317,3 @@ async function renderCityForumSection(container, city) {
 }
 
 applyForumStaticTranslations();
-updateForumComposerVisibility();

@@ -310,6 +310,73 @@ class TestForumViews(unittest.TestCase):
                 "/api/v1/forum/posts?city_id={}".format(city_id)).data)]
         self.assertIn("About this city", city_bodies)
 
+    # -- Topics ----------------------------------------------------
+
+    def _post_in_topic(self, topic, body=None):
+        payload = {"body": body or "Topic post {}".format(uuid.uuid4())}
+        if topic is not None:
+            payload["topic"] = topic
+        return self.admin_client.post(
+            "/api/v1/forum/posts",
+            data=json.dumps(payload),
+            content_type="application/json")
+
+    def test_post_defaults_to_general_topic(self):
+        """A general post without a topic lands in "general"."""
+        resp = self._post_in_topic(None)
+        self.assertEqual(json.loads(resp.data)["topic"], "general")
+
+    def test_post_keeps_chosen_topic(self):
+        """The chosen topic is stored and returned."""
+        for topic in ("global", "student_life", "about_karabakh",
+                      "events_holidays", "introductions"):
+            resp = self._post_in_topic(topic)
+            self.assertEqual(resp.status_code, 201)
+            self.assertEqual(json.loads(resp.data)["topic"], topic)
+
+    def test_unknown_topic_is_rejected(self):
+        """A topic outside the fixed list is a 400."""
+        self.assertEqual(self._post_in_topic("politics").status_code, 400)
+
+    def test_topic_rejected_on_place_post(self):
+        """Topics only apply to general posts."""
+        city = json.loads(self.admin_client.get("/api/v1/cities").data)
+        if not city:
+            self.skipTest("no city available")
+        resp = self.client.post(
+            "/api/v1/forum/posts",
+            data=json.dumps({
+                "body": "About a place", "topic": "global",
+                "target_city_id": city[0]["id"]}),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_list_filters_by_topic(self):
+        """?topic= returns only that topic's approved posts, and
+        "general" also covers older posts saved without a topic."""
+        from models.forum_post import ForumPost
+        tag = str(uuid.uuid4())
+        self._post_in_topic("global", body="Global {}".format(tag))
+        self._post_in_topic("introductions", body="Intro {}".format(tag))
+        legacy = ForumPost(
+            author_id=self.admin_id, body="Legacy {}".format(tag),
+            status="approved", topic=None)
+        legacy.save()
+
+        def bodies(topic):
+            resp = self.client.get("/api/v1/forum/posts?topic=" + topic)
+            return [p["body"] for p in json.loads(resp.data)
+                    if tag in p["body"]]
+
+        self.assertEqual(bodies("global"), ["Global {}".format(tag)])
+        self.assertEqual(bodies("introductions"), ["Intro {}".format(tag)])
+        self.assertEqual(bodies("general"), ["Legacy {}".format(tag)])
+
+    def test_invalid_topic_filter_is_rejected(self):
+        """An unknown ?topic= is a 400, not an empty list."""
+        resp = self.client.get("/api/v1/forum/posts?topic=nope")
+        self.assertEqual(resp.status_code, 400)
+
     def test_moderation_queue_includes_place_scoped_posts(self):
         """A pending opinion about a specific place shows up in the
         admin's pending queue, not just general ones."""
