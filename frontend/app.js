@@ -77,10 +77,23 @@ const streetLayer = L.tileLayer(
   }
 );
 
+// Esri's World Imagery advertises zoom 19 globally, but its actual
+// photographic resolution for a given place is whatever Esri's
+// provider network has flown/captured there — in a rural/semi-urban
+// region like Karabakh that tops out well below 19 in many spots.
+// Past that real ceiling, Esri serves back a flat gray "Map data not
+// available" tile instead of an error, so there's nothing to detect
+// and recover from — capping maxZoom below where that starts is the
+// only fix. 17 is a conservative floor; raise it if real coverage
+// here turns out to reach higher. (CARTO's street basemap below stays
+// uncapped at 19 — it's vector-rendered, not photographic, so it
+// never runs out of "real" data to zoom into.)
+const SATELLITE_MAX_ZOOM = 17;
+
 const satelliteLayer = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
-    maxZoom: 19,
+    maxZoom: SATELLITE_MAX_ZOOM,
     attribution:
       "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
   }
@@ -100,7 +113,9 @@ let waybackReleases = []; // [{ date, urlTemplate }], sorted oldest to newest
 let selectedYear = new Date().getFullYear();
 
 const historicalLayer = L.tileLayer("", {
-  maxZoom: 19,
+  // Same Esri imagery network as satelliteLayer above, just an older
+  // capture date — same real-resolution ceiling, same cap.
+  maxZoom: SATELLITE_MAX_ZOOM,
   attribution:
     "Imagery: Esri World Imagery Wayback — Source: Esri, Maxar, " +
     "Earthstar Geographics, and the GIS User Community",
