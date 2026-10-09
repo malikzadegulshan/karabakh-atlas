@@ -622,7 +622,7 @@ main {
    print rather than a call to action. */
 #panel-legal {
   flex-shrink: 0;
-  margin-top: 1rem;
+  margin: 1rem 0.9rem 0.9rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.72rem;
@@ -646,10 +646,9 @@ main {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0.9rem;
   background: var(--color-bg);
   border-right: 1px solid var(--color-border);
-  transition: width 0.2s ease, padding 0.2s ease;
+  transition: width 0.2s ease;
 }
 
 /* #panel-content owns its own scrolling (not #panel as a whole) so
@@ -660,6 +659,11 @@ main {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* The panel's padding lives here, inside the scroll box, rather than
+     on #panel: .detail-hero bleeds out to the panel's edges with
+     negative margins, which this element's overflow would clip if that
+     padding were outside it. */
+  padding: 0.9rem 0.9rem 0;
 }
 
 /* A little extra room for the place-detail view's hero photo and
@@ -677,8 +681,6 @@ main {
 
 #panel.collapsed {
   width: 0;
-  padding-left: 0;
-  padding-right: 0;
   overflow: hidden;
   border-right: none;
 }
@@ -1078,6 +1080,10 @@ main {
    than stacking underneath them. See openDetailView()/closeDetailView()
    in app.js. */
 #detail-view {
+  /* How far .detail-hero's negative top margin reaches up to touch the
+     panel's own top edge — the panel's padding-top on desktop, nothing
+     on the mobile sheet (see the max-width: 700px block). */
+  --detail-bleed-top: 0.9rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1150,7 +1156,40 @@ main {
    own padding) so the hero photo runs edge-to-edge instead of sitting in
    a padded box like everything else in the sidebar. */
 .detail-hero {
-  margin: -0.9rem -0.9rem 0.9rem;
+  margin: calc(-1 * var(--detail-bleed-top)) -0.9rem 0.9rem;
+}
+
+/* With a photo, the back/save buttons float over its top corners instead
+   of taking a white row of their own above it. Fixed light chip colors
+   (not the theme tokens) since what they sit on is a photo, not the
+   panel background. Without a photo (or if it fails to load and gets
+   hidden) the :has() no longer matches and they stay in the normal flow. */
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn,
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
+  position: absolute;
+  z-index: 2;
+  top: calc(0.6rem - var(--detail-bleed-top));
+  margin: 0;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn {
+  left: calc(0.6rem - 0.9rem);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
+  right: calc(0.6rem - 0.9rem);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn.is-favorited {
+  color: #e0245e;
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn:hover,
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn:hover {
+  background: #ffffff;
 }
 
 /* Before/after photo compare — see the has-compare markup in
@@ -1181,7 +1220,6 @@ main {
   width: 100%;
   height: 180px;
   object-fit: cover;
-  margin-top: 20px
 }
 
 .detail-title {
@@ -2729,14 +2767,8 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     padding: 0 0.9rem 0.9rem;
   }
 
-  /* #panel itself has no padding on mobile (see #panel above) — now
-     that #panel-legal is a sibling of #panel-content rather than a
-     child of it, it needs this same horizontal padding explicitly,
-     instead of getting it for free from a parent. */
-  #panel-legal {
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
-    padding-bottom: 0.9rem;
+  #detail-view {
+    --detail-bleed-top: 0px;
   }
 
   /* Overrides the desktop-only #panel.panel-detail-open rule above (no
