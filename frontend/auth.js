@@ -119,6 +119,12 @@ function renderAccountWidget() {
   if (typeof refreshFavorites === "function") {
     refreshFavorites();
   }
+  // news.js also loads after this file; its open comment threads need
+  // their composer (sign-in prompt vs. text box) and delete buttons
+  // redone for the new user.
+  if (typeof renderNews === "function") {
+    renderNews();
+  }
 }
 
 accountAvatarToggleEl.addEventListener("click", (event) => {

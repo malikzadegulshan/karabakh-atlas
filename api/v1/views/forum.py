@@ -42,9 +42,10 @@ from models import storage
 from models.city import City
 from models.user import User
 from models.forum_post import ForumPost, STATUSES
+from models.news_item import NewsItem
 
 FORUM_BODY_MAX_LENGTH = 2000
-CREATE_FIELDS = {"body", "target_city_id"}
+CREATE_FIELDS = {"body", "target_city_id", "target_news_id"}
 MODERATE_FIELDS = {"status"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
 
@@ -61,6 +62,11 @@ def _city_name(city_id):
     return city.name if city else None
 
 
+def _news_title(news_id):
+    item = storage.all(NewsItem).get("NewsItem.{}".format(news_id))
+    return item.title if item else None
+
+
 def _serialize(post):
     data = post.to_dict()
     data["author_name"] = _user_name(post.author_id)
@@ -68,6 +74,8 @@ def _serialize(post):
         approved_post_count(post.author_id))
     data["target_city_name"] = (
         _city_name(post.target_city_id) if post.target_city_id else None)
+    data["target_news_title"] = (
+        _news_title(post.target_news_id) if post.target_news_id else None)
     return data
 
 
@@ -108,11 +116,23 @@ def create_forum_post():
         if storage.all(City).get("City.{}".format(target_city_id)) is None:
             abort(400, description="target_city_id does not exist")
 
+    target_news_id = data.get("target_news_id")
+    if target_news_id is not None:
+        if target_city_id is not None:
+            abort(400, description=(
+                "A post can target a city or a news item, not both"))
+        if not isinstance(target_news_id, str):
+            abort(400, description="target_news_id must be a string")
+        if storage.all(NewsItem).get(
+                "NewsItem.{}".format(target_news_id)) is None:
+            abort(400, description="target_news_id does not exist")
+
     if not is_admin:
         forum_post_limiter.record(user.id)
     post = ForumPost(
         author_id=user.id,
         target_city_id=target_city_id,
+        target_news_id=target_news_id,
         body=data["body"].strip(),
         status="approved" if is_admin else "pending",
     )
@@ -128,8 +148,13 @@ def list_forum_posts():
     """List forum posts.
 
     Query params:
-      - city_id: only posts about this city/POI (omit for general
-        Karabakh-wide opinions, i.e. target_city_id is null).
+      - city_id: only posts about this city/POI.
+      - news_id: only comments on this news item.
+        (Omit both for general Karabakh-wide opinions — neither a city
+        nor a news item targeted.) The one exception is an admin
+        passing status= with neither: that's the moderation queue, and
+        it spans every target (general, place, and news comments) so
+        nothing pending is invisible to moderation.
       - mine=true: only the logged-in caller's own posts, any status —
         so someone can see whether their own submission is still
         pending or was rejected. Requires login; overrides `status`.
@@ -140,14 +165,22 @@ def list_forum_posts():
     """
     user = get_current_user()
     city_id = request.args.get("city_id")
+    news_id = request.args.get("news_id")
     mine = request.args.get("mine") == "true"
     status_param = request.args.get("status")
 
     posts = list(storage.all(ForumPost).values())
-    if city_id:
+    is_moderation_queue = (
+        user is not None and user.role == "admin" and bool(status_param)
+        and not mine)
+    if news_id:
+        posts = [p for p in posts if p.target_news_id == news_id]
+    elif city_id:
         posts = [p for p in posts if p.target_city_id == city_id]
-    else:
-        posts = [p for p in posts if p.target_city_id is None]
+    elif not is_moderation_queue:
+        posts = [
+            p for p in posts
+            if p.target_city_id is None and p.target_news_id is None]
 
     if mine:
         if user is None:

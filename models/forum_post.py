@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Defines the ForumPost class — a user's opinion about the Karabakh
-region, one of its cities, or a point of interest, held for moderation
-before it's shown to the public."""
+region, one of its cities, or a point of interest, or a comment on a
+news item, held for moderation before it's shown to the public."""
 from models.base_model import BaseModel, Base
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime
 
@@ -19,6 +19,12 @@ class ForumPost(BaseModel, Base):
     # the City table (see models/city.py), so this single nullable
     # column covers "about a city", "about a POI", and "general".
     target_city_id = Column(String(60), ForeignKey("cities.id"), nullable=True)
+    # Set instead of target_city_id when this post is a comment on a news
+    # item (see api/v1/views/news.py). Comments deliberately reuse
+    # ForumPost rather than getting their own table, so they inherit the
+    # same moderation queue, rate limit, and author/admin delete rules.
+    target_news_id = Column(
+        String(60), ForeignKey("news_items.id"), nullable=True)
     body = Column(Text, nullable=False)
     status = Column(String(16), nullable=False, default="pending")
     moderated_by = Column(String(60), ForeignKey("users.id"), nullable=True)

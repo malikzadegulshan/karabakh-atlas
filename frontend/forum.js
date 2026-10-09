@@ -148,18 +148,22 @@ forumComposerEl.addEventListener("submit", async (event) => {
   }
 });
 
-// Per-city/POI opinions widget, appended under the city detail panel
-// (see showCityDetail() in app.js). Built fresh every time — the detail
-// panel's whole content gets replaced (detailEl.innerHTML = ...) on
-// every city selection, so there's no persistent DOM to reuse here.
-function buildCityForumComposer(cityId, onApprovedPost) {
+// Composer for a post tied to one target — a city/POI (targetField
+// "target_city_id", the per-place opinions widget appended under the
+// city detail panel, see showCityDetail() in app.js) or a news item
+// (targetField "target_news_id", its comments in news.js). Built fresh
+// every time: the detail panel's whole content gets replaced
+// (detailEl.innerHTML = ...) on every city selection, and each news
+// card builds its own, so there's no persistent DOM to reuse here.
+function buildForumComposer(
+  targetField, targetId, onApprovedPost, signInKey = "forumSignInPrompt") {
   const wrapper = document.createElement("div");
 
   if (!currentUser) {
     const prompt = document.createElement("button");
     prompt.type = "button";
     prompt.className = "forum-signin-btn";
-    prompt.textContent = t("forumSignInPrompt");
+    prompt.textContent = t(signInKey);
     prompt.addEventListener("click", () => {
       if (typeof openAccountPanel === "function") {
         openAccountPanel();
@@ -199,7 +203,7 @@ function buildCityForumComposer(cityId, onApprovedPost) {
     submit.disabled = true;
     try {
       const post = await apiRequest(
-        "POST", "/forum/posts", { body, target_city_id: cityId });
+        "POST", "/forum/posts", { body, [targetField]: targetId });
       textarea.value = "";
       if (post.status === "approved") {
         // Admins are auto-approved — it's already live, so refresh the
@@ -249,7 +253,8 @@ async function renderCityForumSection(container, city) {
     }
   }
 
-  section.appendChild(buildCityForumComposer(city.id, refreshList));
+  section.appendChild(
+    buildForumComposer("target_city_id", city.id, refreshList));
   section.appendChild(list);
   container.appendChild(section);
 
