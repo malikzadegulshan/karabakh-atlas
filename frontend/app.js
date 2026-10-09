@@ -1290,39 +1290,43 @@ function buildDetailCardHtml(city) {
 // share one icon — the label beside it already carries the detail (a
 // separate glyph for "moderate" vs. "dense drizzle" would be a
 // distinction no one could read at 20px).
+// WMO weather codes (Open-Meteo's own code set) -> icon + i18n key.
+// labelKey, not a raw string: the description has to follow the
+// language switcher like every other piece of UI text, not just the
+// headings around it.
 const WEATHER_CODES = {
-  0: { icon: "weather_clear", label: "Clear sky" },
-  1: { icon: "weather_clear", label: "Mainly clear" },
-  2: { icon: "weather_cloudy", label: "Partly cloudy" },
-  3: { icon: "weather_cloudy", label: "Overcast" },
-  45: { icon: "weather_fog", label: "Fog" },
-  48: { icon: "weather_fog", label: "Depositing rime fog" },
-  51: { icon: "weather_rain", label: "Light drizzle" },
-  53: { icon: "weather_rain", label: "Moderate drizzle" },
-  55: { icon: "weather_rain", label: "Dense drizzle" },
-  56: { icon: "weather_rain", label: "Light freezing drizzle" },
-  57: { icon: "weather_rain", label: "Dense freezing drizzle" },
-  61: { icon: "weather_rain", label: "Slight rain" },
-  63: { icon: "weather_rain", label: "Moderate rain" },
-  65: { icon: "weather_rain", label: "Heavy rain" },
-  66: { icon: "weather_rain", label: "Light freezing rain" },
-  67: { icon: "weather_rain", label: "Heavy freezing rain" },
-  71: { icon: "weather_snow", label: "Slight snow fall" },
-  73: { icon: "weather_snow", label: "Moderate snow fall" },
-  75: { icon: "weather_snow", label: "Heavy snow fall" },
-  77: { icon: "weather_grains", label: "Snow grains" },
-  80: { icon: "weather_rain", label: "Slight rain showers" },
-  81: { icon: "weather_rain", label: "Moderate rain showers" },
-  82: { icon: "weather_storm", label: "Violent rain showers" },
-  85: { icon: "weather_snow", label: "Slight snow showers" },
-  86: { icon: "weather_snow", label: "Heavy snow showers" },
-  95: { icon: "weather_storm", label: "Thunderstorm" },
-  96: { icon: "weather_storm", label: "Thunderstorm, slight hail" },
-  99: { icon: "weather_storm", label: "Thunderstorm, heavy hail" },
+  0: { icon: "weather_clear", labelKey: "weatherClearSky" },
+  1: { icon: "weather_clear", labelKey: "weatherMainlyClear" },
+  2: { icon: "weather_cloudy", labelKey: "weatherPartlyCloudy" },
+  3: { icon: "weather_cloudy", labelKey: "weatherOvercast" },
+  45: { icon: "weather_fog", labelKey: "weatherFog" },
+  48: { icon: "weather_fog", labelKey: "weatherRimeFog" },
+  51: { icon: "weather_rain", labelKey: "weatherLightDrizzle" },
+  53: { icon: "weather_rain", labelKey: "weatherModerateDrizzle" },
+  55: { icon: "weather_rain", labelKey: "weatherDenseDrizzle" },
+  56: { icon: "weather_rain", labelKey: "weatherLightFreezingDrizzle" },
+  57: { icon: "weather_rain", labelKey: "weatherDenseFreezingDrizzle" },
+  61: { icon: "weather_rain", labelKey: "weatherSlightRain" },
+  63: { icon: "weather_rain", labelKey: "weatherModerateRain" },
+  65: { icon: "weather_rain", labelKey: "weatherHeavyRain" },
+  66: { icon: "weather_rain", labelKey: "weatherLightFreezingRain" },
+  67: { icon: "weather_rain", labelKey: "weatherHeavyFreezingRain" },
+  71: { icon: "weather_snow", labelKey: "weatherSlightSnowFall" },
+  73: { icon: "weather_snow", labelKey: "weatherModerateSnowFall" },
+  75: { icon: "weather_snow", labelKey: "weatherHeavySnowFall" },
+  77: { icon: "weather_grains", labelKey: "weatherSnowGrains" },
+  80: { icon: "weather_rain", labelKey: "weatherSlightRainShowers" },
+  81: { icon: "weather_rain", labelKey: "weatherModerateRainShowers" },
+  82: { icon: "weather_storm", labelKey: "weatherViolentRainShowers" },
+  85: { icon: "weather_snow", labelKey: "weatherSlightSnowShowers" },
+  86: { icon: "weather_snow", labelKey: "weatherHeavySnowShowers" },
+  95: { icon: "weather_storm", labelKey: "weatherThunderstorm" },
+  96: { icon: "weather_storm", labelKey: "weatherThunderstormSlightHail" },
+  99: { icon: "weather_storm", labelKey: "weatherThunderstormHeavyHail" },
 };
 
 function weatherInfo(code) {
-  return WEATHER_CODES[code] || { icon: "weather_unknown", label: "—" };
+  return WEATHER_CODES[code] || { icon: "weather_unknown", labelKey: null };
 }
 
 // The city/point currently shown in the weather panel, and its last
@@ -1347,7 +1351,7 @@ function renderWeatherPanel() {
   const info = weatherInfo(weatherCurrent.weather_code);
   weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 26);
   weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
-  weatherDescEl.textContent = info.label;
+  weatherDescEl.textContent = info.labelKey ? t(info.labelKey) : "—";
   weatherMetaEl.textContent =
     `${t("weatherHumidity")}: ${weatherCurrent.relative_humidity_2m}% · ` +
     `${t("weatherWind")}: ${Math.round(weatherCurrent.wind_speed_10m)} km/h`;
