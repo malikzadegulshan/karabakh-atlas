@@ -547,6 +547,30 @@ main {
   color: var(--color-accent);
 }
 
+/* Sits at the bottom of #panel-content, under whichever view (cities/
+   places/forum/a place's own detail) is currently showing — plain
+   text, not styled as a button, and deliberately muted (not the brand
+   accent color the account form's own legal note uses) so it reads as
+   quiet footer fine print rather than a call to action. */
+#panel-legal {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+#panel-legal a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#panel-legal a:hover,
+#panel-legal a:focus-visible {
+  text-decoration: underline;
+}
+
 #panel {
   width: 320px;
   flex-shrink: 0;
