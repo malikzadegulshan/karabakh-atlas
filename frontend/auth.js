@@ -125,6 +125,11 @@ function renderAccountWidget() {
   if (typeof renderNews === "function") {
     renderNews();
   }
+  // Same for the forum: an open topic's posting box (or sign-in
+  // prompt) and delete buttons depend on who's signed in.
+  if (typeof renderForumTab === "function") {
+    renderForumTab();
+  }
 }
 
 accountAvatarToggleEl.addEventListener("click", (event) => {

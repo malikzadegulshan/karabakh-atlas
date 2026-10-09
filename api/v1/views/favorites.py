@@ -48,7 +48,7 @@ def add_favorite():
     get a toggle button out of sync with a double-click or a retry."""
     user = get_current_user()
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, CREATE_FIELDS)

@@ -741,7 +741,7 @@ main {
 
 /* #search-box's own "display: flex" otherwise beats the [hidden]
    attribute's default UA rule (same specificity issue called out
-   elsewhere in this file for #lang-menu, #forum-composer, etc.) — without
+   elsewhere in this file for #lang-menu, etc.) — without
    this, openDetailView() hiding it during a place selection wouldn't
    actually work. */
 #search-box[hidden] {
@@ -886,19 +886,115 @@ main {
   white-space: nowrap;
 }
 
-/* Forum: the general-opinions tab (#forum-composer/#forum-list) and the
-   per-city widget appended into #city-detail (#city-forum) share these
-   rules — same post-card look in both places. */
-#forum-composer textarea {
+/* Forum: a topic's page on the Forum tab, the per-city widget
+   appended into #city-detail (#city-forum), and news comments all share
+   these rules — same post-card look everywhere. */
+.forum-topic-page textarea,
+#city-forum textarea,
+.news-comments textarea {
   resize: vertical;
 }
 
-/* .admin-form's own "display: flex" otherwise beats the [hidden]
-   attribute's default UA rule (same specificity, author stylesheet
-   wins) — same issue already called out for #login-form/#register-form
-   above. */
-#forum-composer[hidden] {
-  display: none;
+/* Forum topics (forum.js): the Forum tab is a list of topic cards
+   (name, description, post count, chevron); tapping one swaps in that
+   topic's page — Back link, serif title, description, posting box,
+   posts. Count pill is muted text on the muted background (6.9:1 light
+   / 5.4:1 dark). */
+.forum-topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.forum-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  font-family: inherit;
+  text-align: left;
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.forum-topic-card:hover,
+.forum-topic-card:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.forum-topic-card-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.forum-topic-card-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.forum-topic-card-hint {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+}
+
+.forum-topic-card-count {
+  padding: 0.05rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+  border-radius: 999px;
+}
+
+.forum-topic-card-chevron {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.2rem;
+  border-top: 2px solid var(--color-text-muted);
+  border-right: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+}
+
+.forum-topic-back {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: -0.2rem 0 0.5rem -0.3rem;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.forum-topic-back:hover {
+  text-decoration: underline;
+}
+
+.forum-topic-title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.forum-topic-hint {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
 }
 
 .forum-signin-btn {
@@ -922,7 +1018,6 @@ main {
   background: var(--color-accent-hover);
 }
 
-#forum-pending-notice,
 .forum-pending-notice {
   margin: 0.5rem 0 0;
   padding: 0.5rem 0.7rem;
@@ -932,16 +1027,63 @@ main {
   border-radius: 6px;
 }
 
-#forum-pending-notice[hidden],
 .forum-pending-notice[hidden] {
   display: none;
 }
 
-#forum-list,
 .forum-post-list {
   list-style: none;
   margin: 0.8rem 0 0;
   padding: 0;
+}
+
+/* Replies (forum.js): nested under their post behind a left rule, with
+   a link-style Reply button and an inline reply form. The button is
+   accent text on the page or card background (5.0:1+ in both themes,
+   past AA's 4.5:1). */
+.forum-replies {
+  list-style: none;
+  margin: 0.2rem 0 0.1rem 0.4rem;
+  padding: 0 0 0 0.7rem;
+  border-left: 2px solid var(--color-border);
+}
+
+.forum-reply {
+  border-top: none;
+  padding: 0.4rem 0;
+}
+
+.forum-reply-btn {
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.forum-reply-btn:hover,
+.forum-reply-btn:focus-visible {
+  text-decoration: underline;
+}
+
+.forum-reply-form {
+  margin-top: 0.4rem;
+}
+
+.forum-reply-form textarea {
+  resize: vertical;
+}
+
+.admin-reply-context {
+  margin: 0.3rem 0 0;
+  padding-left: 0.6rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--color-text-faint);
+  border-left: 2px solid var(--color-border);
 }
 
 .forum-post {

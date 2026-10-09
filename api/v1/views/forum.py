@@ -38,14 +38,22 @@ from api.v1.validation import (
     optional_enum,
 )
 from api.v1.contributions import approved_post_count, contribution_tier
+from api.v1.forum_utils import (
+    delete_post_and_replies, publicly_visible, posts_by_id,
+)
 from models import storage
 from models.city import City
 from models.user import User
-from models.forum_post import ForumPost, STATUSES
+from models.forum_post import (
+    ForumPost, STATUSES, TOPICS, DEFAULT_TOPIC,
+)
 from models.news_item import NewsItem
 
 FORUM_BODY_MAX_LENGTH = 2000
-CREATE_FIELDS = {"body", "target_city_id", "target_news_id"}
+CREATE_FIELDS = {
+    "body", "target_city_id", "target_news_id", "topic", "parent_id",
+}
+REPLY_EXCERPT_LENGTH = 140
 MODERATE_FIELDS = {"status"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
 
@@ -62,6 +70,18 @@ def _city_name(city_id):
     return city.name if city else None
 
 
+def _is_general(post):
+    return post.target_city_id is None and post.target_news_id is None
+
+
+def _topic_of(post):
+    """A general post's topic (older ones read as "general"); None for
+    place- and news-scoped posts, which have no topic."""
+    if not _is_general(post):
+        return None
+    return post.topic or DEFAULT_TOPIC
+
+
 def _news_title(news_id):
     item = storage.all(NewsItem).get("NewsItem.{}".format(news_id))
     return item.title if item else None
@@ -69,11 +89,21 @@ def _news_title(news_id):
 
 def _serialize(post):
     data = post.to_dict()
+    parent = (
+        storage.all(ForumPost).get("ForumPost.{}".format(post.parent_id))
+        if post.parent_id else None)
+    # For a reply: who it answers and a short excerpt, so moderation can
+    # judge it without opening the whole thread.
+    data["parent_author_name"] = (
+        _user_name(parent.author_id) if parent else None)
+    data["parent_excerpt"] = (
+        parent.body[:REPLY_EXCERPT_LENGTH] if parent else None)
     data["author_name"] = _user_name(post.author_id)
     data["author_tier"] = contribution_tier(
         approved_post_count(post.author_id))
     data["target_city_name"] = (
         _city_name(post.target_city_id) if post.target_city_id else None)
+    data["topic"] = _topic_of(post)
     data["target_news_title"] = (
         _news_title(post.target_news_id) if post.target_news_id else None)
     return data
@@ -100,24 +130,47 @@ def create_forum_post():
         }), 429
 
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, CREATE_FIELDS)
         require_non_empty_string(
             data, "body", max_length=FORUM_BODY_MAX_LENGTH)
+        optional_enum(data, "topic", set(TOPICS))
     except ValidationError as error:
         abort(400, description=error.message)
 
-    target_city_id = data.get("target_city_id")
-    if target_city_id is not None:
+    parent = None
+    parent_id = data.get("parent_id")
+    if parent_id is not None:
+        if any(field in data for field in (
+                "target_city_id", "target_news_id", "topic")):
+            abort(400, description=(
+                "A reply takes its place and topic from the post it "
+                "answers; send only body and parent_id"))
+        if not isinstance(parent_id, str):
+            abort(400, description="parent_id must be a string")
+        by_id = posts_by_id()
+        parent = by_id.get(parent_id)
+        if parent is None or not publicly_visible(parent, by_id):
+            abort(400, description=(
+                "parent_id must be a published post"))
+        # Threads are one level deep: answering a reply attaches to the
+        # top-level post it hangs from.
+        if parent.parent_id is not None:
+            parent = by_id[parent.parent_id]
+
+    target_city_id = (
+        parent.target_city_id if parent else data.get("target_city_id"))
+    if parent is None and target_city_id is not None:
         if not isinstance(target_city_id, str):
             abort(400, description="target_city_id must be a string")
         if storage.all(City).get("City.{}".format(target_city_id)) is None:
             abort(400, description="target_city_id does not exist")
 
-    target_news_id = data.get("target_news_id")
-    if target_news_id is not None:
+    target_news_id = (
+        parent.target_news_id if parent else data.get("target_news_id"))
+    if parent is None and target_news_id is not None:
         if target_city_id is not None:
             abort(400, description=(
                 "A post can target a city or a news item, not both"))
@@ -127,12 +180,20 @@ def create_forum_post():
                 "NewsItem.{}".format(target_news_id)) is None:
             abort(400, description="target_news_id does not exist")
 
+    topic = parent.topic if parent else data.get("topic")
+    is_general = target_city_id is None and target_news_id is None
+    if parent is None and topic is not None and not is_general:
+        abort(400, description=(
+            "topic only applies to general posts, not place or news posts"))
+
     if not is_admin:
         forum_post_limiter.record(user.id)
     post = ForumPost(
         author_id=user.id,
         target_city_id=target_city_id,
         target_news_id=target_news_id,
+        topic=(topic or DEFAULT_TOPIC) if is_general else None,
+        parent_id=parent.id if parent else None,
         body=data["body"].strip(),
         status="approved" if is_admin else "pending",
     )
@@ -150,6 +211,10 @@ def list_forum_posts():
     Query params:
       - city_id: only posts about this city/POI.
       - news_id: only comments on this news item.
+      - topic: only general posts in this topic (see TOPICS in
+        models/forum_post.py); older posts without one count as
+        "general". Place- and news-scoped posts have no topic, so any
+        topic filter excludes them.
         (Omit both for general Karabakh-wide opinions — neither a city
         nor a news item targeted.) The one exception is an admin
         passing status= with neither: that's the moderation queue, and
@@ -166,6 +231,9 @@ def list_forum_posts():
     user = get_current_user()
     city_id = request.args.get("city_id")
     news_id = request.args.get("news_id")
+    topic = request.args.get("topic")
+    if topic is not None and topic not in TOPICS:
+        abort(400, description="Invalid topic filter")
     mine = request.args.get("mine") == "true"
     status_param = request.args.get("status")
 
@@ -191,7 +259,11 @@ def list_forum_posts():
             abort(400, description="Invalid status filter")
         posts = [p for p in posts if p.status == status_param]
     else:
-        posts = [p for p in posts if p.status == "approved"]
+        by_id = posts_by_id()
+        posts = [p for p in posts if publicly_visible(p, by_id)]
+
+    if topic is not None:
+        posts = [p for p in posts if _topic_of(p) == topic]
 
     return jsonify([_serialize(p) for p in _sorted_newest_first(posts)])
 
@@ -204,7 +276,7 @@ def moderate_forum_post(post_id):
     if post is None:
         abort(404)
     data = request.get_json(silent=True)
-    if data is None:
+    if not isinstance(data, dict):
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, MODERATE_FIELDS)
@@ -225,13 +297,14 @@ def moderate_forum_post(post_id):
 @app_views.route("/forum/posts/<post_id>", methods=["DELETE"])
 @login_required
 def delete_forum_post(post_id):
-    """Delete a post — its own author, or any admin, may do this."""
+    """Delete a post (and any replies to it) — its own author, or any
+    admin, may do this."""
     post = storage.all(ForumPost).get("ForumPost.{}".format(post_id))
     if post is None:
         abort(404)
     user = get_current_user()
     if user.id != post.author_id and user.role != "admin":
         return jsonify({"error": "Not allowed to delete this post"}), 403
-    post.delete()
+    delete_post_and_replies(post)
     storage.save()
     return jsonify({}), 200

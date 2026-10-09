@@ -197,6 +197,24 @@ class TestNewsViews(unittest.TestCase):
         self.assertEqual(len(queued), 1)
         self.assertEqual(queued[0]["target_news_title"], "Headline")
 
+    def test_reply_to_a_news_comment_stays_on_the_news(self):
+        """A reply to a comment is a comment on the same post, counts
+        toward comment_count, and is removed with the post."""
+        news_id = json.loads(self._create_news().data)["id"]
+        comment = json.loads(_json(
+            self.admin_client, "post", "/api/v1/forum/posts",
+            {"body": "Top comment", "target_news_id": news_id}).data)
+        reply = json.loads(_json(
+            self.admin_client, "post", "/api/v1/forum/posts",
+            {"body": "A reply", "parent_id": comment["id"]}).data)
+        self.assertEqual(reply["target_news_id"], news_id)
+        news = json.loads(app.test_client().get("/api/v1/news").data)
+        counts = {n["id"]: n["comment_count"] for n in news}
+        self.assertEqual(counts[news_id], 2)
+        self.admin_client.delete("/api/v1/news/" + news_id)
+        self.assertNotIn(
+            "ForumPost.{}".format(reply["id"]), storage.all(ForumPost))
+
     def test_comment_on_missing_news_is_rejected(self):
         """target_news_id must point at a real post."""
         resp = self._comment(self.client, "does-not-exist")

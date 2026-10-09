@@ -1076,10 +1076,15 @@ function buildAdminForumCard(post) {
 
   const meta = document.createElement("strong");
   const about = post.target_city_name || t("forumGeneralLabel");
-  const subject = post.target_news_title
-    ? t("newsCommentOn")(post.target_news_title)
-    : t("forumAbout")(about);
-  meta.textContent = `${post.author_name || "?"} — ${subject}`;
+  const subject = post.parent_id
+    ? t("adminReplyTo")(post.parent_author_name || "?")
+    : (post.target_news_title
+      ? t("newsCommentOn")(post.target_news_title)
+      : t("forumAbout")(about));
+  const topicName = typeof forumTopicLabel === "function" && post.topic
+    ? forumTopicLabel(post.topic) : null;
+  meta.textContent = `${post.author_name || "?"} — ${subject}` +
+    (topicName ? ` · ${topicName}` : "");
   headerRow.appendChild(meta);
 
   const actions = document.createElement("div");
@@ -1104,6 +1109,14 @@ function buildAdminForumCard(post) {
   // textContent, not innerHTML — this is unmoderated user-submitted.
   // text, rendered here in the admin's own browser before it's ever
   // approved, so it must never be interpreted as HTML.
+  // For a reply, the post it answers (also user text — textContent).
+  if (post.parent_excerpt) {
+    const context = document.createElement("p");
+    context.className = "admin-reply-context";
+    context.textContent = `“${post.parent_excerpt}”`;
+    card.appendChild(context);
+  }
+
   const body = document.createElement("p");
   body.className = "admin-region-description";
   body.textContent = post.body;

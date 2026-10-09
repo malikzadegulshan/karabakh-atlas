@@ -3,7 +3,7 @@
 import secrets
 from datetime import datetime, timedelta
 from models.base_model import BaseModel, Base
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, Integer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 VALID_ROLES = ("user", "admin")
@@ -31,6 +31,11 @@ class User(BaseModel, Base):
     verification_token_expires_at = Column(DateTime, nullable=True)
     password_reset_otp = Column(String(6), nullable=True)
     password_reset_otp_expires_at = Column(DateTime, nullable=True)
+    # Bumped whenever the password is reset. Each login stores the value
+    # in its session cookie (see log_in in api/v1/auth_utils.py), and a
+    # cookie carrying an older one stops working — sessions are stateless
+    # signed cookies, so this is the only way to sign other devices out.
+    session_epoch = Column(Integer, nullable=False, default=0)
 
     def set_password(self, raw_password):
         """Hash `raw_password` with a salted, slow KDF and store the hash.
