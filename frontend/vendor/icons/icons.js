@@ -1,4 +1,4 @@
-// Tabler Icons (MIT) — vendored, like Leaflet and Roboto Flex, so the
+// Tabler Icons (MIT) — vendored, like Leaflet and Source Sans 3, so the
 // page has no external icon dependency. See LICENSE in this folder.
 //
 // Each value holds only an icon's drawing commands; KBA_ICON_SVG wraps
