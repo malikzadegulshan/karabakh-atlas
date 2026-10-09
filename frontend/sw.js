@@ -5,7 +5,7 @@
 // weather to someone who's actually online. Bump CACHE_NAME whenever
 // the shell file list below changes, so activate() below evicts the
 // old cache instead of an install silently reusing it.
-const CACHE_NAME = "kba-shell-v2";
+const CACHE_NAME = "kba-shell-v3";
 const SHELL_ASSETS = [
   "./",
   "index.html",
@@ -28,9 +28,12 @@ const SHELL_ASSETS = [
   "vendor/leaflet/images/marker-icon-2x.png",
   "vendor/leaflet/images/marker-shadow.png",
   "vendor/icons/icons.js",
-  "vendor/fonts/roboto-flex-latin.woff2",
-  "vendor/fonts/roboto-flex-latin-ext.woff2",
-  "vendor/fonts/roboto-flex-cyrillic.woff2",
+  "vendor/fonts/source-sans-3-latin.woff2",
+  "vendor/fonts/source-sans-3-latin-ext.woff2",
+  "vendor/fonts/source-sans-3-cyrillic.woff2",
+  "vendor/fonts/source-serif-4-latin.woff2",
+  "vendor/fonts/source-serif-4-latin-ext.woff2",
+  "vendor/fonts/source-serif-4-cyrillic.woff2",
   "favicon.svg",
   "favicon-16.png",
   "favicon-32.png",

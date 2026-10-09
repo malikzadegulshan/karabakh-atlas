@@ -84,11 +84,12 @@ const streetLayer = L.tileLayer(
 // Past that real ceiling, Esri serves back a flat gray "Map data not
 // available" tile instead of an error, so there's nothing to detect
 // and recover from — capping maxZoom below where that starts is the
-// only fix. 17 is a conservative floor; raise it if real coverage
-// here turns out to reach higher. (CARTO's street basemap below stays
+// only fix. 18 was picked by eye after 17 felt too restrictive; lower it
+// if gray tiles show up again, raise it if real coverage
+// here turns out to reach higher still. (CARTO's street basemap below stays
 // uncapped at 19 — it's vector-rendered, not photographic, so it
 // never runs out of "real" data to zoom into.)
-const SATELLITE_MAX_ZOOM = 17;
+const SATELLITE_MAX_ZOOM = 18;
 
 const satelliteLayer = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -1634,9 +1635,28 @@ function renderCategoryGrid() {
 // of every label keeps short names at full, easily-readable size.
 const POI_LONG_NAME_LENGTH = 20;
 
+// Names with this many words or more get cut to the first
+// MAP_LABEL_MAX_WORDS words plus an ellipsis, like Google Maps does —
+// "Modern Education Complex named after Heydar Aliyev, Khankendi
+// branch" would otherwise stack into a tall column of text that covers
+// the map around its marker. Only the on-map label is shortened; the
+// full name is still in the list, the detail panel, and the label's
+// hover title.
+const MAP_LABEL_TRUNCATE_AT_WORDS = 6;
+const MAP_LABEL_MAX_WORDS = 5;
+
+function mapLabelText(name) {
+  const words = name.trim().split(/\s+/);
+  if (words.length < MAP_LABEL_TRUNCATE_AT_WORDS) {
+    return name;
+  }
+  return words.slice(0, MAP_LABEL_MAX_WORDS).join(" ") + "\u2026";
+}
+
 function buildMarker(city) {
   if (isPoi(city)) {
-    const name = localizedName(city);
+    const fullName = localizedName(city);
+    const name = mapLabelText(fullName);
     const labelClass = name.length > POI_LONG_NAME_LENGTH
       ? "poi-marker-label poi-marker-label--long"
       : "poi-marker-label";
@@ -1651,14 +1671,14 @@ function buildMarker(city) {
         `<div class="poi-marker" style="background:${poiToneColor(city.category)};` +
         `border-color:${POI_RING[scheme()]}">` +
         `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>` +
-        `<span class="${labelClass}">${escapeHtml(name)}</span>`,
+        `<span class="${labelClass}" title="${escapeAttr(fullName)}">${escapeHtml(name)}</span>`,
       iconSize: null,
       iconAnchor: [13, 13],
     });
     return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
       .addTo(poiMarkersLayers[poiTier(city.category)]);
   }
-  const name = localizedName(city);
+  const name = mapLabelText(localizedName(city));
   const labelIcon = L.divIcon({
     className: "city-label",
     html: escapeHtml(name),

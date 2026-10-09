@@ -2,41 +2,72 @@
   box-sizing: border-box;
 }
 
-/* Roboto Flex — self-hosted (like Leaflet in vendor/) rather than linked
-   from Google Fonts' CDN, so the page has no external font dependency.
-   It's a variable font: one file covers the whole weight range, so
-   font-weight: 600/700 etc. elsewhere in this file render correctly
-   without needing separate bold/regular files. Subset to the scripts
-   this site actually uses (Latin, Latin Extended for az/tr diacritics,
-   Cyrillic for ru) instead of the full multi-script file Google serves. */
+/* Source Sans 3 (body/UI) and Source Serif 4 (place names and headings,
+   via --font-serif) — self-hosted like Leaflet in vendor/, so the page
+   has no external font dependency. Both are variable fonts: one file per
+   script covers the whole weight range, so font-weight: 600/700 etc.
+   elsewhere in this file render correctly without separate bold/regular
+   files. Subset to the scripts this site actually uses (Latin, Latin
+   Extended for az/tr diacritics like ə ı ş ğ, Cyrillic for ru). */
 @font-face {
-  font-family: "Roboto Flex";
+  font-family: "Source Sans 3";
   font-style: normal;
-  font-weight: 100 1000;
+  font-weight: 200 900;
   font-display: swap;
-  src: url("vendor/fonts/roboto-flex-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-    U+02DA, U+02DC, U+2000-206F, U+2122, U+2191, U+2193, U+2212, U+2215,
-    U+FEFF, U+FFFD;
+  src: url("vendor/fonts/source-sans-3-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-  font-family: "Roboto Flex";
+  font-family: "Source Sans 3";
   font-style: normal;
-  font-weight: 100 1000;
+  font-weight: 200 900;
   font-display: swap;
-  src: url("vendor/fonts/roboto-flex-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
-    U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
-    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  src: url("vendor/fonts/source-sans-3-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
-  font-family: "Roboto Flex";
+  font-family: "Source Sans 3";
   font-style: normal;
-  font-weight: 100 1000;
+  font-weight: 200 900;
   font-display: swap;
-  src: url("vendor/fonts/roboto-flex-cyrillic.woff2") format("woff2");
+  src: url("vendor/fonts/source-sans-3-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("vendor/fonts/source-serif-4-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("vendor/fonts/source-serif-4-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("vendor/fonts/source-serif-4-cyrillic.woff2") format("woff2");
   unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 
@@ -52,6 +83,7 @@
        so an explicit dark choice applies even when the OS is in light
        mode (prefers-color-scheme: dark wouldn't otherwise match). */
 :root {
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --color-bg: #ffffff;
   --color-bg-subtle: #f8fafc;
   --color-bg-muted: #f1f5f9;
@@ -144,7 +176,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: "Roboto Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--color-text);
   background: var(--color-bg);
 }
@@ -590,7 +622,7 @@ main {
    print rather than a call to action. */
 #panel-legal {
   flex-shrink: 0;
-  margin-top: 1rem;
+  margin: 1rem 0.9rem 0.9rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.72rem;
@@ -614,10 +646,9 @@ main {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0.9rem;
   background: var(--color-bg);
   border-right: 1px solid var(--color-border);
-  transition: width 0.2s ease, padding 0.2s ease;
+  transition: width 0.2s ease;
 }
 
 /* #panel-content owns its own scrolling (not #panel as a whole) so
@@ -628,6 +659,15 @@ main {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Nothing in here should ever scroll sideways; without this, any
+     sliver of horizontal overflow (e.g. a bleed that slightly exceeds
+     the padding) shows up as a stray scrollbar above the footer. */
+  overflow-x: hidden;
+  /* The panel's padding lives here, inside the scroll box, rather than
+     on #panel: .detail-hero bleeds out to the panel's edges with
+     negative margins, which this element's overflow would clip if that
+     padding were outside it. */
+  padding: 0.9rem 0.9rem 0;
 }
 
 /* A little extra room for the place-detail view's hero photo and
@@ -645,8 +685,6 @@ main {
 
 #panel.collapsed {
   width: 0;
-  padding-left: 0;
-  padding-right: 0;
   overflow: hidden;
   border-right: none;
 }
@@ -959,6 +997,7 @@ main {
 }
 
 #city-forum h4 {
+  font-family: var(--font-serif);
   margin: 0 0 0.5rem;
   font-size: 0.9rem;
   color: var(--color-text);
@@ -973,6 +1012,7 @@ main {
 }
 
 #weather-city {
+  font-family: var(--font-serif);
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -1024,6 +1064,7 @@ main {
 }
 
 #city-list li {
+  font-family: var(--font-serif);
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
   cursor: pointer;
@@ -1043,6 +1084,10 @@ main {
    than stacking underneath them. See openDetailView()/closeDetailView()
    in app.js. */
 #detail-view {
+  /* How far .detail-hero's negative top margin reaches up to touch the
+     panel's own top edge — the panel's padding-top on desktop, nothing
+     on the mobile sheet (see the max-width: 700px block). */
+  --detail-bleed-top: 0.9rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1115,7 +1160,40 @@ main {
    own padding) so the hero photo runs edge-to-edge instead of sitting in
    a padded box like everything else in the sidebar. */
 .detail-hero {
-  margin: -0.9rem -0.9rem 0.9rem;
+  margin: calc(-1 * var(--detail-bleed-top)) -0.9rem 0.9rem;
+}
+
+/* With a photo, the back/save buttons float over its top corners instead
+   of taking a white row of their own above it. Fixed light chip colors
+   (not the theme tokens) since what they sit on is a photo, not the
+   panel background. Without a photo (or if it fails to load and gets
+   hidden) the :has() no longer matches and they stay in the normal flow. */
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn,
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
+  position: absolute;
+  z-index: 2;
+  top: calc(0.6rem - var(--detail-bleed-top));
+  margin: 0;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn {
+  left: calc(0.6rem - 0.9rem);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
+  right: calc(0.6rem - 0.9rem);
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn.is-favorited {
+  color: #e0245e;
+}
+
+#detail-view:has(.detail-hero:not([hidden])) .detail-back-btn:hover,
+#detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn:hover {
+  background: #ffffff;
 }
 
 /* Before/after photo compare — see the has-compare markup in
@@ -1146,10 +1224,10 @@ main {
   width: 100%;
   height: 180px;
   object-fit: cover;
-  margin-top: 20px
 }
 
 .detail-title {
+  font-family: var(--font-serif);
   margin: 0 0 0.2rem;
   font-size: 1.15rem;
   color: var(--color-text);
@@ -1198,6 +1276,7 @@ main {
 }
 
 .detail-about h3 {
+  font-family: var(--font-serif);
   margin: 0 0 0.4rem;
   font-size: 0.9rem;
   color: var(--color-text);
@@ -1219,6 +1298,7 @@ main {
 }
 
 .detail-distance h3 {
+  font-family: var(--font-serif);
   margin: 0 0 0.4rem;
   font-size: 0.9rem;
   color: var(--color-text);
@@ -1724,6 +1804,7 @@ main {
 }
 
 #tour-tooltip h3 {
+  font-family: var(--font-serif);
   margin: 0 0 0.25rem;
   font-size: 0.95rem;
 }
@@ -2252,10 +2333,23 @@ main {
 
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
-  align-self: center;
   background: var(--color-border);
   color: var(--color-text);
   white-space: nowrap;
+}
+
+.admin-edit-city-form .pick-on-map {
+  align-self: center;
+}
+
+/* The add form is a wrapping row (see above), where the button shares a
+   line with the lat/lng/category inputs. Those all carry the 10px
+   margin-top from .admin-form input, so centering the button within the
+   row left it 5px higher than they are, and shorter. Same offset plus
+   stretch instead lines up its top edge and height with them. */
+.admin-add-city-form .pick-on-map {
+  align-self: stretch;
+  margin-top: 10px;
 }
 
 /* Category picker: a searchable combobox (plain <select> gets unwieldy
@@ -2690,14 +2784,8 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     padding: 0 0.9rem 0.9rem;
   }
 
-  /* #panel itself has no padding on mobile (see #panel above) — now
-     that #panel-legal is a sibling of #panel-content rather than a
-     child of it, it needs this same horizontal padding explicitly,
-     instead of getting it for free from a parent. */
-  #panel-legal {
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
-    padding-bottom: 0.9rem;
+  #detail-view {
+    --detail-bleed-top: 0px;
   }
 
   /* Overrides the desktop-only #panel.panel-detail-open rule above (no
@@ -2782,6 +2870,15 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   .admin-add-city-form > input,
   .admin-add-city-form > .category-picker {
     width: 100%;
+    /* The base rule's flex: 1 1 140px sizes the *width* in the desktop
+       row layout; in this column layout the same basis becomes each
+       field's height, turning every input into a 140px-tall box. */
+    flex: none;
+  }
+
+  /* Same column-layout reasoning for the textareas' flex: 1 1 100%. */
+  .admin-add-city-form > textarea {
+    flex: none;
   }
 
   .admin-add-city-form button {
@@ -2834,11 +2931,13 @@ body.legal-page-body {
 }
 
 .legal-page h1 {
+  font-family: var(--font-serif);
   margin: 0 0 0.3rem;
   font-size: 1.8rem;
 }
 
 .legal-page h2 {
+  font-family: var(--font-serif);
   margin: 2rem 0 0.6rem;
   font-size: 1.15rem;
 }
