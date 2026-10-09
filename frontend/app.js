@@ -681,6 +681,9 @@ langMenuEl.addEventListener("click", (event) => {
   if (typeof applyForumStaticTranslations === "function") {
     applyForumStaticTranslations();
   }
+  if (typeof applyTourStaticTranslations === "function") {
+    applyTourStaticTranslations();
+  }
 });
 
 document.addEventListener("click", (event) => {

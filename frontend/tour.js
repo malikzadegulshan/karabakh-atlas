@@ -153,6 +153,7 @@ function renderTourStep() {
 
 function openTour() {
   tourStepIndex = 0;
+  applyTourStaticTranslations();
   tourOverlayEl.hidden = false;
   renderTourStep();
   openModalFocus(tourTooltipEl);
@@ -214,8 +215,22 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-tourToggleEl.setAttribute("aria-label", t("tourToggle"));
-tourToggleEl.title = t("tourToggle");
+// The toggle button is always visible (like #admin-toggle/#stats-toggle),
+// so it needs its label current even while the tour itself is closed —
+// called once below, and again from app.js's language-switch handler
+// (the same typeof-guarded pattern applyAdminStaticTranslations() and
+// applyForumStaticTranslations() already use there). Skip/Back are
+// static markup (see index.html) that's never otherwise touched by
+// renderTourStep(), so without this they'd stay stuck in whatever
+// language the page happened to load in.
+function applyTourStaticTranslations() {
+  tourToggleEl.setAttribute("aria-label", t("tourToggle"));
+  tourToggleEl.title = t("tourToggle");
+  tourSkipEl.textContent = t("tourSkip");
+  tourBackEl.textContent = t("adminBack");
+}
+
+applyTourStaticTranslations();
 
 // Auto-launch once per browser (kba_tour_seen, same override
 // convention as kba_theme in theme-init.js) — a light first-run nudge
