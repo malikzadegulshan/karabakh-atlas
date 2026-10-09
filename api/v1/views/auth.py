@@ -15,6 +15,7 @@ from api.v1.auth_utils import (
     password_reset_request_limiter,
     password_reset_attempt_limiter,
 )
+from api.v1.contributions import approved_post_count, contribution_tier
 from api.v1.mailer import send_email
 from api.v1.validation import (
     ValidationError,
@@ -41,6 +42,18 @@ def _find_user_by_email(email):
         if user.email.lower() == email:
             return user
     return None
+
+
+def _serialize_user(user):
+    """A user's own public_dict(), plus their contribution tier — every
+    response in this file is "here's the logged-in user themselves",
+    never another user's profile, so this is always the right amount
+    of detail to include."""
+    data = user.public_dict()
+    count = approved_post_count(user.id)
+    data["contribution_count"] = count
+    data["contribution_tier"] = contribution_tier(count)
+    return data
 
 
 def _frontend_origin():
@@ -116,7 +129,7 @@ def register():
 
     session.clear()
     session["user_id"] = user.id
-    return jsonify(user.public_dict()), 201
+    return jsonify(_serialize_user(user)), 201
 
 
 @app_views.route("/auth/login", methods=["POST"])
@@ -151,7 +164,7 @@ def login():
     clear_login_failures(rate_key)
     session.clear()
     session["user_id"] = user.id
-    return jsonify(user.public_dict()), 200
+    return jsonify(_serialize_user(user)), 200
 
 
 @app_views.route("/auth/logout", methods=["POST"])
@@ -167,7 +180,7 @@ def me():
     user = get_current_user()
     if user is None:
         return jsonify({"error": "Not logged in"}), 401
-    return jsonify(user.public_dict()), 200
+    return jsonify(_serialize_user(user)), 200
 
 
 @app_views.route("/auth/verify", methods=["POST"])
@@ -191,7 +204,7 @@ def verify_email():
             if not user.consume_verification_token(token):
                 return jsonify({"error": "Verification link expired"}), 400
             user.save()
-            return jsonify(user.public_dict()), 200
+            return jsonify(_serialize_user(user)), 200
     return jsonify({"error": "Invalid verification link"}), 400
 
 
@@ -286,4 +299,4 @@ def reset_password():
     user.save()
     session.clear()
     session["user_id"] = user.id
-    return jsonify(user.public_dict()), 200
+    return jsonify(_serialize_user(user)), 200

@@ -37,6 +37,7 @@ from api.v1.validation import (
     only_allowed_fields,
     optional_enum,
 )
+from api.v1.contributions import approved_post_count, contribution_tier
 from models import storage
 from models.city import City
 from models.user import User
@@ -63,6 +64,8 @@ def _city_name(city_id):
 def _serialize(post):
     data = post.to_dict()
     data["author_name"] = _user_name(post.author_id)
+    data["author_tier"] = contribution_tier(
+        approved_post_count(post.author_id))
     data["target_city_name"] = (
         _city_name(post.target_city_id) if post.target_city_id else None)
     return data

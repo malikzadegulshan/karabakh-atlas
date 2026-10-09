@@ -9,6 +9,7 @@ const accountSigninToggleEl = document.getElementById("account-signin-toggle");
 const accountAvatarToggleEl = document.getElementById("account-avatar-toggle");
 const accountStatusEl = document.getElementById("account-status");
 const accountNameEl = document.getElementById("account-name");
+const accountTierBadgeEl = document.getElementById("account-tier-badge");
 const accountResendEl = document.getElementById("account-resend-verification");
 const accountLogoutEl = document.getElementById("account-logout");
 const accountOverlayEl = document.getElementById("account-overlay");
@@ -100,6 +101,14 @@ function renderAccountWidget() {
   if (loggedIn) {
     accountAvatarToggleEl.textContent = currentUser.name.charAt(0).toUpperCase();
     accountNameEl.textContent = currentUser.name;
+    const label = tierLabel(currentUser.contribution_tier);
+    accountTierBadgeEl.hidden = !label;
+    if (label) {
+      accountTierBadgeEl.className = `tier-badge tier-badge-${currentUser.contribution_tier}`;
+      accountTierBadgeEl.textContent = label;
+      accountTierBadgeEl.title =
+        `${t("accountContributionsLabel")}: ${currentUser.contribution_count}`;
+    }
   } else {
     closeAccountStatusPopover();
   }

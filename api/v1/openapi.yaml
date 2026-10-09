@@ -35,6 +35,19 @@ components:
         role:
           type: string
           enum: [user, admin]
+        contribution_count:
+          type: integer
+          readOnly: true
+          description: >
+            Count of this user's own approved forum posts (general
+            opinions and per-place reviews alike — this app has no
+            separate review model).
+        contribution_tier:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [newcomer, contributor, local_expert]
+          description: Null until contribution_count reaches the first tier.
         created_at:
           type: string
           format: date-time
@@ -217,6 +230,14 @@ components:
         author_name:
           type: string
           readOnly: true
+        author_tier:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [newcomer, contributor, local_expert]
+          description: >
+            The author's contribution tier (see User.contribution_tier),
+            based on their total approved post count, not just this one.
         target_city_id:
           type: string
           nullable: true

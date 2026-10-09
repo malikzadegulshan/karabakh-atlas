@@ -364,6 +364,39 @@ main {
   padding: 0 0.2rem;
 }
 
+/* Contribution tier badge — shared by #account-tier-badge (the
+   signed-in user's own, in the account popover) and the one
+   renderForumList() builds per post author in forum.js. Each tier's
+   background is a fixed hex (not a --color-* token that flips with
+   light/dark theme): the pairing being checked is the badge's own
+   background against ITS text, not against the page, so theme has no
+   bearing on it — all three combinations clear 7:1+, comfortably past
+   WCAG AA's 4.5:1 floor for text this size. */
+.tier-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.08rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.tier-badge-newcomer {
+  background: #c5ddd9;
+  color: #0f1e1b;
+}
+
+.tier-badge-contributor {
+  background: #84b8af;
+  color: #0f1e1b;
+}
+
+.tier-badge-local_expert {
+  background: #25413c;
+  color: #ffffff;
+}
+
 #account-logout {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;

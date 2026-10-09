@@ -65,6 +65,15 @@ function renderForumList(container, posts, emptyMessage, onDeleted) {
     const author = document.createElement("strong");
     author.textContent = post.author_name || "?";
     meta.appendChild(author);
+
+    const tier = tierLabel(post.author_tier);
+    if (tier) {
+      const badge = document.createElement("span");
+      badge.className = `tier-badge tier-badge-${post.author_tier}`;
+      badge.textContent = tier;
+      meta.appendChild(badge);
+    }
+
     meta.appendChild(document.createTextNode(" · " + forumDateLabel(post.created_at)));
 
     // The API itself is the real enforcement point (author-or-admin,

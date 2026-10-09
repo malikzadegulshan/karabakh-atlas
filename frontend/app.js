@@ -703,6 +703,14 @@ langMenuEl.addEventListener("click", (event) => {
   if (typeof applyTourStaticTranslations === "function") {
     applyTourStaticTranslations();
   }
+  // The signed-in user's tier badge text (and the forum's own author
+  // badges) need the same refresh — renderAccountWidget() already
+  // re-derives everything from currentUser, so re-running it is
+  // enough; renderForumList() output refreshes itself the next time
+  // either forum list reloads, same as post bodies/dates already do.
+  if (typeof renderAccountWidget === "function") {
+    renderAccountWidget();
+  }
 });
 
 document.addEventListener("click", (event) => {
@@ -1575,6 +1583,20 @@ function isPoi(city) {
 
 function categoryLabel(value) {
   return (t("categories") && t("categories")[value]) || value;
+}
+
+// Keep in sync with CONTRIBUTION_TIERS in api/v1/contributions.py —
+// shared by auth.js (the signed-in user's own badge) and forum.js
+// (each post's author badge).
+const TIER_LABEL_KEYS = {
+  newcomer: "tierNewcomer",
+  contributor: "tierContributor",
+  local_expert: "tierLocalExpert",
+};
+
+function tierLabel(tier) {
+  const key = TIER_LABEL_KEYS[tier];
+  return key ? t(key) : null;
 }
 
 // Every POI category becomes a grid entry — Object.keys(POI_TONES) is
