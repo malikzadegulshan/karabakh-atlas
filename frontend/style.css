@@ -364,6 +364,39 @@ main {
   padding: 0 0.2rem;
 }
 
+/* Contribution tier badge — shared by #account-tier-badge (the
+   signed-in user's own, in the account popover) and the one
+   renderForumList() builds per post author in forum.js. Each tier's
+   background is a fixed hex (not a --color-* token that flips with
+   light/dark theme): the pairing being checked is the badge's own
+   background against ITS text, not against the page, so theme has no
+   bearing on it — all three combinations clear 7:1+, comfortably past
+   WCAG AA's 4.5:1 floor for text this size. */
+.tier-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.08rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.tier-badge-newcomer {
+  background: #c5ddd9;
+  color: #0f1e1b;
+}
+
+.tier-badge-contributor {
+  background: #84b8af;
+  color: #0f1e1b;
+}
+
+.tier-badge-local_expert {
+  background: #25413c;
+  color: #ffffff;
+}
+
 #account-logout {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
@@ -547,18 +580,22 @@ main {
   color: var(--color-accent);
 }
 
-/* Sits at the bottom of #panel-content, under whichever view (cities/
-   places/forum/a place's own detail) is currently showing — plain
-   text, not styled as a button, and deliberately muted (not the brand
-   accent color the account form's own legal note uses) so it reads as
-   quiet footer fine print rather than a call to action. */
+/* A fixed footer pinned to the bottom of #panel itself (a flex-column
+   sibling of #panel-content, not a child of it) — regardless of how
+   short the current view is (e.g. the cities list), it always sits at
+   the panel's actual bottom edge instead of floating up right under
+   whatever content happens to be showing. Plain text, not styled as a
+   button, and deliberately muted (not the brand accent color the
+   account form's own legal note uses) so it reads as quiet footer fine
+   print rather than a call to action. */
 #panel-legal {
+  flex-shrink: 0;
   margin-top: 1rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.72rem;
   color: var(--color-text-faint);
-  text-align: center;
+  text-align: left;
 }
 
 #panel-legal a {
@@ -575,11 +612,22 @@ main {
   width: 320px;
   flex-shrink: 0;
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: 0.9rem;
   background: var(--color-bg);
   border-right: 1px solid var(--color-border);
   transition: width 0.2s ease, padding 0.2s ease;
+}
+
+/* #panel-content owns its own scrolling (not #panel as a whole) so
+   that #panel-legal below, a flex sibling rather than a child of it,
+   stays put at the panel's bottom edge instead of scrolling away with
+   the cities/places/forum/detail view above it. */
+#panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* A little extra room for the place-detail view's hero photo and
@@ -2640,6 +2688,16 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     min-height: 0;
     overflow-y: auto;
     padding: 0 0.9rem 0.9rem;
+  }
+
+  /* #panel itself has no padding on mobile (see #panel above) — now
+     that #panel-legal is a sibling of #panel-content rather than a
+     child of it, it needs this same horizontal padding explicitly,
+     instead of getting it for free from a parent. */
+  #panel-legal {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    padding-bottom: 0.9rem;
   }
 
   /* Overrides the desktop-only #panel.panel-detail-open rule above (no
