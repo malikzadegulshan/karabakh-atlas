@@ -2329,10 +2329,23 @@ main {
 
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
-  align-self: center;
   background: var(--color-border);
   color: var(--color-text);
   white-space: nowrap;
+}
+
+.admin-edit-city-form .pick-on-map {
+  align-self: center;
+}
+
+/* The add form is a wrapping row (see above), where the button shares a
+   line with the lat/lng/category inputs. Those all carry the 10px
+   margin-top from .admin-form input, so centering the button within the
+   row left it 5px higher than they are, and shorter. Same offset plus
+   stretch instead lines up its top edge and height with them. */
+.admin-add-city-form .pick-on-map {
+  align-self: stretch;
+  margin-top: 10px;
 }
 
 /* Category picker: a searchable combobox (plain <select> gets unwieldy
