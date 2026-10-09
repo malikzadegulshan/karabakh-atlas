@@ -12,12 +12,26 @@ from models.forum_post import ForumPost
 
 
 def delete_forum_posts(posts):
-    """Delete the given posts, replies before the posts they answer, so
-    a database enforcing the parent_id foreign key never sees a parent
-    removed while a reply still points at it. Callers pass every post
-    they want gone (replies share their parent's city/news target, so
-    the cascades in cities/regions/news already collect them)."""
-    for post in sorted(posts, key=lambda p: p.parent_id is None):
+    """Delete the given posts, replies before the posts they answer.
+
+    The order has to be enforced in the database, not just in Python:
+    session.delete() only marks rows, and SQLAlchemy flushes same-table
+    deletes in primary-key order (no relationship() tells it a reply must
+    go first), so deleting everything before one commit can remove a
+    parent while a reply still references it and PostgreSQL rejects it
+    with a foreign-key violation. So the replies are committed first,
+    then the rest. (File storage has no foreign keys, which is why only a
+    real database catches this.) Callers pass every post they want gone;
+    replies share their parent's city/news target, so the cascades in
+    cities/regions/news already collect them.
+    """
+    replies = [post for post in posts if post.parent_id is not None]
+    others = [post for post in posts if post.parent_id is None]
+    for reply in replies:
+        reply.delete()
+    if replies:
+        storage.save()
+    for post in others:
         post.delete()
 
 
