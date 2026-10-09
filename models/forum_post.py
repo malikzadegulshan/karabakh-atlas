@@ -36,6 +36,12 @@ class ForumPost(BaseModel, Base):
     # null on place and news posts, and on general posts that predate
     # topics (which read as DEFAULT_TOPIC).
     topic = Column(String(32), nullable=True)
+    # Set when this post is a reply: the id of the top-level post it
+    # answers. Replies copy their parent's city/news/topic and live one
+    # level deep — answering a reply attaches to the same top-level post
+    # (see create_forum_post in api/v1/views/forum.py).
+    parent_id = Column(
+        String(60), ForeignKey("forum_posts.id"), nullable=True)
     body = Column(Text, nullable=False)
     status = Column(String(16), nullable=False, default="pending")
     moderated_by = Column(String(60), ForeignKey("users.id"), nullable=True)

@@ -7,6 +7,7 @@ from models import storage
 from models.region import Region
 from models.city import City
 from models.forum_post import ForumPost
+from api.v1.forum_utils import delete_forum_posts
 from models.favorite import Favorite
 from models.image import Image
 from api.v1.validation import (
@@ -146,9 +147,8 @@ def delete_city(city_id):
     city = storage.all(City).get("City.{}".format(city_id))
     if city is None:
         abort(404)
-    for post in [p for p in storage.all(ForumPost).values()
-                 if p.target_city_id == city_id]:
-        post.delete()
+    delete_forum_posts([p for p in storage.all(ForumPost).values()
+                        if p.target_city_id == city_id])
     for favorite in [f for f in storage.all(Favorite).values()
                      if f.city_id == city_id]:
         favorite.delete()

@@ -266,6 +266,22 @@ components:
           description: >
             The discussion topic of a general post (older posts read as
             general). Null for place- and news-scoped posts.
+        parent_id:
+          type: string
+          nullable: true
+          description: >
+            Set when this post is a reply: the top-level post it
+            answers. Threads are one level deep, and a reply is hidden
+            from public lists whenever its parent is not approved.
+        parent_author_name:
+          type: string
+          nullable: true
+          readOnly: true
+        parent_excerpt:
+          type: string
+          nullable: true
+          readOnly: true
+          description: First 140 characters of the post this one answers.
         body:
           type: string
           maxLength: 2000
@@ -312,6 +328,13 @@ components:
           description: >
             Topic for a general post (defaults to general). Rejected on
             place- or news-scoped posts.
+        parent_id:
+          type: string
+          description: >
+            Reply to this published post (answering a reply attaches to
+            the top-level post). Starts pending like any post. A reply
+            takes its city/news/topic from its parent, so sending
+            target_city_id, target_news_id, or topic with it is a 400.
     NewsItem:
       type: object
       properties:

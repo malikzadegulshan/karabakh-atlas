@@ -142,17 +142,191 @@ function applyForumStaticTranslations() {
   renderForumTab();
 }
 
-function forumDateLabel(isoString) {
-  // An absolute, locale-formatted date/time rather than a "3 hours ago"
-  // relative formatter — the latter would need its own translated unit
-  // strings across 4 languages for not much benefit on a forum this size.
-  return new Date(isoString).toLocaleString(currentLang);
+// created_at is a naive UTC timestamp (no "Z"), which new Date() would
+// read as local time.
+function forumDate(isoString) {
+  const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(isoString) ? isoString : `${isoString}Z`;
+  return new Date(iso);
 }
 
-// onDeleted is called (and should re-fetch/re-render) after a
-// successful delete — both call sites below already have a natural
-// "reload this list" function to pass in.
-function renderForumList(container, posts, emptyMessage, onDeleted) {
+// Compact on purpose ("Oct 9", or "Oct 9, 2025" once it's not this year)
+// so a post's author, badge, date and Delete fit on one line in the
+// narrow panel; the full date and time are in the hover title (see
+// buildForumPostElement). An absolute date rather than "3 hours ago" —
+// a relative formatter would need translated unit strings in 4 languages
+// for little benefit on a forum this size.
+function forumDateLabel(isoString) {
+  const date = forumDate(isoString);
+  const options = { day: "numeric", month: "short" };
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = "numeric";
+  }
+  return date.toLocaleDateString(currentLang, options);
+}
+
+
+// Builds one post's meta line (author, tier badge, date, Delete), body,
+// and Reply button. onChanged is called (and should re-fetch/re-render
+// the list) after a successful delete or reply — every call site already
+// has a natural "reload this list" function to pass in. rootId is the
+// top-level post a reply to this one attaches to (threads are one level
+// deep, see the API's create_forum_post); isReply prefills "@Name " so
+// answering a reply still says who it's aimed at.
+function buildForumPostElement(post, rootId, isReply, replyCount, onChanged) {
+  const li = document.createElement("li");
+  li.className = isReply ? "forum-post forum-reply" : "forum-post";
+
+  const meta = document.createElement("div");
+  meta.className = "forum-post-meta";
+  const author = document.createElement("strong");
+  author.textContent = post.author_name || "?";
+  meta.appendChild(author);
+
+  const tier = tierLabel(post.author_tier);
+  if (tier) {
+    const badge = document.createElement("span");
+    badge.className = `tier-badge tier-badge-${post.author_tier}`;
+    badge.textContent = tier;
+    meta.appendChild(badge);
+  }
+
+  const when = document.createElement("time");
+  when.className = "forum-post-date";
+  when.dateTime = forumDate(post.created_at).toISOString();
+  when.title = forumDate(post.created_at).toLocaleString(currentLang);
+  when.textContent = forumDateLabel(post.created_at);
+  meta.appendChild(document.createTextNode(" · "));
+  meta.appendChild(when);
+
+  // The API itself is the real enforcement point (author-or-admin,
+  // see DELETE /forum/posts/<id>) — this button is just hidden
+  // client-side for anyone it wouldn't work for.
+  const canDelete = currentUser &&
+    (currentUser.role === "admin" || currentUser.id === post.author_id);
+  if (canDelete) {
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "forum-post-delete";
+    deleteBtn.textContent = t("adminDelete");
+    deleteBtn.addEventListener("click", async () => {
+      const message = replyCount > 0
+        ? t("confirmDeleteForumThread")(replyCount)
+        : t("confirmDeleteForumPost");
+      if (!window.confirm(message)) {
+        return;
+      }
+      try {
+        await apiRequest("DELETE", `/forum/posts/${post.id}`);
+        await onChanged();
+      } catch (err) {
+        window.alert(err.message);
+      }
+    });
+    meta.appendChild(deleteBtn);
+  }
+
+  li.appendChild(meta);
+
+  const body = document.createElement("p");
+  body.className = "forum-post-body";
+  body.textContent = post.body;
+  li.appendChild(body);
+
+  const replySlot = document.createElement("div");
+  replySlot.className = "forum-reply-slot";
+
+  const replyBtn = document.createElement("button");
+  replyBtn.type = "button";
+  replyBtn.className = "forum-reply-btn";
+  replyBtn.textContent = t("forumReply");
+  replyBtn.addEventListener("click", () => {
+    if (!currentUser) {
+      if (typeof openAccountPanel === "function") {
+        openAccountPanel();
+      }
+      return;
+    }
+    if (replySlot.firstChild) {
+      replySlot.innerHTML = "";
+      return;
+    }
+    replySlot.appendChild(buildReplyForm(
+      rootId, isReply ? `@${post.author_name || "?"} ` : "", replySlot,
+      onChanged));
+  });
+  li.appendChild(replyBtn);
+  li.appendChild(replySlot);
+  return li;
+}
+
+function buildReplyForm(rootId, prefill, slot, onChanged) {
+  const form = document.createElement("form");
+  form.className = "admin-form forum-reply-form";
+
+  const textarea = document.createElement("textarea");
+  textarea.rows = 2;
+  textarea.maxLength = 2000;
+  setPlaceholderLabel(textarea, t("forumReplyPlaceholder"));
+  textarea.value = prefill;
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.textContent = t("forumSubmit");
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.textContent = t("adminCancel");
+  cancel.addEventListener("click", () => { slot.innerHTML = ""; });
+  actions.appendChild(submit);
+  actions.appendChild(cancel);
+
+  form.appendChild(textarea);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const body = textarea.value.trim();
+    // A reply that is only the "@Name " prefill isn't a reply yet.
+    if (!body || body === prefill.trim()) {
+      return;
+    }
+    submit.disabled = true;
+    try {
+      const post = await apiRequest(
+        "POST", "/forum/posts", { body, parent_id: rootId });
+      if (post.status === "approved") {
+        await onChanged();
+        return;
+      }
+      // Pending (non-admin): the reply isn't visible yet, so replace
+      // the form with the same notice posting elsewhere shows.
+      const notice = document.createElement("p");
+      notice.className = "forum-pending-notice";
+      notice.textContent = t("forumPendingNotice");
+      slot.innerHTML = "";
+      slot.appendChild(notice);
+    } catch (err) {
+      window.alert(err.message);
+      submit.disabled = false;
+    }
+  });
+
+  // Focus once the form is in the document, caret after any "@Name "
+  // prefill so typing continues from there.
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }, 0);
+  return form;
+}
+
+// Top-level posts newest first (as the API returns them), each with its
+// replies underneath oldest first so a thread reads top to bottom. A
+// reply whose parent isn't in the list is skipped rather than shown
+// orphaned (the API already hides replies of unpublished posts; this
+// just keeps the render safe against a list filtered some other way).
+function renderForumList(container, posts, emptyMessage, onChanged) {
   container.innerHTML = "";
   if (posts.length === 0) {
     const empty = document.createElement("p");
@@ -161,57 +335,26 @@ function renderForumList(container, posts, emptyMessage, onDeleted) {
     container.appendChild(empty);
     return;
   }
-  posts.forEach((post) => {
-    const li = document.createElement("li");
-    li.className = "forum-post";
-
-    const meta = document.createElement("div");
-    meta.className = "forum-post-meta";
-    const author = document.createElement("strong");
-    author.textContent = post.author_name || "?";
-    meta.appendChild(author);
-
-    const tier = tierLabel(post.author_tier);
-    if (tier) {
-      const badge = document.createElement("span");
-      badge.className = `tier-badge tier-badge-${post.author_tier}`;
-      badge.textContent = tier;
-      meta.appendChild(badge);
-    }
-
-    meta.appendChild(document.createTextNode(" · " + forumDateLabel(post.created_at)));
-
-    // The API itself is the real enforcement point (author-or-admin,
-    // see DELETE /forum/posts/<id>) — this button is just hidden
-    // client-side for anyone it wouldn't work for.
-    const canDelete = currentUser &&
-      (currentUser.role === "admin" || currentUser.id === post.author_id);
-    if (canDelete) {
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "forum-post-delete";
-      deleteBtn.textContent = t("adminDelete");
-      deleteBtn.addEventListener("click", async () => {
-        if (!window.confirm(t("confirmDeleteForumPost"))) {
-          return;
-        }
-        try {
-          await apiRequest("DELETE", `/forum/posts/${post.id}`);
-          await onDeleted();
-        } catch (err) {
-          window.alert(err.message);
-        }
+  const repliesByParent = new Map();
+  posts.filter((post) => post.parent_id).forEach((reply) => {
+    const thread = repliesByParent.get(reply.parent_id) || [];
+    thread.push(reply);
+    repliesByParent.set(reply.parent_id, thread);
+  });
+  posts.filter((post) => !post.parent_id).forEach((post) => {
+    const replies = (repliesByParent.get(post.id) || []).slice().sort(
+      (a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const li = buildForumPostElement(
+      post, post.id, false, replies.length, onChanged);
+    if (replies.length > 0) {
+      const thread = document.createElement("ul");
+      thread.className = "forum-replies";
+      replies.forEach((reply) => {
+        thread.appendChild(
+          buildForumPostElement(reply, post.id, true, 0, onChanged));
       });
-      meta.appendChild(deleteBtn);
+      li.appendChild(thread);
     }
-
-    li.appendChild(meta);
-
-    const body = document.createElement("p");
-    body.className = "forum-post-body";
-    body.textContent = post.body;
-    li.appendChild(body);
-
     container.appendChild(li);
   });
 }

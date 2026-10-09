@@ -6,6 +6,7 @@ from models import storage
 from models.region import Region
 from models.city import City
 from models.forum_post import ForumPost
+from api.v1.forum_utils import delete_forum_posts
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
@@ -40,9 +41,8 @@ def delete_region(region_id):
         abort(404)
     for city in [c for c in storage.all(City).values()
                  if c.region_id == region_id]:
-        for post in [p for p in storage.all(ForumPost).values()
-                     if p.target_city_id == city.id]:
-            post.delete()
+        delete_forum_posts([p for p in storage.all(ForumPost).values()
+                            if p.target_city_id == city.id])
         city.delete()
     region.delete()
     storage.save()

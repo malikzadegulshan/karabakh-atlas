@@ -377,6 +377,141 @@ class TestForumViews(unittest.TestCase):
         resp = self.client.get("/api/v1/forum/posts?topic=nope")
         self.assertEqual(resp.status_code, 400)
 
+    # -- Replies ---------------------------------------------------
+
+    def _approved_post(self, **payload):
+        """An admin post (auto-approved) with the given fields."""
+        payload.setdefault("body", "Post {}".format(uuid.uuid4()))
+        resp = self.admin_client.post(
+            "/api/v1/forum/posts", data=json.dumps(payload),
+            content_type="application/json")
+        self.assertEqual(resp.status_code, 201)
+        return json.loads(resp.data)
+
+    def _reply(self, client, parent_id, body=None):
+        return client.post(
+            "/api/v1/forum/posts",
+            data=json.dumps({
+                "body": body or "Reply {}".format(uuid.uuid4()),
+                "parent_id": parent_id}),
+            content_type="application/json")
+
+    def _approve(self, post_id, status="approved"):
+        return self.admin_client.put(
+            "/api/v1/forum/posts/{}/status".format(post_id),
+            data=json.dumps({"status": status}),
+            content_type="application/json")
+
+    def test_reply_requires_login(self):
+        """Replying needs an account."""
+        parent = self._approved_post()
+        resp = self._reply(app.test_client(), parent["id"])
+        self.assertEqual(resp.status_code, 401)
+
+    def test_reply_is_moderated_and_inherits_topic(self):
+        """A user's reply starts pending, keeps the parent's topic, and
+        only shows publicly once approved."""
+        parent = self._approved_post(topic="student_life")
+        text = "My reply {}".format(uuid.uuid4())
+        resp = self._reply(self.client, parent["id"], body=text)
+        self.assertEqual(resp.status_code, 201)
+        reply = json.loads(resp.data)
+        self.assertEqual(reply["status"], "pending")
+        self.assertEqual(reply["parent_id"], parent["id"])
+        self.assertEqual(reply["topic"], "student_life")
+
+        def public_bodies():
+            listing = self.client.get(
+                "/api/v1/forum/posts?topic=student_life")
+            return [p["body"] for p in json.loads(listing.data)]
+
+        self.assertNotIn(text, public_bodies())
+        self._approve(reply["id"])
+        self.assertIn(text, public_bodies())
+
+    def test_reply_to_a_reply_attaches_to_the_top_level_post(self):
+        """Threads are one level deep."""
+        parent = self._approved_post()
+        first = self._approved_post(parent_id=parent["id"])
+        second = self._approved_post(parent_id=first["id"])
+        self.assertEqual(first["parent_id"], parent["id"])
+        self.assertEqual(second["parent_id"], parent["id"])
+
+    def test_reply_cannot_choose_its_own_target_or_topic(self):
+        """A reply sends only body and parent_id."""
+        parent = self._approved_post()
+        for extra in ({"topic": "global"}, {"target_city_id": "x"},
+                      {"target_news_id": "x"}):
+            payload = {"body": "r", "parent_id": parent["id"]}
+            payload.update(extra)
+            resp = self.client.post(
+                "/api/v1/forum/posts", data=json.dumps(payload),
+                content_type="application/json")
+            self.assertEqual(resp.status_code, 400)
+
+    def test_reply_needs_a_published_parent(self):
+        """Missing, pending, and rejected parents can't be replied to."""
+        self.assertEqual(
+            self._reply(self.client, "nope").status_code, 400)
+        pending = json.loads(self._create_post().data)
+        self.assertEqual(
+            self._reply(self.client, pending["id"]).status_code, 400)
+        parent = self._approved_post()
+        self._approve(parent["id"], "rejected")
+        self.assertEqual(
+            self._reply(self.client, parent["id"]).status_code, 400)
+
+    def test_rejecting_a_parent_hides_its_replies(self):
+        """Replies disappear from public lists with their parent."""
+        parent = self._approved_post(topic="global")
+        reply = self._approved_post(parent_id=parent["id"])
+
+        def public_ids():
+            listing = self.client.get("/api/v1/forum/posts?topic=global")
+            return [p["id"] for p in json.loads(listing.data)]
+
+        self.assertIn(reply["id"], public_ids())
+        self._approve(parent["id"], "rejected")
+        self.assertNotIn(reply["id"], public_ids())
+        self.assertNotIn(parent["id"], public_ids())
+
+    def test_deleting_a_post_deletes_its_replies(self):
+        """Replies go with the post they answer."""
+        from models import storage
+        from models.forum_post import ForumPost
+        parent = self._approved_post()
+        reply = self._approved_post(parent_id=parent["id"])
+        resp = self.admin_client.delete(
+            "/api/v1/forum/posts/{}".format(parent["id"]))
+        self.assertEqual(resp.status_code, 200)
+        stored = storage.all(ForumPost)
+        self.assertNotIn("ForumPost.{}".format(parent["id"]), stored)
+        self.assertNotIn("ForumPost.{}".format(reply["id"]), stored)
+
+    def test_reply_on_a_place_post_stays_on_that_place(self):
+        """A reply to a place opinion is a place post too."""
+        cities = json.loads(self.admin_client.get("/api/v1/cities").data)
+        if not cities:
+            self.skipTest("no city available")
+        parent = self._approved_post(target_city_id=cities[0]["id"])
+        reply = self._approved_post(parent_id=parent["id"])
+        self.assertEqual(reply["target_city_id"], cities[0]["id"])
+        self.assertIsNone(reply["topic"])
+        listing = self.client.get(
+            "/api/v1/forum/posts?city_id=" + cities[0]["id"])
+        self.assertIn(
+            reply["id"], [p["id"] for p in json.loads(listing.data)])
+
+    def test_moderation_card_data_for_a_reply(self):
+        """A pending reply in the queue names who it answers."""
+        parent = self._approved_post(body="Original thought")
+        reply = json.loads(self._reply(self.client, parent["id"]).data)
+        queue = json.loads(self.admin_client.get(
+            "/api/v1/forum/posts?status=pending").data)
+        match = [p for p in queue if p["id"] == reply["id"]][0]
+        self.assertEqual(match["parent_excerpt"], "Original thought")
+        self.assertEqual(match["parent_author_name"], "Test Admin")
+
     def test_moderation_queue_includes_place_scoped_posts(self):
         """A pending opinion about a specific place shows up in the
         admin's pending queue, not just general ones."""

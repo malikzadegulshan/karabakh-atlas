@@ -38,6 +38,9 @@ from api.v1.validation import (
     optional_enum,
 )
 from api.v1.contributions import approved_post_count, contribution_tier
+from api.v1.forum_utils import (
+    delete_post_and_replies, publicly_visible, posts_by_id,
+)
 from models import storage
 from models.city import City
 from models.user import User
@@ -47,7 +50,10 @@ from models.forum_post import (
 from models.news_item import NewsItem
 
 FORUM_BODY_MAX_LENGTH = 2000
-CREATE_FIELDS = {"body", "target_city_id", "target_news_id", "topic"}
+CREATE_FIELDS = {
+    "body", "target_city_id", "target_news_id", "topic", "parent_id",
+}
+REPLY_EXCERPT_LENGTH = 140
 MODERATE_FIELDS = {"status"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
 
@@ -83,6 +89,15 @@ def _news_title(news_id):
 
 def _serialize(post):
     data = post.to_dict()
+    parent = (
+        storage.all(ForumPost).get("ForumPost.{}".format(post.parent_id))
+        if post.parent_id else None)
+    # For a reply: who it answers and a short excerpt, so moderation can
+    # judge it without opening the whole thread.
+    data["parent_author_name"] = (
+        _user_name(parent.author_id) if parent else None)
+    data["parent_excerpt"] = (
+        parent.body[:REPLY_EXCERPT_LENGTH] if parent else None)
     data["author_name"] = _user_name(post.author_id)
     data["author_tier"] = contribution_tier(
         approved_post_count(post.author_id))
@@ -125,15 +140,37 @@ def create_forum_post():
     except ValidationError as error:
         abort(400, description=error.message)
 
-    target_city_id = data.get("target_city_id")
-    if target_city_id is not None:
+    parent = None
+    parent_id = data.get("parent_id")
+    if parent_id is not None:
+        if any(field in data for field in (
+                "target_city_id", "target_news_id", "topic")):
+            abort(400, description=(
+                "A reply takes its place and topic from the post it "
+                "answers; send only body and parent_id"))
+        if not isinstance(parent_id, str):
+            abort(400, description="parent_id must be a string")
+        by_id = posts_by_id()
+        parent = by_id.get(parent_id)
+        if parent is None or not publicly_visible(parent, by_id):
+            abort(400, description=(
+                "parent_id must be a published post"))
+        # Threads are one level deep: answering a reply attaches to the
+        # top-level post it hangs from.
+        if parent.parent_id is not None:
+            parent = by_id[parent.parent_id]
+
+    target_city_id = (
+        parent.target_city_id if parent else data.get("target_city_id"))
+    if parent is None and target_city_id is not None:
         if not isinstance(target_city_id, str):
             abort(400, description="target_city_id must be a string")
         if storage.all(City).get("City.{}".format(target_city_id)) is None:
             abort(400, description="target_city_id does not exist")
 
-    target_news_id = data.get("target_news_id")
-    if target_news_id is not None:
+    target_news_id = (
+        parent.target_news_id if parent else data.get("target_news_id"))
+    if parent is None and target_news_id is not None:
         if target_city_id is not None:
             abort(400, description=(
                 "A post can target a city or a news item, not both"))
@@ -143,9 +180,9 @@ def create_forum_post():
                 "NewsItem.{}".format(target_news_id)) is None:
             abort(400, description="target_news_id does not exist")
 
-    topic = data.get("topic")
+    topic = parent.topic if parent else data.get("topic")
     is_general = target_city_id is None and target_news_id is None
-    if topic is not None and not is_general:
+    if parent is None and topic is not None and not is_general:
         abort(400, description=(
             "topic only applies to general posts, not place or news posts"))
 
@@ -156,6 +193,7 @@ def create_forum_post():
         target_city_id=target_city_id,
         target_news_id=target_news_id,
         topic=(topic or DEFAULT_TOPIC) if is_general else None,
+        parent_id=parent.id if parent else None,
         body=data["body"].strip(),
         status="approved" if is_admin else "pending",
     )
@@ -221,7 +259,8 @@ def list_forum_posts():
             abort(400, description="Invalid status filter")
         posts = [p for p in posts if p.status == status_param]
     else:
-        posts = [p for p in posts if p.status == "approved"]
+        by_id = posts_by_id()
+        posts = [p for p in posts if publicly_visible(p, by_id)]
 
     if topic is not None:
         posts = [p for p in posts if _topic_of(p) == topic]
@@ -258,13 +297,14 @@ def moderate_forum_post(post_id):
 @app_views.route("/forum/posts/<post_id>", methods=["DELETE"])
 @login_required
 def delete_forum_post(post_id):
-    """Delete a post — its own author, or any admin, may do this."""
+    """Delete a post (and any replies to it) — its own author, or any
+    admin, may do this."""
     post = storage.all(ForumPost).get("ForumPost.{}".format(post_id))
     if post is None:
         abort(404)
     user = get_current_user()
     if user.id != post.author_id and user.role != "admin":
         return jsonify({"error": "Not allowed to delete this post"}), 403
-    post.delete()
+    delete_post_and_replies(post)
     storage.save()
     return jsonify({}), 200

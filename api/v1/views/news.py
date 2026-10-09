@@ -10,6 +10,9 @@ but an admin can ever add, edit, or delete news.
 """
 from flask import jsonify, abort, request
 from api.v1.views import app_views
+from api.v1.forum_utils import (
+    delete_forum_posts, publicly_visible, posts_by_id,
+)
 from models import storage
 from models.forum_post import ForumPost
 from models.news_item import NewsItem
@@ -44,9 +47,10 @@ def _serialize(item):
     data = item.to_dict()
     # Approved comments only — the same "visible to everyone" count a
     # reader would see in the list, never one that leaks pending posts.
+    by_id = posts_by_id()
     data["comment_count"] = sum(
-        1 for post in storage.all(ForumPost).values()
-        if post.target_news_id == item.id and post.status == "approved")
+        1 for post in by_id.values()
+        if post.target_news_id == item.id and publicly_visible(post, by_id))
     return data
 
 
@@ -103,9 +107,8 @@ def delete_news_item(news_id):
         abort(404)
     # Comments reference the item by foreign key, so they have to go
     # first (Postgres would reject deleting a still-referenced row).
-    for post in list(storage.all(ForumPost).values()):
-        if post.target_news_id == item.id:
-            post.delete()
+    delete_forum_posts([p for p in storage.all(ForumPost).values()
+                        if p.target_news_id == item.id])
     item.delete()
     storage.save()
     return jsonify({}), 200
