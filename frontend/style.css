@@ -2866,6 +2866,15 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   .admin-add-city-form > input,
   .admin-add-city-form > .category-picker {
     width: 100%;
+    /* The base rule's flex: 1 1 140px sizes the *width* in the desktop
+       row layout; in this column layout the same basis becomes each
+       field's height, turning every input into a 140px-tall box. */
+    flex: none;
+  }
+
+  /* Same column-layout reasoning for the textareas' flex: 1 1 100%. */
+  .admin-add-city-form > textarea {
+    flex: none;
   }
 
   .admin-add-city-form button {
