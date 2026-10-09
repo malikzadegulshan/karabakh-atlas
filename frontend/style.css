@@ -1079,6 +1079,100 @@ main {
   font-weight: 600;
 }
 
+/* News tab (news.js): one card per post — optional picture, date,
+   serif headline, body clamped to a few lines until "Read more", then a
+   footer row of link-style buttons (accent text on the card's subtle
+   background measures 5.0:1 light / 5.3:1 dark, past AA's 4.5:1). */
+#news-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.news-card {
+  margin-bottom: 0.9rem;
+  padding: 0.75rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.news-card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 0.6rem;
+  object-fit: cover;
+  background: var(--color-bg-muted);
+  border-radius: 7px;
+}
+
+.news-card-date {
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
+}
+
+.news-card-title {
+  margin: 0.15rem 0 0.4rem;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.news-card-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.news-card-body.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.news-link-btn {
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.news-link-btn:hover,
+.news-link-btn:focus-visible {
+  text-decoration: underline;
+}
+
+.news-link-btn[hidden] {
+  display: none;
+}
+
+.news-comments {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.news-comments[hidden] {
+  display: none;
+}
+
 /* Place-detail view (#detail-view) — replaces search/weather/the active
    tab entirely while a city or POI is selected, Apple-Maps-style, rather
    than stacking underneath them. See openDetailView()/closeDetailView()

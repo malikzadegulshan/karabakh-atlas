@@ -248,6 +248,16 @@ components:
           type: string
           nullable: true
           readOnly: true
+        target_news_id:
+          type: string
+          nullable: true
+          description: >
+            Set (instead of target_city_id) when this post is a comment
+            on a news item.
+        target_news_title:
+          type: string
+          nullable: true
+          readOnly: true
         body:
           type: string
           maxLength: 2000
@@ -282,6 +292,79 @@ components:
         target_city_id:
           type: string
           nullable: true
+        target_news_id:
+          type: string
+          nullable: true
+          description: >
+            Comment on this news item. Mutually exclusive with
+            target_city_id.
+    NewsItem:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 5000
+        image_url:
+          type: string
+          nullable: true
+          description: Picture shown with the post (see POST /images).
+        source_url:
+          type: string
+          nullable: true
+        title_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        body_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        comment_count:
+          type: integer
+          readOnly: true
+          description: Number of approved comments.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    NewsItemInput:
+      type: object
+      required: [title, body]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 5000
+        image_url:
+          type: string
+          nullable: true
+        source_url:
+          type: string
+          nullable: true
+        title_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+        body_i18n:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
     HistoricalEvent:
       type: object
       properties:
@@ -770,6 +853,13 @@ paths:
             (target_city_id is null) opinions about Karabakh overall.
           schema:
             type: string
+        - name: news_id
+          in: query
+          description: >
+            Only comments on this news item. Omit both city_id and
+            news_id for general opinions about Karabakh overall.
+          schema:
+            type: string
         - name: mine
           in: query
           schema:
@@ -996,6 +1086,86 @@ paths:
           description: Not found
     delete:
       summary: Delete a historical event
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: Not found
+  /news:
+    get:
+      summary: List all news posts, newest first
+      responses:
+        "200":
+          description: List of news posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsItem"
+    post:
+      summary: Create a news post (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsItemInput"
+      responses:
+        "201":
+          description: News post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsItem"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+  /news/{news_id}:
+    parameters:
+      - name: news_id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update a news post (admin only)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsItemInput"
+      responses:
+        "200":
+          description: Updated news post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsItem"
+        "400":
+          description: Validation error
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a news post and its comments (admin only)
       security:
         - cookieAuth: []
       responses:

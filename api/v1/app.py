@@ -14,13 +14,13 @@ from api.v1.views import app_views
 from api.v1.auth_utils import get_current_user
 
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
-# Only region/city/historical-event writes go through the account gate —
+# Only region/city/historical-event/news writes go through the account gate —
 # /auth/* has its own rules (register/login must be reachable while
 # logged out), and /forum/* enforces login (and admin, for moderation)
 # itself via decorators instead of this prefix list.
 ADMIN_GATED_PREFIXES = (
     "/api/v1/regions", "/api/v1/cities", "/api/v1/historical-events",
-    "/api/v1/images")
+    "/api/v1/images", "/api/v1/news")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
 

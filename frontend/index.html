@@ -64,6 +64,7 @@
       <button type="button" id="rail-cities" class="rail-btn active" data-icon="rail_cities" aria-label="Cities"></button>
       <button type="button" id="rail-places" class="rail-btn" data-icon="rail_places" aria-label="Places"></button>
       <button type="button" id="rail-forum" class="rail-btn" data-icon="rail_forum" aria-label="Forum"></button>
+      <button type="button" id="rail-news" class="rail-btn" data-icon="rail_news" aria-label="News"></button>
       <div class="rail-spacer"></div>
       <button type="button" id="admin-toggle" class="rail-btn" hidden data-icon="rail_admin" aria-label="Manage"></button>
       <div id="lang-switcher" class="rail-widget">
@@ -103,6 +104,7 @@
         <button type="button" id="sheet-tab-cities" class="sheet-tab active">Cities</button>
         <button type="button" id="sheet-tab-places" class="sheet-tab">Places</button>
         <button type="button" id="sheet-tab-forum" class="sheet-tab">Forum</button>
+        <button type="button" id="sheet-tab-news" class="sheet-tab">News</button>
       </div>
       <div id="panel-content">
         <div id="search-box">
@@ -140,6 +142,10 @@
             <p id="forum-pending-notice" role="status" aria-live="polite" hidden></p>
             <ul id="forum-list"></ul>
           </div>
+        </div>
+
+        <div id="panel-view-news" class="panel-view" hidden>
+          <ul id="news-list"></ul>
         </div>
 
         <div id="detail-view" hidden>
@@ -287,6 +293,7 @@
         <div class="admin-tabs">
           <button type="button" id="admin-tab-data" class="admin-tab active">Regions &amp; cities</button>
           <button type="button" id="admin-tab-events" class="admin-tab">Timeline events</button>
+          <button type="button" id="admin-tab-news" class="admin-tab">News</button>
           <button type="button" id="admin-tab-forum" class="admin-tab">Forum moderation</button>
         </div>
 
@@ -305,6 +312,14 @@
             <input type="search" id="admin-events-search" placeholder="Search events…" aria-label="Search events…">
             <button type="button" id="admin-add-event-toggle" class="admin-add-new-btn">+ Add new event</button>
             <div id="admin-events-list"></div>
+          </section>
+        </div>
+
+        <div id="admin-view-news" class="admin-view" hidden>
+          <section class="admin-section">
+            <h3 id="admin-news-title">News</h3>
+            <button type="button" id="admin-add-news-toggle" class="admin-add-new-btn">+ Add news post</button>
+            <div id="admin-news-list"></div>
           </section>
         </div>
 
@@ -342,6 +357,7 @@
   <script src="auth.js" defer></script>
   <script src="admin.js" defer></script>
   <script src="forum.js" defer></script>
+  <script src="news.js" defer></script>
   <script src="favorites.js" defer></script>
   <script src="stats.js" defer></script>
   <script src="tour.js" defer></script>

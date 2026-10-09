@@ -310,6 +310,21 @@ class TestForumViews(unittest.TestCase):
                 "/api/v1/forum/posts?city_id={}".format(city_id)).data)]
         self.assertIn("About this city", city_bodies)
 
+    def test_moderation_queue_includes_place_scoped_posts(self):
+        """A pending opinion about a specific place shows up in the
+        admin's pending queue, not just general ones."""
+        city_resp = self.admin_client.get("/api/v1/cities")
+        cities = json.loads(city_resp.data)
+        if not cities:
+            self.skipTest("no city available")
+        resp = self._create_post(
+            body="Queued place opinion", target_city_id=cities[0]["id"])
+        self.assertEqual(resp.status_code, 201)
+        queue = json.loads(self.admin_client.get(
+            "/api/v1/forum/posts?status=pending").data)
+        self.assertIn(
+            "Queued place opinion", [p["body"] for p in queue])
+
     def test_deleting_city_cascades_to_its_forum_posts(self):
         """Deleting a city also removes any forum posts about it."""
         city_id = self._create_city()

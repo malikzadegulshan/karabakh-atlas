@@ -145,6 +145,11 @@ const adminForumListEl = document.getElementById("admin-forum-list");
 const adminTabDataEl = document.getElementById("admin-tab-data");
 const adminTabEventsEl = document.getElementById("admin-tab-events");
 const adminTabForumEl = document.getElementById("admin-tab-forum");
+const adminTabNewsEl = document.getElementById("admin-tab-news");
+const adminViewNewsEl = document.getElementById("admin-view-news");
+const adminNewsTitleEl = document.getElementById("admin-news-title");
+const adminAddNewsToggleEl = document.getElementById("admin-add-news-toggle");
+const adminNewsListEl = document.getElementById("admin-news-list");
 const adminViewDataEl = document.getElementById("admin-view-data");
 const adminViewEventsEl = document.getElementById("admin-view-events");
 const adminViewForumEl = document.getElementById("admin-view-forum");
@@ -230,12 +235,15 @@ function applyAdminStaticTranslations() {
   adminTabDataEl.textContent = t("adminRegionsTitle");
   adminTabEventsEl.textContent = t("adminEventsTitle");
   adminTabForumEl.textContent = t("adminForumTitle");
+  adminTabNewsEl.textContent = t("adminNewsTitle");
+  adminNewsTitleEl.textContent = t("adminNewsTitle");
+  adminAddNewsToggleEl.textContent = t("adminAddNewsButton");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
   setPlaceholderLabel(adminEventsSearchEl, t("adminEventsSearchPlaceholder"));
   adminAddEventToggleEl.textContent = t("adminAddEventButton");
 }
 
-// One shared "page" (outside all three .admin-view tabs, see
+// One shared "page" (outside all four .admin-view tabs, see
 // index.html) for adding or editing a region, place, or event —
 // rather than a form expanding inline where an Edit/Add button was
 // clicked, which pushes a potentially long list around. Used by
@@ -251,6 +259,7 @@ let adminActiveTab = "data";
 function openAdminEditView(form) {
   adminViewDataEl.hidden = true;
   adminViewEventsEl.hidden = true;
+  adminViewNewsEl.hidden = true;
   adminViewForumEl.hidden = true;
   adminEditViewBodyEl.innerHTML = "";
   adminEditViewBodyEl.appendChild(form);
@@ -262,17 +271,19 @@ function closeAdminEditView() {
   adminEditViewBodyEl.innerHTML = "";
   adminViewDataEl.hidden = adminActiveTab !== "data";
   adminViewEventsEl.hidden = adminActiveTab !== "events";
+  adminViewNewsEl.hidden = adminActiveTab !== "news";
   adminViewForumEl.hidden = adminActiveTab !== "forum";
 }
 
 adminEditBackEl.addEventListener("click", closeAdminEditView);
 
-// Three tabs sharing the same modal, same pattern as the sign-in/register
+// Four tabs sharing the same modal, same pattern as the sign-in/register
 // tabs in auth.js (.active class + hidden toggling).
 function selectAdminTab(tab) {
   adminActiveTab = tab;
   adminTabDataEl.classList.toggle("active", tab === "data");
   adminTabEventsEl.classList.toggle("active", tab === "events");
+  adminTabNewsEl.classList.toggle("active", tab === "news");
   adminTabForumEl.classList.toggle("active", tab === "forum");
   // Leaving a tab (or reopening one) shouldn't leave a stale edit/add
   // form open underneath the tab switch — also restores the right
@@ -281,11 +292,13 @@ function selectAdminTab(tab) {
   closeAdminEditView();
   adminViewDataEl.hidden = tab !== "data";
   adminViewEventsEl.hidden = tab !== "events";
+  adminViewNewsEl.hidden = tab !== "news";
   adminViewForumEl.hidden = tab !== "forum";
 }
 
 adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
 adminTabEventsEl.addEventListener("click", () => selectAdminTab("events"));
+adminTabNewsEl.addEventListener("click", () => selectAdminTab("news"));
 adminTabForumEl.addEventListener("click", () => selectAdminTab("forum"));
 
 function showAdminMessage(message, isError) {
@@ -501,6 +514,7 @@ async function refreshAdminData() {
     showAdminMessage(err.message, true);
   }
   await refreshAdminEvents();
+  await refreshAdminNews();
   await refreshAdminForumQueue();
 }
 
@@ -844,6 +858,192 @@ function buildAddEventForm() {
 adminAddEventToggleEl.addEventListener("click", () =>
   openAdminEditView(buildAddEventForm()));
 
+// News posts: a short list (newest first, no search — a handful of
+// recent posts is the common case) plus one shared add/edit form. The
+// public News tab (news.js) is re-fetched after every change so it
+// never shows a stale list behind this modal.
+let adminNewsCache = [];
+
+async function refreshAdminNews() {
+  adminNewsListEl.textContent = t("adminLoading");
+  try {
+    adminNewsCache = await apiRequest("GET", "/news");
+    renderAdminNews(adminNewsCache);
+  } catch (err) {
+    adminNewsListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminNews(items) {
+  adminNewsListEl.innerHTML = "";
+  if (items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminNoNews");
+    adminNewsListEl.appendChild(empty);
+    return;
+  }
+  items.forEach((item) => adminNewsListEl.appendChild(buildAdminNewsRow(item)));
+}
+
+function buildAdminNewsRow(item) {
+  const row = document.createElement("div");
+  row.className = "admin-region admin-news-row";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+
+  const label = document.createElement("strong");
+  label.textContent = item.title;
+  headerRow.appendChild(label);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.textContent = t("adminEdit");
+  editBtn.addEventListener("click", () => openAdminEditView(buildNewsForm(item)));
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "danger";
+  deleteBtn.textContent = t("adminDelete");
+  deleteBtn.addEventListener("click", () => deleteNewsItem(item));
+
+  actions.appendChild(editBtn);
+  actions.appendChild(deleteBtn);
+  headerRow.appendChild(actions);
+  row.appendChild(headerRow);
+
+  const excerpt = document.createElement("p");
+  excerpt.className = "admin-region-description";
+  excerpt.textContent = item.body.length > 140
+    ? `${item.body.slice(0, 140)}…` : item.body;
+  row.appendChild(excerpt);
+
+  return row;
+}
+
+// One form for both "add" (item null) and "edit" — the fields are
+// identical, only the request (POST vs PUT) and starting values differ.
+function buildNewsForm(item) {
+  const form = document.createElement("form");
+  form.className = "admin-form admin-edit-form";
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  setPlaceholderLabel(titleInput, t("fieldTitle"));
+  titleInput.required = true;
+  titleInput.maxLength = 200;
+  titleInput.value = item ? item.title : "";
+
+  const titleI18n = buildTitleI18nInputs(item && item.title_i18n);
+
+  const bodyInput = document.createElement("textarea");
+  bodyInput.rows = 6;
+  bodyInput.required = true;
+  bodyInput.maxLength = 5000;
+  setPlaceholderLabel(bodyInput, t("fieldBody"));
+  bodyInput.value = item ? item.body : "";
+
+  const bodyI18n = buildI18nInputs(
+    item && item.body_i18n, "fieldBody", { textarea: true, maxLength: 5000 });
+
+  const imageUrlInput = document.createElement("input");
+  imageUrlInput.type = "url";
+  setPlaceholderLabel(imageUrlInput, t("fieldImageUrl"));
+  imageUrlInput.maxLength = 500;
+  imageUrlInput.value = (item && item.image_url) || "";
+
+  const sourceInput = document.createElement("input");
+  sourceInput.type = "url";
+  setPlaceholderLabel(sourceInput, t("fieldSourceUrl"));
+  sourceInput.maxLength = 500;
+  sourceInput.value = (item && item.source_url) || "";
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "submit";
+  saveBtn.textContent = item ? t("adminSave") : t("adminAddNewsButton").replace(/^\+\s*/, "");
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t("adminCancel");
+  cancelBtn.addEventListener("click", closeAdminEditView);
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  form.appendChild(titleInput);
+  titleI18n.elements.forEach((el) => form.appendChild(el));
+  form.appendChild(bodyInput);
+  bodyI18n.elements.forEach((el) => form.appendChild(el));
+  form.appendChild(imageUrlInput);
+  form.appendChild(buildImageUploadField(imageUrlInput));
+  form.appendChild(sourceInput);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", async (submitEvent) => {
+    submitEvent.preventDefault();
+    const title = titleInput.value.trim();
+    const body = bodyInput.value.trim();
+    if (!title || !body) {
+      showAdminMessage(t("invalidNewsFields"), true);
+      return;
+    }
+    saveBtn.disabled = true;
+    const payload = {
+      title, body,
+      image_url: imageUrlInput.value.trim() || null,
+      source_url: sourceInput.value.trim() || null,
+      title_i18n: titleI18n.collect(),
+      body_i18n: bodyI18n.collect(),
+    };
+    try {
+      if (item) {
+        await apiRequest("PUT", `/news/${item.id}`, payload);
+        showAdminMessage(t("newsUpdated")(title), false);
+      } else {
+        await apiRequest("POST", "/news", payload);
+        showAdminMessage(t("newsAdded")(title), false);
+      }
+      closeAdminEditView();
+      await refreshAdminNews();
+      if (typeof loadNews === "function") {
+        await loadNews();
+      }
+    } catch (err) {
+      showAdminMessage(err.message, true);
+      saveBtn.disabled = false;
+    }
+  });
+
+  return form;
+}
+
+adminAddNewsToggleEl.addEventListener("click", () => {
+  openAdminEditView(buildNewsForm(null));
+});
+
+async function deleteNewsItem(item) {
+  if (!window.confirm(t("confirmDeleteNews")(item.title))) {
+    return;
+  }
+  try {
+    await apiRequest("DELETE", `/news/${item.id}`);
+    showAdminMessage(t("newsDeleted")(item.title), false);
+    await refreshAdminNews();
+    if (typeof loadNews === "function") {
+      await loadNews();
+    }
+  } catch (err) {
+    showAdminMessage(err.message, true);
+  }
+}
+
 async function refreshAdminForumQueue() {
   adminForumListEl.textContent = t("adminLoading");
   try {
@@ -876,7 +1076,10 @@ function buildAdminForumCard(post) {
 
   const meta = document.createElement("strong");
   const about = post.target_city_name || t("forumGeneralLabel");
-  meta.textContent = `${post.author_name || "?"} — ${t("forumAbout")(about)}`;
+  const subject = post.target_news_title
+    ? t("newsCommentOn")(post.target_news_title)
+    : t("forumAbout")(about);
+  meta.textContent = `${post.author_name || "?"} — ${subject}`;
   headerRow.appendChild(meta);
 
   const actions = document.createElement("div");

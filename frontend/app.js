@@ -574,13 +574,16 @@ const panelToggleEl = document.getElementById("panel-toggle");
 const railCitiesEl = document.getElementById("rail-cities");
 const railPlacesEl = document.getElementById("rail-places");
 const railForumEl = document.getElementById("rail-forum");
+const railNewsEl = document.getElementById("rail-news");
 const panelHandleEl = document.getElementById("panel-handle");
 const sheetTabCitiesEl = document.getElementById("sheet-tab-cities");
 const sheetTabPlacesEl = document.getElementById("sheet-tab-places");
 const sheetTabForumEl = document.getElementById("sheet-tab-forum");
+const sheetTabNewsEl = document.getElementById("sheet-tab-news");
 const panelViewCitiesEl = document.getElementById("panel-view-cities");
 const panelViewPlacesEl = document.getElementById("panel-view-places");
 const panelViewForumEl = document.getElementById("panel-view-forum");
+const panelViewNewsEl = document.getElementById("panel-view-news");
 const categoryGridEl = document.getElementById("category-grid");
 const weatherCityEl = document.getElementById("weather-city");
 const weatherIconEl = document.getElementById("weather-icon");
@@ -644,9 +647,12 @@ function applyStaticTranslations() {
   railPlacesEl.title = t("placesToggle");
   railForumEl.setAttribute("aria-label", t("forumToggle"));
   railForumEl.title = t("forumToggle");
+  railNewsEl.setAttribute("aria-label", t("newsToggle"));
+  railNewsEl.title = t("newsToggle");
   sheetTabCitiesEl.textContent = t("citiesToggle");
   sheetTabPlacesEl.textContent = t("placesToggle");
   sheetTabForumEl.textContent = t("forumToggle");
+  sheetTabNewsEl.textContent = t("newsToggle");
   themeToggleEl.setAttribute("aria-label", t("themeToggle"));
   themeToggleEl.title = t("themeToggle");
   detailBackEl.setAttribute("aria-label", t("detailBack"));
@@ -711,6 +717,11 @@ langMenuEl.addEventListener("click", (event) => {
   // either forum list reloads, same as post bodies/dates already do.
   if (typeof renderAccountWidget === "function") {
     renderAccountWidget();
+  }
+  // Re-render the News list so titles/bodies/dates pick up the new
+  // language (it keeps its fetched items, no refetch needed).
+  if (typeof renderNews === "function") {
+    renderNews();
   }
 });
 
@@ -907,9 +918,11 @@ function activateTab(tab) {
   railCitiesEl.classList.toggle("active", tab === "cities");
   railPlacesEl.classList.toggle("active", tab === "places");
   railForumEl.classList.toggle("active", tab === "forum");
+  railNewsEl.classList.toggle("active", tab === "news");
   sheetTabCitiesEl.classList.toggle("active", tab === "cities");
   sheetTabPlacesEl.classList.toggle("active", tab === "places");
   sheetTabForumEl.classList.toggle("active", tab === "forum");
+  sheetTabNewsEl.classList.toggle("active", tab === "news");
   // Doesn't just set panelViewXEl.hidden directly — updateSearchResultsVisibility()
   // (below) also needs a say, since an active search overrides whichever
   // tab is nominally selected with the results dropdown instead.
@@ -923,11 +936,14 @@ function activateTab(tab) {
   if (tab === "forum" && typeof loadGeneralForumPosts === "function") {
     loadGeneralForumPosts();
   }
+  if (tab === "news" && typeof loadNews === "function") {
+    loadNews();
+  }
   setPanelCollapsed(false);
 }
 
 // Rail buttons (desktop) and sheet tabs (mobile — see #sheet-tabs in
-// index.html) both call this for the same Cities/Places/Forum
+// index.html) both call this for the same Cities/Places/Forum/News
 // switching. Clicking the already-active tab again is a close gesture
 // — same toggle-to-close behavior the old Cities button had. Clicking
 // any tab while a place detail is open is a "go back, then switch"
@@ -960,6 +976,7 @@ function openDetailView() {
   panelViewCitiesEl.hidden = true;
   panelViewPlacesEl.hidden = true;
   panelViewForumEl.hidden = true;
+  panelViewNewsEl.hidden = true;
   detailViewEl.hidden = false;
   panelEl.classList.add("panel-detail-open");
   // A marker click should always reveal its detail card, even if the
@@ -985,9 +1002,11 @@ detailBackEl.addEventListener("click", closeDetailView);
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
 railForumEl.addEventListener("click", () => selectPanelTab("forum"));
+railNewsEl.addEventListener("click", () => selectPanelTab("news"));
 sheetTabCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 sheetTabPlacesEl.addEventListener("click", () => selectPanelTab("places"));
 sheetTabForumEl.addEventListener("click", () => selectPanelTab("forum"));
+sheetTabNewsEl.addEventListener("click", () => selectPanelTab("news"));
 
 // Drag-to-resize for the mobile bottom sheet. Height is read from the
 // same --sheet-*-h custom properties style.css defines (rather than a
@@ -1888,6 +1907,7 @@ function updateSearchResultsVisibility() {
     panelViewCitiesEl.hidden = true;
     panelViewPlacesEl.hidden = true;
     panelViewForumEl.hidden = true;
+    panelViewNewsEl.hidden = true;
     // Same reasoning as openDetailView()'s own setPanelCollapsed(false)
     // call: results that are actually visible matter more here than
     // preserving a collapsed/peeking state, on both layouts — this
@@ -1902,6 +1922,7 @@ function updateSearchResultsVisibility() {
   panelViewCitiesEl.hidden = activePanelTab !== "cities";
   panelViewPlacesEl.hidden = activePanelTab !== "places";
   panelViewForumEl.hidden = activePanelTab !== "forum";
+  panelViewNewsEl.hidden = activePanelTab !== "news";
 }
 
 searchInputEl.addEventListener("input", () => {
