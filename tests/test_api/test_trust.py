@@ -229,8 +229,15 @@ class TestAccountDeletion(unittest.TestCase):
             mine["id"]), {"reason": "spam"})
         _json(leaver, "post", "/api/v1/forum/posts/{}/report".format(
             theirs["id"]), {"reason": "spam"})
-        favorite = Favorite(user_id=leaver_id, city_id="some-city")
-        favorite.save()
+        region = json.loads(_json(self.admin, "post", "/api/v1/regions", {
+            "name": "Region-{}".format(uuid.uuid4())}).data)
+        city = json.loads(_json(
+            self.admin, "post", "/api/v1/regions/{}/cities".format(
+                region["id"]),
+            {"name": "City", "latitude": 39.8, "longitude": 46.75}).data)
+        self.assertEqual(_json(
+            leaver, "post", "/api/v1/favorites",
+            {"city_id": city["id"]}).status_code, 201)
 
         resp = self._delete(leaver)
         self.assertEqual(resp.status_code, 200)
