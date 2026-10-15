@@ -30,6 +30,7 @@ from flask import jsonify, abort, request
 from api.v1.views import app_views
 from api.v1.auth_utils import (
     get_current_user, login_required, admin_required, forum_post_limiter,
+    report_limiter,
 )
 from api.v1.validation import (
     ValidationError,
@@ -39,7 +40,8 @@ from api.v1.validation import (
 )
 from api.v1.contributions import approved_post_count, contribution_tier
 from api.v1.forum_utils import (
-    delete_post_and_replies, publicly_visible, posts_by_id,
+    delete_post_and_replies, delete_reports_for, publicly_visible,
+    posts_by_id,
 )
 from models import storage
 from models.city import City
@@ -48,6 +50,7 @@ from models.forum_post import (
     ForumPost, STATUSES, TOPICS, DEFAULT_TOPIC,
 )
 from models.news_item import NewsItem
+from models.post_report import PostReport, REPORT_REASONS
 
 FORUM_BODY_MAX_LENGTH = 2000
 CREATE_FIELDS = {
@@ -55,6 +58,7 @@ CREATE_FIELDS = {
 }
 REPLY_EXCERPT_LENGTH = 140
 MODERATE_FIELDS = {"status"}
+REPORT_FIELDS = {"reason"}
 MODERATABLE_STATUSES = {"approved", "rejected"}
 
 logger = logging.getLogger(__name__)
@@ -306,5 +310,93 @@ def delete_forum_post(post_id):
     if user.id != post.author_id and user.role != "admin":
         return jsonify({"error": "Not allowed to delete this post"}), 403
     delete_post_and_replies(post)
+    storage.save()
+    return jsonify({}), 200
+
+
+@app_views.route("/forum/posts/<post_id>/report", methods=["POST"])
+@login_required
+def report_forum_post(post_id):
+    """Flag a published post for an admin to review.
+
+    Only published posts can be reported (anything else answers 404, so
+    this can't be used to probe for pending or rejected content), never
+    your own, and reporting the same post twice is a no-op. Reports are
+    never shown to anyone but admins.
+    """
+    user = get_current_user()
+    by_id = posts_by_id()
+    post = by_id.get(post_id)
+    if post is None or not publicly_visible(post, by_id):
+        abort(404)
+    if post.author_id == user.id:
+        abort(400, description="You can't report your own post")
+
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(data, REPORT_FIELDS)
+        optional_enum(data, "reason", set(REPORT_REASONS))
+    except ValidationError as error:
+        abort(400, description=error.message)
+
+    already = any(
+        r.post_id == post.id and r.reporter_id == user.id
+        for r in storage.all(PostReport).values())
+    if already:
+        return jsonify({"reported": True}), 200
+    if report_limiter.is_limited(user.id):
+        logger.warning("Report rate limit hit for user %s", user.id)
+        return jsonify({
+            "error": "Too many reports submitted recently. Try again later.",
+        }), 429
+    report_limiter.record(user.id)
+    PostReport(
+        post_id=post.id, reporter_id=user.id,
+        reason=data.get("reason") or "other").save()
+    return jsonify({"reported": True}), 201
+
+
+@app_views.route("/forum/reports", methods=["GET"])
+@admin_required
+def list_post_reports():
+    """Reported posts for the admin review list: one entry per post
+    with how many reports it has and why, most reported first."""
+    by_id = posts_by_id()
+    grouped = {}
+    for report in storage.all(PostReport).values():
+        grouped.setdefault(report.post_id, []).append(report)
+    entries = []
+    for post_id, reports in grouped.items():
+        post = by_id.get(post_id)
+        if post is None:
+            continue
+        reasons = {}
+        for report in reports:
+            reasons[report.reason] = reasons.get(report.reason, 0) + 1
+        entries.append({
+            "post": _serialize(post),
+            "report_count": len(reports),
+            "reasons": reasons,
+            "last_reported_at": max(
+                r.created_at for r in reports).isoformat(),
+        })
+    entries.sort(
+        key=lambda e: (e["report_count"], e["last_reported_at"]),
+        reverse=True)
+    return jsonify(entries)
+
+
+@app_views.route("/forum/reports/<post_id>", methods=["DELETE"])
+@admin_required
+def dismiss_post_reports(post_id):
+    """Dismiss every report against a post (the post stays up)."""
+    if not any(r.post_id == post_id
+               for r in storage.all(PostReport).values()):
+        abort(404)
+    delete_reports_for({post_id})
     storage.save()
     return jsonify({}), 200

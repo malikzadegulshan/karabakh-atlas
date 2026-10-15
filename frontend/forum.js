@@ -26,6 +26,19 @@ const FORUM_TOPICS = [
 ];
 const FORUM_DEFAULT_TOPIC = "general";
 
+// Keep in sync with REPORT_REASONS in models/post_report.py.
+const REPORT_REASONS = [
+  { value: "spam", labelKey: "reportReasonSpam" },
+  { value: "abusive", labelKey: "reportReasonAbusive" },
+  { value: "misleading", labelKey: "reportReasonMisleading" },
+  { value: "other", labelKey: "reportReasonOther" },
+];
+
+function reportReasonLabel(value) {
+  const reason = REPORT_REASONS.find((entry) => entry.value === value);
+  return reason ? t(reason.labelKey) : value;
+}
+
 function forumTopicLabel(value) {
   const topic = FORUM_TOPICS.find((entry) => entry.value === value);
   return topic ? t(topic.labelKey) : null;
@@ -140,6 +153,7 @@ function renderForumTab() {
 
 function applyForumStaticTranslations() {
   renderForumTab();
+  applyReportStaticTranslations();
 }
 
 // created_at is a naive UTC timestamp (no "Z"), which new Date() would
@@ -232,6 +246,11 @@ function buildForumPostElement(post, rootId, isReply, replyCount, onChanged) {
   body.textContent = post.body;
   li.appendChild(body);
 
+  const actions = document.createElement("div");
+  actions.className = "forum-post-actions";
+
+  // One slot for whichever inline form (reply or report) is open; opening
+  // one closes the other.
   const replySlot = document.createElement("div");
   replySlot.className = "forum-reply-slot";
 
@@ -246,18 +265,158 @@ function buildForumPostElement(post, rootId, isReply, replyCount, onChanged) {
       }
       return;
     }
-    if (replySlot.firstChild) {
-      replySlot.innerHTML = "";
+    const wasReply = replySlot.firstChild &&
+      replySlot.firstChild.classList.contains("forum-reply-form");
+    replySlot.innerHTML = "";
+    if (wasReply) {
       return;
     }
     replySlot.appendChild(buildReplyForm(
       rootId, isReply ? `@${post.author_name || "?"} ` : "", replySlot,
       onChanged));
   });
-  li.appendChild(replyBtn);
+  actions.appendChild(replyBtn);
+
+  // Your own posts can't be reported (the API refuses too).
+  if (!currentUser || currentUser.id !== post.author_id) {
+    const reportBtn = document.createElement("button");
+    reportBtn.type = "button";
+    reportBtn.className = "forum-reply-btn forum-report-btn";
+    reportBtn.textContent = t("forumReport");
+    reportBtn.addEventListener("click", () => {
+      if (!currentUser) {
+        if (typeof openAccountPanel === "function") {
+          openAccountPanel();
+        }
+        return;
+      }
+      openReportDialog(post);
+    });
+    actions.appendChild(reportBtn);
+  }
+
+  li.appendChild(actions);
   li.appendChild(replySlot);
   return li;
 }
+
+const reportOverlayEl = document.getElementById("report-overlay");
+const reportPanelEl = document.getElementById("report-panel");
+const reportTitleEl = document.getElementById("report-title");
+const reportCloseEl = document.getElementById("report-close");
+const reportFormEl = document.getElementById("report-form");
+const reportPreviewEl = document.getElementById("report-post-preview");
+const reportReasonsEl = document.getElementById("report-reasons");
+const reportLegendEl = document.getElementById("report-reasons-legend");
+const reportErrorEl = document.getElementById("report-error");
+const reportSubmitEl = document.getElementById("report-submit");
+const reportCancelEl = document.getElementById("report-cancel");
+const reportThanksEl = document.getElementById("report-thanks");
+const reportThanksTextEl = document.getElementById("report-thanks-text");
+const reportDoneEl = document.getElementById("report-done");
+
+// The post currently being reported (null while the dialog is closed).
+let reportingPost = null;
+
+function applyReportStaticTranslations() {
+  reportTitleEl.textContent = t("reportTitle");
+  reportCloseEl.setAttribute("aria-label", t("adminClose"));
+  reportLegendEl.textContent = t("reportReasonLabel");
+  reportSubmitEl.textContent = t("reportSend");
+  reportCancelEl.textContent = t("adminCancel");
+  reportThanksTextEl.textContent = t("reportThanks");
+  reportDoneEl.textContent = t("adminClose");
+}
+
+// A pop-up dialog (same overlay/focus handling as the sign-in dialog)
+// rather than a form wedged into the post list: shows what is being
+// reported, a short list of reasons, and only enables Send once one is
+// chosen, so a stray click can't file a report by accident.
+function openReportDialog(post) {
+  reportingPost = post;
+  applyReportStaticTranslations();
+
+  reportPreviewEl.innerHTML = "";
+  const author = document.createElement("strong");
+  author.textContent = post.author_name || "?";
+  const excerpt = document.createElement("p");
+  excerpt.textContent = post.body.length > 200
+    ? `${post.body.slice(0, 200)}…` : post.body;
+  reportPreviewEl.appendChild(author);
+  reportPreviewEl.appendChild(excerpt);
+
+  reportReasonsEl.querySelectorAll("label").forEach((el) => el.remove());
+  REPORT_REASONS.forEach((reason) => {
+    const label = document.createElement("label");
+    label.className = "report-reason";
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "report-reason";
+    radio.value = reason.value;
+    radio.addEventListener("change", () => { reportSubmitEl.disabled = false; });
+    const text = document.createElement("span");
+    text.textContent = t(reason.labelKey);
+    label.appendChild(radio);
+    label.appendChild(text);
+    reportReasonsEl.appendChild(label);
+  });
+
+  reportErrorEl.hidden = true;
+  reportErrorEl.textContent = "";
+  reportSubmitEl.disabled = true;
+  reportFormEl.hidden = false;
+  reportThanksEl.hidden = true;
+  reportOverlayEl.hidden = false;
+  openModalFocus(reportPanelEl);
+}
+
+function closeReportDialog() {
+  reportOverlayEl.hidden = true;
+  reportingPost = null;
+  closeModalFocus();
+}
+
+reportCloseEl.addEventListener("click", closeReportDialog);
+reportCancelEl.addEventListener("click", closeReportDialog);
+reportDoneEl.addEventListener("click", closeReportDialog);
+reportOverlayEl.addEventListener("click", (event) => {
+  if (event.target === reportOverlayEl) {
+    closeReportDialog();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (reportOverlayEl.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
+    closeReportDialog();
+  } else {
+    trapTabKey(event, reportPanelEl);
+  }
+});
+
+reportFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const chosen = reportFormEl.querySelector('input[name="report-reason"]:checked');
+  if (!chosen || !reportingPost) {
+    return;
+  }
+  reportSubmitEl.disabled = true;
+  reportErrorEl.hidden = true;
+  try {
+    await apiRequest(
+      "POST", `/forum/posts/${reportingPost.id}/report`,
+      { reason: chosen.value });
+  } catch (err) {
+    reportErrorEl.textContent = err.message;
+    reportErrorEl.hidden = false;
+    reportSubmitEl.disabled = false;
+    return;
+  }
+  reportFormEl.hidden = true;
+  reportThanksEl.hidden = false;
+  reportDoneEl.focus();
+});
 
 function buildReplyForm(rootId, prefill, slot, onChanged) {
   const form = document.createElement("form");

@@ -1142,6 +1142,130 @@ paths:
           description: Admin privileges required
         "404":
           description: Not found
+  /forum/posts/{post_id}/report:
+    parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Report a published post for an admin to review
+      description: >
+        Requires login. Only published posts can be reported (anything
+        else is a 404, so this can't be used to probe for pending or
+        rejected content), never your own (400), and reporting the same
+        post twice is a no-op (200). Reports are only ever visible to
+        admins.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  enum: [spam, abusive, misleading, other]
+                  default: other
+      responses:
+        "201":
+          description: Report recorded
+        "200":
+          description: Already reported by you
+        "400":
+          description: Invalid reason, or your own post
+        "401":
+          description: Login required
+        "404":
+          description: No such published post
+        "429":
+          description: Too many reports recently
+  /forum/reports:
+    get:
+      summary: Reported posts, most reported first (admin only)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: One entry per reported post
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    post:
+                      $ref: "#/components/schemas/ForumPost"
+                    report_count:
+                      type: integer
+                    reasons:
+                      type: object
+                      additionalProperties:
+                        type: integer
+                    last_reported_at:
+                      type: string
+                      format: date-time
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+  /forum/reports/{post_id}:
+    parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Dismiss every report against a post; the post stays (admin only)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Dismissed
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: No reports for that post
+  /auth/account:
+    delete:
+      summary: Permanently delete your own account and everything you posted or saved
+      description: >
+        Requires login and the account password (wrong attempts share the
+        login failure rate limit). Deletes the account, the user's posts
+        and replies (and other people's replies to them), reports they
+        filed or that were filed against their posts, and their
+        favorites, then ends the session. Admin accounts can't be
+        deleted this way (403).
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Account deleted
+        "400":
+          description: Missing password or bad body
+        "401":
+          description: Not logged in, or incorrect password
+        "403":
+          description: Admin accounts can't be deleted here
+        "429":
+          description: Too many failed attempts
   /news:
     get:
       summary: List all news posts, newest first

@@ -445,6 +445,51 @@ main {
   background: var(--color-border);
 }
 
+/* Delete account: a quiet danger-colored link in the popover (danger
+   text is 5.9:1 light / 5.0:1 dark on the muted fill), expanding into a
+   short form with the warning and the password. */
+.account-danger-link {
+  padding: 0.2rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.account-danger-link:hover {
+  text-decoration: underline;
+}
+
+.account-danger-link[hidden],
+#account-delete-form[hidden] {
+  display: none;
+}
+
+#account-delete-warning,
+#account-delete-error {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+#account-delete-error {
+  color: var(--color-danger);
+}
+
+#account-delete-error[hidden] {
+  display: none;
+}
+
+#account-delete-form .danger-btn {
+  background: var(--color-danger);
+  color: #fff;
+}
+
 #account-resend-verification {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
@@ -1067,6 +1112,115 @@ main {
 .forum-reply-btn:hover,
 .forum-reply-btn:focus-visible {
   text-decoration: underline;
+}
+
+.forum-post-actions {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.forum-report-btn {
+  color: var(--color-text-muted);
+}
+
+/* Report dialog (forum.js): the post being reported, quoted; a radio
+   list of reasons whose chosen row gets a filled background and an
+   accent ring (the ring is the non-color cue); Send stays disabled
+   until one is chosen. */
+#report-panel .admin-form,
+#report-thanks {
+  margin: 1rem 1.25rem 1.25rem;
+}
+
+#report-post-preview {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.84rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+#report-post-preview p {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-muted);
+}
+
+#report-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+#report-reasons legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.report-reason {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#report-panel .report-reason input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--color-accent);
+}
+
+.report-reason:has(input:checked) {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+#report-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-danger);
+}
+
+#report-error[hidden],
+#report-form[hidden],
+#report-thanks[hidden] {
+  display: none;
+}
+
+#report-thanks p {
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+#report-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.admin-subsection-title {
+  margin-top: 1.4rem;
+}
+
+.admin-report-reasons {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-danger);
 }
 
 .forum-reply-form {
@@ -1906,7 +2060,8 @@ main {
 /* Account panel (sign in / register) — shares .admin-panel-header,
    .admin-form, and .admin-message with the admin panel above. */
 
-#account-overlay {
+#account-overlay,
+#report-overlay {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -1917,11 +2072,13 @@ main {
   background: rgba(15, 10, 25, 0.55);
 }
 
-#account-overlay[hidden] {
+#account-overlay[hidden],
+#report-overlay[hidden] {
   display: none;
 }
 
-#account-panel {
+#account-panel,
+#report-panel {
   width: 100%;
   max-width: 380px;
   display: flex;
@@ -1932,7 +2089,8 @@ main {
   overflow: hidden;
 }
 
-#account-close {
+#account-close,
+#report-close {
   background: none;
   border: none;
   color: #fff;

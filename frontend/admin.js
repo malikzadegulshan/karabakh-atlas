@@ -142,6 +142,8 @@ const adminEditBackEl = document.getElementById("admin-edit-back");
 const adminEditBackLabelEl = document.getElementById("admin-edit-back-label");
 const adminForumTitleEl = document.getElementById("admin-forum-title");
 const adminForumListEl = document.getElementById("admin-forum-list");
+const adminReportsTitleEl = document.getElementById("admin-reports-title");
+const adminReportsListEl = document.getElementById("admin-reports-list");
 const adminTabDataEl = document.getElementById("admin-tab-data");
 const adminTabEventsEl = document.getElementById("admin-tab-events");
 const adminTabForumEl = document.getElementById("admin-tab-forum");
@@ -232,6 +234,7 @@ function applyAdminStaticTranslations() {
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
   adminForumTitleEl.textContent = t("adminForumTitle");
+  adminReportsTitleEl.textContent = t("adminReportsTitle");
   adminTabDataEl.textContent = t("adminRegionsTitle");
   adminTabEventsEl.textContent = t("adminEventsTitle");
   adminTabForumEl.textContent = t("adminForumTitle");
@@ -1049,6 +1052,7 @@ async function refreshAdminForumQueue() {
   try {
     const posts = await apiRequest("GET", "/forum/posts?status=pending");
     renderAdminForumQueue(posts);
+    await refreshAdminReports();
   } catch (err) {
     adminForumListEl.textContent = "";
     showAdminMessage(err.message, true);
@@ -1122,6 +1126,90 @@ function buildAdminForumCard(post) {
   body.textContent = post.body;
   card.appendChild(body);
 
+  return card;
+}
+
+async function refreshAdminReports() {
+  adminReportsListEl.textContent = t("adminLoading");
+  try {
+    const reports = await apiRequest("GET", "/forum/reports");
+    renderAdminReports(reports);
+  } catch (err) {
+    adminReportsListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminReports(reports) {
+  adminReportsListEl.innerHTML = "";
+  if (reports.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminReportsEmpty");
+    adminReportsListEl.appendChild(empty);
+    return;
+  }
+  reports.forEach((entry) => adminReportsListEl.appendChild(buildAdminReportCard(entry)));
+}
+
+function buildAdminReportCard(entry) {
+  const post = entry.post;
+  const card = document.createElement("div");
+  card.className = "admin-region admin-forum-card admin-report-card";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+  const meta = document.createElement("strong");
+  meta.textContent = `${post.author_name || "?"} · ${t("adminReportCount")(entry.report_count)}`;
+  headerRow.appendChild(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+  const dismissBtn = document.createElement("button");
+  dismissBtn.type = "button";
+  dismissBtn.textContent = t("adminDismissReports");
+  dismissBtn.addEventListener("click", async () => {
+    try {
+      await apiRequest("DELETE", `/forum/reports/${post.id}`);
+      await refreshAdminReports();
+    } catch (err) {
+      showAdminMessage(err.message, true);
+    }
+  });
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "danger";
+  deleteBtn.textContent = t("adminDelete");
+  deleteBtn.addEventListener("click", async () => {
+    if (!window.confirm(t("confirmDeleteForumPost"))) {
+      return;
+    }
+    try {
+      await apiRequest("DELETE", `/forum/posts/${post.id}`);
+      await refreshAdminReports();
+      await refreshAdminForumQueue();
+    } catch (err) {
+      showAdminMessage(err.message, true);
+    }
+  });
+  actions.appendChild(dismissBtn);
+  actions.appendChild(deleteBtn);
+  headerRow.appendChild(actions);
+  card.appendChild(headerRow);
+
+  // "Spam ×2, Abusive ×1" — reasons are fixed values, labels translated.
+  const reasons = document.createElement("p");
+  reasons.className = "admin-report-reasons";
+  reasons.textContent = Object.entries(entry.reasons)
+    .map(([reason, count]) => `${reportReasonLabel(reason)} ×${count}`)
+    .join(", ");
+  card.appendChild(reasons);
+
+  // textContent, not innerHTML — the reported post is untrusted user text.
+  const body = document.createElement("p");
+  body.className = "admin-region-description";
+  body.textContent = post.body;
+  card.appendChild(body);
   return card;
 }
 

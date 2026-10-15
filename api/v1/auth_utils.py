@@ -56,6 +56,9 @@ register_limiter = RateLimiter(max_attempts=5, window_seconds=3600)
 # generous enough for genuine back-and-forth use, tight enough that
 # scripting registrations-then-posts doesn't scale.
 forum_post_limiter = RateLimiter(max_attempts=5, window_seconds=600)
+# Keyed by user id: a handful of reports is normal, hundreds is someone
+# using the report button to flood the admin's review list.
+report_limiter = RateLimiter(max_attempts=10, window_seconds=3600)
 # Keyed by IP (same reasoning as register_limiter): caps how many
 # password-reset emails a single source can trigger.
 password_reset_request_limiter = RateLimiter(
