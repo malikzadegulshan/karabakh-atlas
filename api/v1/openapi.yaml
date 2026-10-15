@@ -667,6 +667,83 @@ paths:
           description: Validation error
         "404":
           description: Region not found
+  /regions/{region_id}/cities/import:
+    parameters:
+      - name: region_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Bulk-add places from parsed spreadsheet rows (admin only)
+      description: >
+        Each row is validated with exactly the rules POST
+        /regions/{region_id}/cities applies. A row is "new", a
+        "duplicate" (a place with the same name — in any language the
+        existing place has a name in — already exists in the region or
+        earlier in this request; plain cities match by name alone, other
+        places must also be within 500 m), or an "error". Only new rows
+        are saved, and only when dry_run is false (the default is true,
+        so a request never saves unless it says so); the same request
+        therefore serves as the preview, and re-importing a corrected
+        file is safe. At most 300 rows per request.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rows]
+              properties:
+                rows:
+                  type: array
+                  minItems: 1
+                  maxItems: 300
+                  items:
+                    $ref: "#/components/schemas/CityInput"
+                dry_run:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Per-row results (and how many were created)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dry_run:
+                    type: boolean
+                  created:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row:
+                          type: integer
+                          description: Zero-based index into rows.
+                        name:
+                          type: string
+                          nullable: true
+                        status:
+                          type: string
+                          enum: [new, duplicate, error]
+                        error:
+                          type: string
+                        duplicate_of:
+                          type: string
+        "400":
+          description: rows missing, empty, over 300, or dry_run not a boolean
+        "401":
+          description: Login required
+        "403":
+          description: Admin privileges required
+        "404":
+          description: No such region
   /cities:
     get:
       summary: List all cities

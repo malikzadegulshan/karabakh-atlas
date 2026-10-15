@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """RESTful API views for City objects."""
+import math
 import re
 from api.v1.views import app_views
 from flask import jsonify, abort, request
@@ -119,6 +120,125 @@ def create_city(region_id):
     city = City(**data)
     city.save()
     return jsonify(city.to_dict()), 201
+
+
+# Bulk import (POST /regions/<id>/cities/import) -----------------------
+
+IMPORT_MAX_ROWS = 300
+# Two non-city places with the same name count as the same place only if
+# they're this close (a "Pharmacy" in two different towns is two places).
+IMPORT_DUPLICATE_RADIUS_KM = 0.5
+
+
+def _normalized_name(value):
+    return " ".join(str(value).lower().split())
+
+
+def _all_names(name, name_i18n):
+    """Every name a place goes by — the main one and each translation —
+    normalized, so "Xankəndi" matches an existing "Khankendi" whose az
+    translation is "Xankəndi"."""
+    names = {_normalized_name(name)}
+    if isinstance(name_i18n, dict):
+        names.update(_normalized_name(v) for v in name_i18n.values() if v)
+    return names
+
+
+def _distance_km(lat1, lng1, lat2, lng2):
+    """Great-circle distance between two points, in kilometres."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((phi2 - phi1) / 2) ** 2
+         + math.cos(phi1) * math.cos(phi2)
+         * math.sin(math.radians(lng2 - lng1) / 2) ** 2)
+    return 6371 * 2 * math.asin(math.sqrt(a))
+
+
+def _is_same_place(candidate, existing):
+    """True if `candidate` (a dict) is already covered by `existing`
+    (a dict-like place): they share a name, and either is a plain city
+    (cities are matched by name alone) or they're within
+    IMPORT_DUPLICATE_RADIUS_KM of each other."""
+    if not (_all_names(candidate["name"], candidate.get("name_i18n"))
+            & _all_names(existing["name"], existing.get("name_i18n"))):
+        return False
+    if candidate.get("category", "city") == "city" \
+            or existing.get("category") == "city":
+        return True
+    return _distance_km(
+        candidate["latitude"], candidate["longitude"],
+        existing["latitude"], existing["longitude"],
+    ) <= IMPORT_DUPLICATE_RADIUS_KM
+
+
+@app_views.route("/regions/<region_id>/cities/import", methods=["POST"])
+def import_cities(region_id):
+    """Bulk-add places from parsed spreadsheet rows (admin only, via the
+    /regions prefix gate in api/v1/app.py).
+
+    Body: {"rows": [<place fields>, ...], "dry_run": true|false}. Every
+    row is validated with exactly the rules POST /regions/<id>/cities
+    applies, so an import can never store anything a hand-added place
+    couldn't. A row is "new", a "duplicate" (a place with the same name
+    already exists in the region, or earlier in this same file — see
+    _is_same_place) or an "error"; only new rows are saved, and only when
+    dry_run is false, so the same request doubles as the preview and
+    re-importing a corrected file is safe.
+    """
+    region = storage.all(Region).get("Region.{}".format(region_id))
+    if region is None:
+        abort(404)
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        abort(400, description="Not a JSON")
+    rows = body.get("rows")
+    dry_run = body.get("dry_run", True)
+    if not isinstance(rows, list) or not rows:
+        abort(400, description="rows must be a non-empty list")
+    if len(rows) > IMPORT_MAX_ROWS:
+        abort(400, description=(
+            "At most {} rows per import".format(IMPORT_MAX_ROWS)))
+    if not isinstance(dry_run, bool):
+        abort(400, description="dry_run must be true or false")
+
+    known = [c.to_dict() for c in storage.all(City).values()
+             if c.region_id == region_id]
+    results = []
+    to_create = []
+    for index, row in enumerate(rows):
+        result = {"row": index, "name": None, "status": "error"}
+        results.append(result)
+        if not isinstance(row, dict):
+            result["error"] = "Row is not an object"
+            continue
+        result["name"] = row.get("name") if isinstance(
+            row.get("name"), str) else None
+        try:
+            _validate_city_data(row, require_required_fields=True)
+        except ValidationError as error:
+            result["error"] = error.message
+            continue
+        place = dict(row)
+        place.setdefault("category", "city")
+        match = next((k for k in known if _is_same_place(place, k)), None)
+        if match is not None:
+            result["status"] = "duplicate"
+            result["duplicate_of"] = match["name"]
+            continue
+        result["status"] = "new"
+        known.append(place)
+        to_create.append(place)
+
+    if not dry_run:
+        for place in to_create:
+            place["region_id"] = region_id
+            storage.new(City(**place))
+        if to_create:
+            storage.save()
+    return jsonify({
+        "dry_run": dry_run,
+        "created": 0 if dry_run else len(to_create),
+        "results": results,
+    })
 
 
 @app_views.route("/cities", methods=["GET"])

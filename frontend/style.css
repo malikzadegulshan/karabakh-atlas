@@ -2555,6 +2555,170 @@ main {
   cursor: pointer;
 }
 
+/* Bulk CSV import (admin.js buildImportForm). Status chips reuse the
+   tokens already checked for text contrast: accent-soft/text 13.4:1
+   light, 10:1 dark; danger on danger-bg 5.3:1; muted on muted 6.9:1 /
+   5.4:1. The status is also spelled out in words, never color alone. */
+.admin-secondary-btn,
+.admin-add-new-btn.admin-secondary-btn {
+  padding: 0.4rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.admin-add-new-btn.admin-secondary-btn {
+  margin-top: 0;
+}
+
+/* The shared ".admin-form-actions button[type=button]" rule turns every
+   plain button gray (it's meant for Cancel), so the import's main action
+   needs its own, same as the app's other primary buttons. */
+.admin-import .admin-form-actions button.admin-primary-btn {
+  color: #fff;
+  background: var(--color-accent);
+}
+
+.admin-import .admin-form-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.admin-import h3 {
+  margin: 0 0 0.4rem;
+}
+
+.admin-import-help {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.admin-import-categories {
+  margin: 0.7rem 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.admin-import-categories summary {
+  cursor: pointer;
+}
+
+.admin-import-categories p {
+  margin: 0.3rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-import-file {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.admin-import-status {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.admin-import-status.error {
+  color: var(--color-danger);
+}
+
+.admin-import-status[hidden] {
+  display: none;
+}
+
+.admin-import-summary {
+  margin: 0 0 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.admin-import-ignored {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-warn-text);
+}
+
+.admin-import-rows {
+  list-style: none;
+  max-height: 38vh;
+  margin: 0 0 0.8rem;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.admin-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-import-row:first-child {
+  border-top: none;
+}
+
+.admin-import-rowno {
+  min-width: 3.6rem;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+}
+
+.admin-import-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+}
+
+.admin-import-chip {
+  padding: 0.05rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.admin-import-row-new .admin-import-chip {
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+}
+
+.admin-import-row-duplicate .admin-import-chip {
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+}
+
+.admin-import-row-error .admin-import-chip {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.admin-import-note {
+  flex-basis: 100%;
+  padding-left: 4.2rem;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.admin-import-row-error .admin-import-note {
+  color: var(--color-danger);
+}
+
 .admin-form button,
 .admin-form-actions button {
   align-self: flex-start;
