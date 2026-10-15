@@ -26,6 +26,26 @@
     form-action 'self'
   ">
   <title>Dirchalish - Atlas of Karabakh</title>
+  <!-- Generic link-preview card for the site itself. A shared *place*
+       link gets its own title/photo from the API's /p/<id> share page
+       instead (api/v1/seo.py) — link-preview bots don't run JavaScript,
+       so nothing this page does client-side could vary it per place.
+       Absolute URLs on purpose: previews ignore relative ones. -->
+  <meta name="description" content="An interactive atlas of Karabakh: cities, places, photos and history on one map.">
+  <link rel="canonical" href="https://karabakh-atlas-frontend.onrender.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dirchalish — Atlas of Karabakh">
+  <meta property="og:title" content="Dirchalish — Atlas of Karabakh">
+  <meta property="og:description" content="An interactive atlas of Karabakh: cities, places, photos and history on one map.">
+  <meta property="og:url" content="https://karabakh-atlas-frontend.onrender.com/">
+  <meta property="og:image" content="https://karabakh-atlas-frontend.onrender.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dirchalish — Atlas of Karabakh">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dirchalish — Atlas of Karabakh">
+  <meta name="twitter:description" content="An interactive atlas of Karabakh: cities, places, photos and history on one map.">
+  <meta name="twitter:image" content="https://karabakh-atlas-frontend.onrender.com/og-image.png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />

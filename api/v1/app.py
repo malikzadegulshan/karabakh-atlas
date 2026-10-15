@@ -11,6 +11,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from models import storage
 from models.user import User
 from api.v1.views import app_views
+from api.v1.seo import seo
 from api.v1.auth_utils import get_current_user
 
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
@@ -46,6 +47,7 @@ app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 # /api/v1/images hands back (see api/v1/views/images.py).
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.register_blueprint(app_views)
+app.register_blueprint(seo)
 app.register_blueprint(
     get_swaggerui_blueprint(
         SWAGGER_UI_PATH,
