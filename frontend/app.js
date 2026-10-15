@@ -1817,9 +1817,9 @@ function matchesSearch(city) {
 // concept — "show me the cafes", not "hide every non-cafe city"); only
 // POIs get excluded when their category doesn't match the active one.
 function matchesActiveFilters(city) {
-  if (!matchesSearch(city)) {
-    return false;
-  }
+  // The search query deliberately isn't part of this: it only drives the
+  // results dropdown (see matchingPlaces()), never which markers the map
+  // shows.
   if (activeCategoryFilter && isPoi(city) && city.category !== activeCategoryFilter) {
     return false;
   }
@@ -1927,9 +1927,13 @@ function updateSearchResultsVisibility() {
 
 searchInputEl.addEventListener("input", () => {
   searchQuery = searchInputEl.value.trim();
-  // applyFilterAndRender() -> renderCities() -> closeDetailView() already
-  // calls updateSearchResultsVisibility() on every render, search included.
-  applyFilterAndRender();
+  // Typing only updates the results dropdown. The map — its position,
+  // zoom, and which markers are showing — stays exactly where the visitor
+  // left it until they actually choose a result (click or Enter, below).
+  // It used to re-render and refit the map to the matches on every
+  // keystroke, which yanked the view around and hid every other marker
+  // while someone was still just typing.
+  updateSearchResultsVisibility();
 });
 
 searchInputEl.addEventListener("keydown", (event) => {
