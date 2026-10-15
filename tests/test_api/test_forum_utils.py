@@ -97,6 +97,11 @@ class TestAgainstARealForeignKey(unittest.TestCase):
             delete = staticmethod(session.delete)
             save = staticmethod(session.commit)
 
+            @staticmethod
+            def all(cls):
+                return {"{}.{}".format(cls.__name__, row.id): row
+                        for row in session.query(cls)}
+
         with mock.patch("api.v1.forum_utils.storage", SessionStorage), \
                 mock.patch("models.storage", SessionStorage):
             delete_forum_posts([parent, reply])

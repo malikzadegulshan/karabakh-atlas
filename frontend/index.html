@@ -94,6 +94,16 @@
             <p id="account-favorites-empty" hidden>No favorites yet.</p>
           </div>
           <button type="button" id="account-logout">Log out</button>
+          <button type="button" id="account-delete" class="account-danger-link">Delete account</button>
+          <form id="account-delete-form" class="admin-form" hidden>
+            <p id="account-delete-warning"></p>
+            <input type="password" id="account-delete-password" autocomplete="current-password" required maxlength="128">
+            <p id="account-delete-error" role="alert" hidden></p>
+            <div class="admin-form-actions">
+              <button type="submit" id="account-delete-confirm" class="danger-btn">Delete my account</button>
+              <button type="button" id="account-delete-cancel">Cancel</button>
+            </div>
+          </form>
         </div>
       </div>
     </nav>
@@ -319,6 +329,8 @@
           <section class="admin-section">
             <h3 id="admin-forum-title">Forum moderation</h3>
             <div id="admin-forum-list"></div>
+            <h3 id="admin-reports-title" class="admin-subsection-title">Reported posts</h3>
+            <div id="admin-reports-list"></div>
           </section>
         </div>
 

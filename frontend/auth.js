@@ -12,6 +12,13 @@ const accountNameEl = document.getElementById("account-name");
 const accountTierBadgeEl = document.getElementById("account-tier-badge");
 const accountResendEl = document.getElementById("account-resend-verification");
 const accountLogoutEl = document.getElementById("account-logout");
+const accountDeleteEl = document.getElementById("account-delete");
+const accountDeleteFormEl = document.getElementById("account-delete-form");
+const accountDeleteWarningEl = document.getElementById("account-delete-warning");
+const accountDeletePasswordEl = document.getElementById("account-delete-password");
+const accountDeleteErrorEl = document.getElementById("account-delete-error");
+const accountDeleteConfirmEl = document.getElementById("account-delete-confirm");
+const accountDeleteCancelEl = document.getElementById("account-delete-cancel");
 const accountOverlayEl = document.getElementById("account-overlay");
 const accountPanelEl = document.getElementById("account-panel");
 const accountTitleEl = document.getElementById("account-title");
@@ -54,6 +61,11 @@ function applyAccountStaticTranslations() {
   accountSigninToggleEl.setAttribute("aria-label", t("accountSignIn"));
   accountSigninToggleEl.title = t("accountSignIn");
   accountLogoutEl.textContent = t("accountSignOut");
+  accountDeleteEl.textContent = t("accountDelete");
+  accountDeleteWarningEl.textContent = t("accountDeleteWarning");
+  setPlaceholderLabel(accountDeletePasswordEl, t("accountDeletePassword"));
+  accountDeleteConfirmEl.textContent = t("accountDeleteConfirm");
+  accountDeleteCancelEl.textContent = t("adminCancel");
   accountTabLoginEl.textContent = t("accountSignIn");
   accountTabRegisterEl.textContent = t("accountCreateAccount");
   setPlaceholderLabel(loginEmailInputEl, t("accountEmail"));
@@ -87,9 +99,19 @@ function applyAccountStaticTranslations() {
   }
 }
 
+function resetAccountDeleteForm() {
+  accountDeleteFormEl.hidden = true;
+  accountDeleteFormEl.reset();
+  accountDeleteErrorEl.hidden = true;
+  accountDeleteErrorEl.textContent = "";
+  accountDeleteConfirmEl.disabled = false;
+  accountDeleteEl.hidden = !currentUser || currentUser.role === "admin";
+}
+
 function closeAccountStatusPopover() {
   accountStatusEl.hidden = true;
   accountAvatarToggleEl.setAttribute("aria-expanded", "false");
+  resetAccountDeleteForm();
 }
 
 function renderAccountWidget() {
@@ -98,6 +120,8 @@ function renderAccountWidget() {
   accountAvatarToggleEl.hidden = !loggedIn;
   adminToggleEl.hidden = !loggedIn || currentUser.role !== "admin";
   accountResendEl.hidden = !loggedIn || currentUser.email_verified;
+  accountDeleteEl.hidden = !loggedIn || currentUser.role === "admin" ||
+    !accountDeleteFormEl.hidden;
   if (loggedIn) {
     accountAvatarToggleEl.textContent = currentUser.name.charAt(0).toUpperCase();
     accountNameEl.textContent = currentUser.name;
@@ -331,6 +355,36 @@ resetPasswordFormEl.addEventListener("submit", async (event) => {
   } finally {
     resetPasswordSubmitEl.disabled = false;
   }
+});
+
+// Deleting an account is permanent, so it takes an explicit second step
+// (the warning and the account password, which the server checks) rather
+// than a bare confirm() — a stolen session alone can't do it either.
+accountDeleteEl.addEventListener("click", () => {
+  accountDeleteEl.hidden = true;
+  accountDeleteFormEl.hidden = false;
+  accountDeletePasswordEl.focus();
+});
+
+accountDeleteCancelEl.addEventListener("click", resetAccountDeleteForm);
+
+accountDeleteFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  accountDeleteConfirmEl.disabled = true;
+  accountDeleteErrorEl.hidden = true;
+  try {
+    await apiRequest("DELETE", "/auth/account", {
+      password: accountDeletePasswordEl.value,
+    });
+  } catch (err) {
+    accountDeleteErrorEl.textContent = err.message;
+    accountDeleteErrorEl.hidden = false;
+    accountDeleteConfirmEl.disabled = false;
+    return;
+  }
+  currentUser = null;
+  renderAccountWidget();
+  window.alert(t("accountDeleted"));
 });
 
 accountLogoutEl.addEventListener("click", async () => {

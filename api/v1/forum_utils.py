@@ -9,6 +9,7 @@ showing while its parent is.
 """
 from models import storage
 from models.forum_post import ForumPost
+from models.post_report import PostReport
 
 
 def delete_forum_posts(posts):
@@ -25,6 +26,9 @@ def delete_forum_posts(posts):
     replies share their parent's city/news target, so the cascades in
     cities/regions/news already collect them.
     """
+    posts = list(posts)
+    # Reports point at their post by foreign key, so they go with it.
+    delete_reports_for({post.id for post in posts})
     replies = [post for post in posts if post.parent_id is not None]
     others = [post for post in posts if post.parent_id is None]
     for reply in replies:
@@ -33,6 +37,13 @@ def delete_forum_posts(posts):
         storage.save()
     for post in others:
         post.delete()
+
+
+def delete_reports_for(post_ids):
+    """Delete every report filed against any of the given post ids."""
+    for report in [r for r in storage.all(PostReport).values()
+                   if r.post_id in post_ids]:
+        report.delete()
 
 
 def delete_post_and_replies(post):

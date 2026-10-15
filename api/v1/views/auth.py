@@ -7,6 +7,7 @@ from flask import jsonify, abort, request, session
 from api.v1.views import app_views
 from api.v1.auth_utils import (
     get_current_user,
+    login_required,
     log_in,
     is_login_rate_limited,
     record_login_failure,
@@ -25,7 +26,11 @@ from api.v1.validation import (
     require_password,
     only_allowed_fields,
 )
+from api.v1.forum_utils import delete_forum_posts
 from models import storage
+from models.favorite import Favorite
+from models.forum_post import ForumPost
+from models.post_report import PostReport
 from models.user import User
 
 REGISTER_FIELDS = {"name", "email", "password"}
@@ -180,6 +185,65 @@ def me():
     if user is None:
         return jsonify({"error": "Not logged in"}), 401
     return jsonify(_serialize_user(user)), 200
+
+
+def _delete_user_data(user):
+    """Remove everything a user owns, in an order the database's foreign
+    keys allow: their posts and replies (and anyone's replies to those),
+    reports they filed or that were filed against their posts, their
+    favorites, then the account itself."""
+    own = [p for p in storage.all(ForumPost).values()
+           if p.author_id == user.id]
+    own_ids = {p.id for p in own}
+    answers = [p for p in storage.all(ForumPost).values()
+               if p.parent_id in own_ids and p.id not in own_ids]
+    delete_forum_posts(own + answers)
+    for report in [r for r in storage.all(PostReport).values()
+                   if r.reporter_id == user.id]:
+        report.delete()
+    for favorite in [f for f in storage.all(Favorite).values()
+                     if f.user_id == user.id]:
+        favorite.delete()
+    user.delete()
+    storage.save()
+
+
+@app_views.route("/auth/account", methods=["DELETE"])
+@login_required
+def delete_account():
+    """Permanently delete the logged-in user's own account and
+    everything they posted or saved. Requires the account password (so a
+    stolen session cookie alone can't wipe an account) and shares the
+    login failure rate limit (so this can't be used to guess it).
+    Admin accounts can't be deleted this way, so the site can't be left
+    without one."""
+    user = get_current_user()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(data, {"password"})
+        require_non_empty_string(data, "password", max_length=128)
+    except ValidationError as error:
+        abort(400, description=error.message)
+    if user.role == "admin":
+        return jsonify({
+            "error": "Admin accounts can't be deleted here",
+        }), 403
+
+    rate_key = "{}:{}".format(request.remote_addr, user.email)
+    if is_login_rate_limited(rate_key):
+        return jsonify({
+            "error": "Too many failed attempts. Try again later.",
+        }), 429
+    if not user.check_password(data["password"]):
+        record_login_failure(rate_key)
+        return jsonify({"error": "Incorrect password"}), 401
+    clear_login_failures(rate_key)
+
+    _delete_user_data(user)
+    session.clear()
+    return jsonify({}), 200
 
 
 @app_views.route("/auth/verify", methods=["POST"])

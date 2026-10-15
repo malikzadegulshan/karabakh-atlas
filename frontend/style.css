@@ -445,6 +445,51 @@ main {
   background: var(--color-border);
 }
 
+/* Delete account: a quiet danger-colored link in the popover (danger
+   text is 5.9:1 light / 5.0:1 dark on the muted fill), expanding into a
+   short form with the warning and the password. */
+.account-danger-link {
+  padding: 0.2rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.account-danger-link:hover {
+  text-decoration: underline;
+}
+
+.account-danger-link[hidden],
+#account-delete-form[hidden] {
+  display: none;
+}
+
+#account-delete-warning,
+#account-delete-error {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+#account-delete-error {
+  color: var(--color-danger);
+}
+
+#account-delete-error[hidden] {
+  display: none;
+}
+
+#account-delete-form .danger-btn {
+  background: var(--color-danger);
+  color: #fff;
+}
+
 #account-resend-verification {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
@@ -1067,6 +1112,42 @@ main {
 .forum-reply-btn:hover,
 .forum-reply-btn:focus-visible {
   text-decoration: underline;
+}
+
+.forum-post-actions {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.forum-report-btn {
+  color: var(--color-text-muted);
+}
+
+.forum-report-form,
+.forum-reply-form {
+  margin-top: 0.4rem;
+}
+
+.forum-report-reason {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+}
+
+.admin-subsection-title {
+  margin-top: 1.4rem;
+}
+
+.admin-report-reasons {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-danger);
 }
 
 .forum-reply-form {

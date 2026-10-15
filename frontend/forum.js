@@ -26,6 +26,19 @@ const FORUM_TOPICS = [
 ];
 const FORUM_DEFAULT_TOPIC = "general";
 
+// Keep in sync with REPORT_REASONS in models/post_report.py.
+const REPORT_REASONS = [
+  { value: "spam", labelKey: "reportReasonSpam" },
+  { value: "abusive", labelKey: "reportReasonAbusive" },
+  { value: "misleading", labelKey: "reportReasonMisleading" },
+  { value: "other", labelKey: "reportReasonOther" },
+];
+
+function reportReasonLabel(value) {
+  const reason = REPORT_REASONS.find((entry) => entry.value === value);
+  return reason ? t(reason.labelKey) : value;
+}
+
 function forumTopicLabel(value) {
   const topic = FORUM_TOPICS.find((entry) => entry.value === value);
   return topic ? t(topic.labelKey) : null;
@@ -232,6 +245,11 @@ function buildForumPostElement(post, rootId, isReply, replyCount, onChanged) {
   body.textContent = post.body;
   li.appendChild(body);
 
+  const actions = document.createElement("div");
+  actions.className = "forum-post-actions";
+
+  // One slot for whichever inline form (reply or report) is open; opening
+  // one closes the other.
   const replySlot = document.createElement("div");
   replySlot.className = "forum-reply-slot";
 
@@ -246,17 +264,93 @@ function buildForumPostElement(post, rootId, isReply, replyCount, onChanged) {
       }
       return;
     }
-    if (replySlot.firstChild) {
-      replySlot.innerHTML = "";
+    const wasReply = replySlot.firstChild &&
+      replySlot.firstChild.classList.contains("forum-reply-form");
+    replySlot.innerHTML = "";
+    if (wasReply) {
       return;
     }
     replySlot.appendChild(buildReplyForm(
       rootId, isReply ? `@${post.author_name || "?"} ` : "", replySlot,
       onChanged));
   });
-  li.appendChild(replyBtn);
+  actions.appendChild(replyBtn);
+
+  // Your own posts can't be reported (the API refuses too).
+  if (!currentUser || currentUser.id !== post.author_id) {
+    const reportBtn = document.createElement("button");
+    reportBtn.type = "button";
+    reportBtn.className = "forum-reply-btn forum-report-btn";
+    reportBtn.textContent = t("forumReport");
+    reportBtn.addEventListener("click", () => {
+      if (!currentUser) {
+        if (typeof openAccountPanel === "function") {
+          openAccountPanel();
+        }
+        return;
+      }
+      const wasReport = replySlot.firstChild &&
+        replySlot.firstChild.classList.contains("forum-report-form");
+      replySlot.innerHTML = "";
+      if (wasReport) {
+        return;
+      }
+      replySlot.appendChild(buildReportForm(post.id, replySlot));
+    });
+    actions.appendChild(reportBtn);
+  }
+
+  li.appendChild(actions);
   li.appendChild(replySlot);
   return li;
+}
+
+function buildReportForm(postId, slot) {
+  const form = document.createElement("form");
+  form.className = "admin-form forum-report-form";
+
+  const select = document.createElement("select");
+  select.className = "forum-report-reason";
+  select.setAttribute("aria-label", t("reportReasonLabel"));
+  REPORT_REASONS.forEach((reason) => {
+    const option = document.createElement("option");
+    option.value = reason.value;
+    option.textContent = t(reason.labelKey);
+    select.appendChild(option);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.textContent = t("reportSend");
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.textContent = t("adminCancel");
+  cancel.addEventListener("click", () => { slot.innerHTML = ""; });
+  actions.appendChild(submit);
+  actions.appendChild(cancel);
+
+  form.appendChild(select);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    try {
+      await apiRequest(
+        "POST", `/forum/posts/${postId}/report`, { reason: select.value });
+      const notice = document.createElement("p");
+      notice.className = "forum-pending-notice";
+      notice.textContent = t("reportThanks");
+      slot.innerHTML = "";
+      slot.appendChild(notice);
+    } catch (err) {
+      window.alert(err.message);
+      submit.disabled = false;
+    }
+  });
+  return form;
 }
 
 function buildReplyForm(rootId, prefill, slot, onChanged) {
