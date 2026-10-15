@@ -136,6 +136,7 @@ const adminRegionsTitleEl = document.getElementById("admin-regions-title");
 const adminRegionsListEl = document.getElementById("admin-regions-list");
 const adminRegionsSearchEl = document.getElementById("admin-regions-search");
 const adminAddPlaceToggleEl = document.getElementById("admin-add-place-toggle");
+const adminImportPlacesToggleEl = document.getElementById("admin-import-places-toggle");
 const adminEditViewEl = document.getElementById("admin-edit-view");
 const adminEditViewBodyEl = document.getElementById("admin-edit-view-body");
 const adminEditBackEl = document.getElementById("admin-edit-back");
@@ -230,6 +231,7 @@ function applyAdminStaticTranslations() {
   setPlaceholderLabel(
     adminRegionsSearchEl, t("adminRegionsSearchPlaceholder"));
   adminAddPlaceToggleEl.textContent = t("adminAddPlaceButton");
+  adminImportPlacesToggleEl.textContent = t("adminImportButton");
   adminEditBackLabelEl.textContent = t("adminBack");
   mapPickInstructionEl.textContent = t("mapPickInstruction");
   mapPickCancelEl.textContent = t("mapPickCancel");
@@ -500,6 +502,229 @@ adminAddPlaceToggleEl.addEventListener("click", () => {
     return;
   }
   openAdminEditView(buildAddCityForm(region));
+});
+
+// ---- Bulk import from a CSV file ------------------------------------
+//
+// The browser parses the file (csv.js) and sends the rows to
+// POST /regions/<id>/cities/import twice: first as a dry run, which only
+// reports what would happen to each row, then — once the admin has seen
+// that preview and confirmed — for real. The server applies the same
+// validation as adding a place by hand and skips places that already
+// exist, so re-uploading a corrected file is safe.
+
+// The server rejects request bodies over 1 MB; a little headroom for
+// the JSON wrapping.
+const IMPORT_MAX_FILE_BYTES = 900 * 1024;
+
+function downloadCsvTemplate() {
+  const blob = new Blob([csvTemplateText()], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "places-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function importErrorMessage(error) {
+  if (error.key === "missingColumns") {
+    return t("importMissingColumns")(error.columns.join(", "));
+  }
+  if (error.key === "tooManyRows") {
+    return t("importTooMany")(error.count, error.max);
+  }
+  return t("importEmptyFile");
+}
+
+function buildImportForm(region) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "admin-import";
+
+  const title = document.createElement("h3");
+  title.textContent = t("importTitle");
+  const help = document.createElement("p");
+  help.className = "admin-import-help";
+  help.textContent = t("importHelp");
+
+  const templateBtn = document.createElement("button");
+  templateBtn.type = "button";
+  templateBtn.className = "admin-secondary-btn";
+  templateBtn.textContent = t("importTemplate");
+  templateBtn.addEventListener("click", downloadCsvTemplate);
+
+  const categories = document.createElement("details");
+  categories.className = "admin-import-categories";
+  const summary = document.createElement("summary");
+  summary.textContent = t("importCategories");
+  const categoryList = document.createElement("p");
+  categoryList.textContent = CITY_CATEGORY_VALUES.join(", ");
+  categories.appendChild(summary);
+  categories.appendChild(categoryList);
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".csv,text/csv";
+  fileInput.className = "admin-import-file";
+  fileInput.setAttribute("aria-label", t("importChooseFile"));
+
+  const status = document.createElement("p");
+  status.className = "admin-import-status";
+  status.setAttribute("role", "status");
+  status.hidden = true;
+
+  const preview = document.createElement("div");
+  preview.className = "admin-import-preview";
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form-actions";
+  const importBtn = document.createElement("button");
+  importBtn.type = "button";
+  importBtn.className = "admin-primary-btn";
+  importBtn.disabled = true;
+  importBtn.textContent = t("importConfirm")(0);
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t("adminCancel");
+  cancelBtn.addEventListener("click", closeAdminEditView);
+  actions.appendChild(importBtn);
+  actions.appendChild(cancelBtn);
+
+  [title, help, templateBtn, categories, fileInput, status, preview, actions]
+    .forEach((el) => wrapper.appendChild(el));
+
+  let pendingPlaces = null;
+
+  function setStatus(message, isError) {
+    status.hidden = !message;
+    status.textContent = message || "";
+    status.classList.toggle("error", Boolean(isError));
+  }
+
+  function renderPreview(result, ignoredColumns) {
+    preview.innerHTML = "";
+    const counts = { new: 0, duplicate: 0, error: 0 };
+    result.results.forEach((entry) => { counts[entry.status] += 1; });
+
+    const summaryLine = document.createElement("p");
+    summaryLine.className = "admin-import-summary";
+    summaryLine.textContent =
+      t("importSummary")(counts.new, counts.duplicate, counts.error);
+    preview.appendChild(summaryLine);
+    if (ignoredColumns.length > 0) {
+      const ignored = document.createElement("p");
+      ignored.className = "admin-import-ignored";
+      ignored.textContent = t("importIgnored")(ignoredColumns.join(", "));
+      preview.appendChild(ignored);
+    }
+
+    const list = document.createElement("ul");
+    list.className = "admin-import-rows";
+    const statusLabels = {
+      new: t("importStatusNew"),
+      duplicate: t("importStatusDuplicate"),
+      error: t("importStatusError"),
+    };
+    result.results.forEach((entry) => {
+      const li = document.createElement("li");
+      li.className = `admin-import-row admin-import-row-${entry.status}`;
+      // Spreadsheet row numbers: the header is row 1.
+      const rowNo = document.createElement("span");
+      rowNo.className = "admin-import-rowno";
+      rowNo.textContent = t("importRow")(entry.row + 2);
+      const name = document.createElement("span");
+      name.className = "admin-import-name";
+      name.textContent = entry.name || "—";
+      const chip = document.createElement("span");
+      chip.className = "admin-import-chip";
+      chip.textContent = statusLabels[entry.status];
+      li.appendChild(rowNo);
+      li.appendChild(name);
+      li.appendChild(chip);
+      const detail = entry.error ||
+        (entry.duplicate_of ? t("importDuplicateOf")(entry.duplicate_of) : "");
+      if (detail) {
+        const note = document.createElement("span");
+        note.className = "admin-import-note";
+        note.textContent = detail;
+        li.appendChild(note);
+      }
+      list.appendChild(li);
+    });
+    preview.appendChild(list);
+
+    importBtn.textContent = t("importConfirm")(counts.new);
+    importBtn.disabled = counts.new === 0;
+    if (counts.new === 0) {
+      setStatus(t("importNothingNew"), false);
+    }
+    return counts;
+  }
+
+  fileInput.addEventListener("change", async () => {
+    preview.innerHTML = "";
+    setStatus("", false);
+    pendingPlaces = null;
+    importBtn.textContent = t("importConfirm")(0);
+    importBtn.disabled = true;
+    const file = fileInput.files[0];
+    if (!file) {
+      return;
+    }
+    if (file.size > IMPORT_MAX_FILE_BYTES) {
+      setStatus(t("importTooLarge"), true);
+      return;
+    }
+    setStatus(t("importChecking"), false);
+    const parsed = csvRecordsToPlaces(
+      parseCsv(await file.text()), TRANSLATIONS);
+    if (parsed.error) {
+      setStatus(importErrorMessage(parsed.error), true);
+      return;
+    }
+    try {
+      const result = await apiRequest(
+        "POST", `/regions/${region.id}/cities/import`,
+        { rows: parsed.places, dry_run: true });
+      setStatus("", false);
+      pendingPlaces = parsed.places;
+      renderPreview(result, parsed.ignoredColumns);
+    } catch (err) {
+      setStatus(err.message, true);
+    }
+  });
+
+  importBtn.addEventListener("click", async () => {
+    if (!pendingPlaces) {
+      return;
+    }
+    importBtn.disabled = true;
+    try {
+      const result = await apiRequest(
+        "POST", `/regions/${region.id}/cities/import`,
+        { rows: pendingPlaces, dry_run: false });
+      const skipped = result.results.length - result.created;
+      showAdminMessage(t("importDone")(result.created, skipped), false);
+      closeAdminEditView();
+      await refreshAdminData();
+      await loadCities();
+    } catch (err) {
+      setStatus(err.message, true);
+      importBtn.disabled = false;
+    }
+  });
+
+  return wrapper;
+}
+
+adminImportPlacesToggleEl.addEventListener("click", () => {
+  const region = adminRegionsCache[0];
+  if (!region) {
+    showAdminMessage(t("adminNoRegionForNewPlace"), true);
+    return;
+  }
+  openAdminEditView(buildImportForm(region));
 });
 
 async function refreshAdminData() {
