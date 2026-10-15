@@ -177,6 +177,32 @@
     </div>
   </main>
 
+  <div id="report-overlay" hidden>
+    <div id="report-panel" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div class="admin-panel-header">
+        <h2 id="report-title">Report this post</h2>
+        <button type="button" id="report-close" aria-label="Close">×</button>
+      </div>
+      <form id="report-form" class="admin-form">
+        <div id="report-post-preview"></div>
+        <fieldset id="report-reasons">
+          <legend id="report-reasons-legend">Why are you reporting this?</legend>
+        </fieldset>
+        <p id="report-error" role="alert" hidden></p>
+        <div class="admin-form-actions">
+          <button type="submit" id="report-submit">Send report</button>
+          <button type="button" id="report-cancel">Cancel</button>
+        </div>
+      </form>
+      <div id="report-thanks" hidden>
+        <p id="report-thanks-text"></p>
+        <div class="admin-form-actions">
+          <button type="button" id="report-done">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="account-overlay" hidden>
     <div id="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
       <div class="admin-panel-header">
