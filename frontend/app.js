@@ -2,8 +2,16 @@ const API_BASE = window.KBA_API_BASE || "http://localhost:5000/api/v1";
 const DEFAULT_CENTER = [39.8, 46.75];
 const DEFAULT_ZOOM = 9;
 
-let currentLang = getStoredLang() || DEFAULT_LANG;
-if (!TRANSLATIONS[currentLang]) {
+// A shared place link carries the sharer's language (?lang=, see
+// placeShareUrl()) — honored only for someone with no saved preference,
+// so it never overrides a choice they made themselves.
+let currentLang =
+  getStoredLang() ||
+  new URLSearchParams(window.location.search).get("lang") ||
+  DEFAULT_LANG;
+// hasOwn, not a plain lookup: "?lang=__proto__" or "?lang=constructor"
+// would otherwise resolve to Object.prototype / Object and pass.
+if (!Object.prototype.hasOwnProperty.call(TRANSLATIONS, currentLang)) {
   currentLang = DEFAULT_LANG;
 }
 let lastCities = [];
@@ -1154,6 +1162,51 @@ function updateUrlForPlace(cityId) {
   window.history.replaceState({}, "", url);
 }
 
+// The link people share for a place is the API's /p/<id> page, not the
+// app's own ?place= URL: link-preview bots (WhatsApp, Telegram, ...) don't
+// run JavaScript, so only a server-rendered page can give them a title and
+// photo. Humans who open it are redirected on to the app (see
+// api/v1/seo.py).
+function placeShareUrl(cityId) {
+  const origin = API_BASE.replace(/\/api\/v1\/?$/, "");
+  const lang = currentLang === DEFAULT_LANG ? "" : `?lang=${currentLang}`;
+  return `${origin}/p/${encodeURIComponent(cityId)}${lang}`;
+}
+
+async function sharePlace(button) {
+  const city = lastCities.find((c) => c.id === button.dataset.placeId);
+  if (!city) {
+    return;
+  }
+  const url = placeShareUrl(city.id);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: localizedName(city), url });
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        return; // person closed the share sheet — not a failure
+      }
+    }
+  }
+  const label = button.querySelector("span");
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch (err) {
+    window.prompt(t("shareCopyPrompt"), url);
+    return;
+  }
+  label.textContent = t("shareCopied");
+  setTimeout(() => { label.textContent = t("detailShare"); }, 2000);
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".detail-share-btn");
+  if (button) {
+    sharePlace(button);
+  }
+});
+
 function clearUrlPlace() {
   if (!new URLSearchParams(window.location.search).has("place")) {
     return;
@@ -1262,8 +1315,8 @@ function buildDetailCardHtml(city) {
   // Contact buttons are a point-of-interest thing, not a plain-city
   // thing — isPoi() is the same "category !== 'city'" check the admin
   // forms use to hide the phone/website inputs in the first place.
+  parts.push('<div class="detail-actions">');
   if (isPoi(city) && (city.phone || city.website)) {
-    parts.push('<div class="detail-actions">');
     if (city.phone) {
       parts.push(
         `<a class="detail-action-btn" href="tel:${escapeAttr(city.phone)}">` +
@@ -1279,8 +1332,14 @@ function buildDetailCardHtml(city) {
           `<span>${escapeHtml(t("detailWebsite"))}</span></a>`
       );
     }
-    parts.push("</div>");
   }
+  parts.push(
+    `<button type="button" class="detail-action-btn detail-share-btn" ` +
+      `data-place-id="${escapeAttr(city.id)}">` +
+      KBA_ICON_SVG("detail_share", 16) +
+      `<span>${escapeHtml(t("detailShare"))}</span></button>`
+  );
+  parts.push("</div>");
 
   parts.push('<div class="detail-about">');
   parts.push(`<h3>${escapeHtml(t("detailAbout"))}</h3>`);

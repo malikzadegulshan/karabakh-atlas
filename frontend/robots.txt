@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://karabakh-atlas-frontend.onrender.com/sitemap.xml

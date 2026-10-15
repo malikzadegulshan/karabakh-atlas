@@ -1654,6 +1654,8 @@ main {
   border-radius: 8px;
   text-decoration: none;
   cursor: pointer;
+  border: 0;
+  font-family: inherit;
 }
 
 .detail-action-btn:hover {

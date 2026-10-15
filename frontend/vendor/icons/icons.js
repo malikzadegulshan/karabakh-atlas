@@ -53,6 +53,8 @@ const KBA_ICON_PATHS = {
   detail_back: '<path d="M15 6l-6 6l6 6" />',
   detail_call: '<path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />',
   detail_website: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M3.6 9h16.8" /><path d="M3.6 15h16.8" /><path d="M11.5 3a17 17 0 0 0 0 18" /><path d="M12.5 3a17 17 0 0 1 0 18" />',
+  // Share button on the place card — three nodes joined by two lines.
+  detail_share: '<path d="M5 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M15 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M10.6 10.5l4.8 -3" /><path d="M10.6 13.5l4.8 3" />',
   // Favorite/save toggle (#detail-favorite-toggle in index.html) — a
   // closed heart outline, so it also works filled (see .is-favorited in
   // style.css, which overrides KBA_ICON_SVG's fill="none" for this one).

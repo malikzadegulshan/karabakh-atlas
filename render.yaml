@@ -40,6 +40,11 @@ services:
         value: "true"
       - key: KBA_FRONTEND_ORIGIN
         value: "https://karabakh-atlas-frontend.onrender.com"
+      # This API's own public origin — pins the canonical/og:url links
+      # and sitemap URLs (api/v1/seo.py) so a spoofed Host header can't
+      # steer them. Change it if the API moves to a custom domain.
+      - key: KBA_PUBLIC_URL
+        value: "https://karabakh-atlas-api.onrender.com"
       # Bootstraps the first admin account on boot (idempotent — safe to
       # leave set). Fill these in via the Render dashboard's environment
       # tab after the first deploy, not here — never commit real
