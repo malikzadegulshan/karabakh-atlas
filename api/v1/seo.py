@@ -154,7 +154,12 @@ def preview_image_url(image_url):
 
 
 def _share_base():
-    return request.host_url.rstrip("/")
+    """This API's public origin, for the canonical/og:url links and the
+    sitemap. KBA_PUBLIC_URL pins it; without it (local dev) it comes from
+    the request, which means a spoofed Host/X-Forwarded-Host header would
+    be echoed into those links — so a real deployment must set it."""
+    configured = os.environ.get("KBA_PUBLIC_URL", "").strip().rstrip("/")
+    return configured or request.host_url.rstrip("/")
 
 
 def _find_city(city_id):
