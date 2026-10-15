@@ -107,3 +107,48 @@ class TestAgainstARealForeignKey(unittest.TestCase):
             delete_forum_posts([parent, reply])
             session.commit()
         self.assertEqual(session.query(ForumPost).count(), 0)
+
+    def test_post_with_a_report_and_no_replies_deletes_cleanly(self):
+        """The report must be committed before its post: SQLAlchemy has
+        no relationship() telling it the order, so one flush can delete
+        the post first (the PostgreSQL CI failure)."""
+        from sqlalchemy import create_engine, event
+        from sqlalchemy.orm import sessionmaker
+        from models.base_model import Base
+        import models.engine.db_storage  # noqa: F401  registers all models
+        from models.forum_post import ForumPost
+        from models.post_report import PostReport
+        from models.user import User
+
+        engine = create_engine("sqlite://")
+        event.listen(
+            engine, "connect",
+            lambda conn, _: conn.execute("PRAGMA foreign_keys=ON"))
+        Base.metadata.create_all(engine)
+        session = sessionmaker(bind=engine)()
+        user = User(name="u", email="r@example.com", password_hash="x")
+        session.add(user)
+        session.commit()
+        post = ForumPost(
+            id="p1", author_id=user.id, body="b", status="approved")
+        session.add(post)
+        session.commit()
+        session.add(PostReport(
+            post_id="p1", reporter_id=user.id, reason="spam"))
+        session.commit()
+
+        class SessionStorage:
+            delete = staticmethod(session.delete)
+            save = staticmethod(session.commit)
+
+            @staticmethod
+            def all(cls):
+                return {"{}.{}".format(cls.__name__, row.id): row
+                        for row in session.query(cls)}
+
+        with mock.patch("api.v1.forum_utils.storage", SessionStorage), \
+                mock.patch("models.storage", SessionStorage):
+            delete_forum_posts([post])
+            session.commit()
+        self.assertEqual(session.query(ForumPost).count(), 0)
+        self.assertEqual(session.query(PostReport).count(), 0)

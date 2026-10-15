@@ -204,6 +204,9 @@ def _delete_user_data(user):
     for favorite in [f for f in storage.all(Favorite).values()
                      if f.user_id == user.id]:
         favorite.delete()
+    # Commit what references the user before the user row itself (see
+    # delete_forum_posts for why the order isn't left to one flush).
+    storage.save()
     user.delete()
     storage.save()
 
