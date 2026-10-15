@@ -9,7 +9,9 @@ let currentLang =
   getStoredLang() ||
   new URLSearchParams(window.location.search).get("lang") ||
   DEFAULT_LANG;
-if (!TRANSLATIONS[currentLang]) {
+// hasOwn, not a plain lookup: "?lang=__proto__" or "?lang=constructor"
+// would otherwise resolve to Object.prototype / Object and pass.
+if (!Object.prototype.hasOwnProperty.call(TRANSLATIONS, currentLang)) {
   currentLang = DEFAULT_LANG;
 }
 let lastCities = [];
