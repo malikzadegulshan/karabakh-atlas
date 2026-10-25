@@ -2,7 +2,6 @@
 """Authentication views: register, login, logout, current user, and
 email verification."""
 import logging
-import os
 from flask import jsonify, abort, request, session
 from api.v1.views import app_views
 from api.v1.auth_utils import (
@@ -12,7 +11,6 @@ from api.v1.auth_utils import (
     is_login_rate_limited,
     record_login_failure,
     clear_login_failures,
-    resend_verification_limiter,
     register_limiter,
     password_reset_request_limiter,
     password_reset_attempt_limiter,
@@ -22,6 +20,8 @@ from api.v1.mailer import send_email
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
+    require_safe_name,
+    require_safe_text,
     require_email,
     require_password,
     only_allowed_fields,
@@ -33,11 +33,12 @@ from models.forum_post import ForumPost
 from models.post_report import PostReport
 from models.user import User
 
-REGISTER_FIELDS = {"name", "email", "password"}
+REGISTER_FIELDS = {"name", "email", "password", "join_reason"}
 LOGIN_FIELDS = {"email", "password"}
-VERIFY_FIELDS = {"token"}
 FORGOT_PASSWORD_FIELDS = {"email"}
 RESET_PASSWORD_FIELDS = {"email", "otp", "password"}
+
+MAX_JOIN_REASON_LENGTH = 500
 
 logger = logging.getLogger(__name__)
 
@@ -62,26 +63,6 @@ def _serialize_user(user):
     return data
 
 
-def _frontend_origin():
-    origins = os.environ.get(
-        "KBA_FRONTEND_ORIGIN", "http://localhost:8000").split(",")
-    return origins[0].strip()
-
-
-def _send_verification_email(user):
-    token = user.generate_verification_token()
-    user.save()
-    link = "{}/index.html?verify={}".format(_frontend_origin(), token)
-    send_email(
-        user.email,
-        "Verify your Karabakh Atlas account",
-        "Hi {},\n\n"
-        "Confirm your email address by opening this link:\n{}\n\n"
-        "This link expires in 24 hours. If you didn't create this "
-        "account, you can ignore this email.".format(user.name, link),
-    )
-
-
 def _send_password_reset_email(user, otp):
     send_email(
         user.email,
@@ -96,11 +77,11 @@ def _send_password_reset_email(user, otp):
 
 @app_views.route("/auth/register", methods=["POST"])
 def register():
-    """Create a new user account (role "user") and log them in.
+    """Request a new user account (role "user").
 
-    The account works immediately (email verification isn't required to
-    use the site) — it just starts unverified, with a verification email
-    sent in the background.
+    The account is created unapproved and the caller is NOT logged in:
+    an admin has to approve it (see views/users.py) before it can sign
+    in, using the reason given here to decide.
     """
     if register_limiter.is_limited(request.remote_addr):
         logger.warning(
@@ -114,9 +95,11 @@ def register():
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, REGISTER_FIELDS)
-        require_non_empty_string(data, "name")
+        require_safe_name(data, "name")
         require_email(data)
         require_password(data)
+        require_safe_text(
+            data, "join_reason", max_length=MAX_JOIN_REASON_LENGTH)
     except ValidationError as error:
         abort(400, description=error.message)
 
@@ -128,13 +111,11 @@ def register():
 
     user = User(
         name=data["name"].strip(), email=email, role="user",
-        email_verified=False)
+        email_verified=False, approved=False,
+        join_reason=data["join_reason"].strip())
     user.set_password(data["password"])
     user.save()
-    _send_verification_email(user)
-
-    log_in(user)
-    return jsonify(_serialize_user(user)), 201
+    return jsonify({"pending_approval": True}), 201
 
 
 @app_views.route("/auth/login", methods=["POST"])
@@ -167,6 +148,13 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     clear_login_failures(rate_key)
+    if not user.is_approved:
+        # Only said after the password checked out, so this can't be
+        # used to learn which emails have pending accounts.
+        return jsonify({
+            "error": "Your account is awaiting admin approval",
+            "pending_approval": True,
+        }), 403
     log_in(user)
     return jsonify(_serialize_user(user)), 200
 
@@ -249,50 +237,6 @@ def delete_account():
     return jsonify({}), 200
 
 
-@app_views.route("/auth/verify", methods=["POST"])
-def verify_email():
-    """Confirm an email address using the token from the verification
-    email. Doesn't require being logged in as that user — possessing
-    the token (from the user's own inbox) is the proof of ownership.
-    """
-    data = request.get_json(silent=True)
-    if not isinstance(data, dict):
-        abort(400, description="Not a JSON")
-    try:
-        only_allowed_fields(data, VERIFY_FIELDS)
-        require_non_empty_string(data, "token", max_length=128)
-    except ValidationError as error:
-        abort(400, description=error.message)
-
-    token = data["token"]
-    for user in storage.all(User).values():
-        if user.verification_token == token:
-            if not user.consume_verification_token(token):
-                return jsonify({"error": "Verification link expired"}), 400
-            user.save()
-            return jsonify(_serialize_user(user)), 200
-    return jsonify({"error": "Invalid verification link"}), 400
-
-
-@app_views.route("/auth/resend-verification", methods=["POST"])
-def resend_verification():
-    """Send a fresh verification email to the logged-in user."""
-    user = get_current_user()
-    if user is None:
-        return jsonify({"error": "Login required"}), 401
-    if user.email_verified:
-        return jsonify({"error": "Email is already verified"}), 400
-    if resend_verification_limiter.is_limited(user.id):
-        logger.warning(
-            "Resend-verification rate limit hit for user %s", user.id)
-        return jsonify({
-            "error": "Too many verification emails sent. Try again later.",
-        }), 429
-    resend_verification_limiter.record(user.id)
-    _send_verification_email(user)
-    return jsonify({}), 200
-
-
 @app_views.route("/auth/forgot-password", methods=["POST"])
 def forgot_password():
     """Email a time-limited OTP for resetting a forgotten password.
@@ -320,6 +264,8 @@ def forgot_password():
 
     password_reset_request_limiter.record(request.remote_addr)
     user = _find_user_by_email(data["email"])
+    if user is not None and not user.is_approved:
+        user = None
     if user is not None:
         otp = user.generate_password_reset_otp()
         user.save()
@@ -361,6 +307,11 @@ def reset_password():
         return jsonify({"error": "Invalid or expired code"}), 400
 
     password_reset_attempt_limiter.clear(rate_key)
+    if not user.is_approved:
+        return jsonify({
+            "error": "Your account is awaiting admin approval",
+            "pending_approval": True,
+        }), 403
     user.set_password(data["password"])
     # Sign every other device/cookie out: a reset usually means the old
     # password (and so possibly an old session) can't be trusted.

@@ -7,10 +7,8 @@ from sqlalchemy import Column, String, Boolean, DateTime, Integer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 VALID_ROLES = ("user", "admin")
-VERIFICATION_TOKEN_LIFETIME = timedelta(hours=24)
 # Short on purpose: a 6-digit OTP only has 1,000,000 possible values, so
-# unlike the verification token above (a 32-byte random string, safe to
-# leave valid for a day) this needs a tight window — combined with
+# it needs a tight window — combined with
 # password_reset_attempt_limiter in api/v1/views/auth.py, 15 minutes
 # keeps an online guessing attack infeasible within any one code's
 # lifetime.
@@ -26,9 +24,19 @@ class User(BaseModel, Base):
     email = Column(String(254), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(16), nullable=False, default="user")
+    # Legacy: email verification was replaced by admin approval (see
+    # `approved`). Kept because existing databases have this column as
+    # NOT NULL, so dropping it from the model would break inserts there.
     email_verified = Column(Boolean, nullable=False, default=False)
-    verification_token = Column(String(64), nullable=True)
-    verification_token_expires_at = Column(DateTime, nullable=True)
+    # Admin approval. New registrations are saved with approved=False and
+    # can't log in until an admin flips it to True. Nullable on purpose:
+    # accounts created before this column existed get NULL when it's
+    # added to a populated table, and those must stay usable — so only an
+    # explicit False means "awaiting approval" (see is_approved).
+    approved = Column(Boolean, nullable=True)
+    # Why the person wants to join, as typed on the registration form —
+    # shown to the admin when deciding whether to approve.
+    join_reason = Column(String(500), nullable=True)
     password_reset_otp = Column(String(6), nullable=True)
     password_reset_otp_expires_at = Column(DateTime, nullable=True)
     # Bumped whenever the password is reset. Each login stores the value
@@ -36,6 +44,15 @@ class User(BaseModel, Base):
     # cookie carrying an older one stops working — sessions are stateless
     # signed cookies, so this is the only way to sign other devices out.
     session_epoch = Column(Integer, nullable=False, default=0)
+
+    @property
+    def is_approved(self):
+        """True unless an admin hasn't approved this account yet.
+
+        Only an explicit False is "pending"; None (accounts that predate
+        the approval column) counts as approved.
+        """
+        return self.approved is not False
 
     def set_password(self, raw_password):
         """Hash `raw_password` with a salted, slow KDF and store the hash.
@@ -47,32 +64,6 @@ class User(BaseModel, Base):
     def check_password(self, raw_password):
         """Return True if `raw_password` matches the stored hash."""
         return check_password_hash(self.password_hash, raw_password)
-
-    def generate_verification_token(self):
-        """Create a fresh, time-limited email-verification token and
-        return it. Overwrites any previous unused token."""
-        token = secrets.token_urlsafe(32)
-        self.verification_token = token
-        self.verification_token_expires_at = (
-            datetime.utcnow() + VERIFICATION_TOKEN_LIFETIME)
-        return token
-
-    def consume_verification_token(self, token):
-        """If `token` matches this user's current, unexpired token, mark
-        the email verified and clear the token (so it can't be reused).
-        Returns True on success, False otherwise — the caller decides
-        what a failure means (wrong token vs. already verified)."""
-        if not self.verification_token or not token:
-            return False
-        if not secrets.compare_digest(self.verification_token, token):
-            return False
-        if (self.verification_token_expires_at is None
-                or datetime.utcnow() > self.verification_token_expires_at):
-            return False
-        self.email_verified = True
-        self.verification_token = None
-        self.verification_token_expires_at = None
-        return True
 
     def generate_password_reset_otp(self):
         """Create a fresh, time-limited 6-digit password-reset code and
@@ -103,7 +94,7 @@ class User(BaseModel, Base):
 
     def public_dict(self):
         """Same as to_dict(), but never includes the password hash or the
-        raw verification/password-reset tokens.
+        raw password-reset code.
 
         Use this (not to_dict()) whenever serializing a user for an API
         response. to_dict() itself must keep including every field —
@@ -112,6 +103,5 @@ class User(BaseModel, Base):
         """
         data = self.to_dict()
         data.pop("password_hash", None)
-        data.pop("verification_token", None)
         data.pop("password_reset_otp", None)
         return data

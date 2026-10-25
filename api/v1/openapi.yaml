@@ -17,7 +17,7 @@ components:
       in: cookie
       name: session
       description: >
-        Session cookie set by POST /auth/login or /auth/register. The
+        Session cookie set by POST /auth/login. The
         session user additionally needs the "admin" role for
         region/city write endpoints.
   schemas:
@@ -812,14 +812,18 @@ paths:
           description: Not found
   /auth/register:
     post:
-      summary: Create an account (role "user") and log in
+      summary: Request an account (role "user"), pending admin approval
+      description: >
+        Creates the account unapproved and does not log the caller in.
+        An admin has to approve it (see /users/pending) before it can
+        sign in.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [name, email, password]
+              required: [name, email, password, join_reason]
               properties:
                 name:
                   type: string
@@ -831,13 +835,20 @@ paths:
                   type: string
                   minLength: 8
                   maxLength: 128
+                join_reason:
+                  type: string
+                  maxLength: 500
+                  description: Why the person wants to join; shown to the admin.
       responses:
         "201":
-          description: Account created; session cookie set
+          description: Request received, awaiting admin approval
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  pending_approval:
+                    type: boolean
         "400":
           description: Validation error
         "409":
@@ -869,8 +880,77 @@ paths:
           description: Validation error
         "401":
           description: Invalid email or password
+        "403":
+          description: Correct credentials, but the account is awaiting admin approval
         "429":
           description: Too many failed attempts — try again later
+  /users/pending:
+    get:
+      summary: List accounts awaiting approval (admin only)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Pending accounts, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    join_reason:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+        "401":
+          description: Not logged in
+        "403":
+          description: Admin privileges required
+  /users/{user_id}/approve:
+    post:
+      summary: Approve a pending account so it can sign in (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved
+        "403":
+          description: Admin privileges required
+        "404":
+          description: No pending account with that id
+  /users/{user_id}/reject:
+    delete:
+      summary: Reject (delete) a pending account (admin only)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rejected and deleted
+        "403":
+          description: Admin privileges required
+        "404":
+          description: No pending account with that id
   /auth/logout:
     post:
       summary: Clear the current session

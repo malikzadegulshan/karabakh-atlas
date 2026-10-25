@@ -7,6 +7,7 @@ import uuid
 from api.v1.app import app
 from api.v1 import auth_utils
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -28,12 +29,9 @@ class TestForumViews(unittest.TestCase):
 
         self.client = app.test_client()
         self.user_email = _unique_email()
-        resp = self.client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Forum User", "email": self.user_email,
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        resp = register_and_login(
+            self.client, "Forum User",
+            self.user_email, TEST_PASSWORD)
         self.user_id = json.loads(resp.data)["id"]
 
         self.admin_client = app.test_client()
@@ -257,12 +255,9 @@ class TestForumViews(unittest.TestCase):
         post_id = json.loads(create_resp.data)["id"]
 
         other_client = app.test_client()
-        other_client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Other User", "email": _unique_email(),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        register_and_login(
+            other_client, "Other User",
+            _unique_email(), TEST_PASSWORD)
         resp = other_client.delete("/api/v1/forum/posts/{}".format(post_id))
         self.assertEqual(resp.status_code, 403)
 

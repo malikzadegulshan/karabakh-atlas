@@ -19,8 +19,9 @@ Leaflet-based visual interface backed by a REST API.
   and see the real distance, drawn as a line on the map.
 - **Shareable permalinks** — opening a place updates the URL, so a
   copied/bookmarked link reopens the same place.
-- **Accounts** — register/login with email verification and
-  password reset.
+- **Accounts** — register with a short reason for joining;
+  an admin approves each account before it can sign in. Password
+  reset by email.
 - **Favorites** — signed-in users can save places and find them again
   from the account menu.
 - **Community forum** — visitors can share opinions about Karabakh in

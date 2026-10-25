@@ -9,6 +9,7 @@ from api.v1 import auth_utils
 from models import storage
 from models.forum_post import ForumPost
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -42,9 +43,8 @@ class TestNewsViews(unittest.TestCase):
               {"email": admin.email, "password": TEST_PASSWORD})
 
         self.client = app.test_client()
-        resp = _json(self.client, "post", "/api/v1/auth/register", {
-            "name": "Reader", "email": _unique_email(),
-            "password": TEST_PASSWORD})
+        resp = register_and_login(
+            self.client, "Reader", _unique_email(), TEST_PASSWORD)
         self.reader_id = json.loads(resp.data)["id"]
 
     def _create_news(self, **overrides):

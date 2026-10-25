@@ -7,6 +7,7 @@ import unittest
 import uuid
 from api.v1.app import app
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -55,12 +56,9 @@ class TestImageViews(unittest.TestCase):
     def test_upload_rejects_non_admin(self):
         """A logged-in non-admin can't upload."""
         user_client = app.test_client()
-        user_client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Regular User", "email": _unique_email(),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        register_and_login(
+            user_client, "Regular User",
+            _unique_email(), TEST_PASSWORD)
         resp = self._upload(user_client, PNG_BYTES)
         self.assertEqual(resp.status_code, 403)
 

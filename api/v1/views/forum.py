@@ -35,6 +35,7 @@ from api.v1.auth_utils import (
 from api.v1.validation import (
     ValidationError,
     require_non_empty_string,
+    require_safe_text,
     only_allowed_fields,
     optional_enum,
 )
@@ -138,7 +139,7 @@ def create_forum_post():
         abort(400, description="Not a JSON")
     try:
         only_allowed_fields(data, CREATE_FIELDS)
-        require_non_empty_string(
+        require_safe_text(
             data, "body", max_length=FORUM_BODY_MAX_LENGTH)
         optional_enum(data, "topic", set(TOPICS))
     except ValidationError as error:

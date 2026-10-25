@@ -12,6 +12,7 @@ from api.v1 import auth_utils
 from models import storage
 from models.favorite import Favorite
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 NEW_PASSWORD = "anotherlongpassword"
@@ -50,7 +51,7 @@ class TestProxyAwareRateLimiting(unittest.TestCase):
         self.email = _email()
         _post(app.test_client(), "/api/v1/auth/register", {
             "name": "Limited", "email": self.email,
-            "password": TEST_PASSWORD})
+            "password": TEST_PASSWORD, "join_reason": "Testing"})
 
     def _failed_login(self, forwarded_for):
         return _post(
@@ -85,8 +86,7 @@ class TestSessionRevocationOnPasswordReset(unittest.TestCase):
     def test_old_cookie_stops_working_after_reset(self):
         email = _email()
         old_device = app.test_client()
-        _post(old_device, "/api/v1/auth/register", {
-            "name": "Resetter", "email": email, "password": TEST_PASSWORD})
+        register_and_login(old_device, "Resetter", email, TEST_PASSWORD)
         self.assertEqual(old_device.get("/api/v1/auth/me").status_code, 200)
 
         user = [u for u in storage.all(User).values()
@@ -103,8 +103,8 @@ class TestSessionRevocationOnPasswordReset(unittest.TestCase):
 
     def test_new_login_after_reset_works(self):
         email = _email()
-        _post(app.test_client(), "/api/v1/auth/register", {
-            "name": "Resetter", "email": email, "password": TEST_PASSWORD})
+        register_and_login(
+            app.test_client(), "Resetter", email, TEST_PASSWORD)
         user = [u for u in storage.all(User).values()
                 if u.email == email][0]
         otp = user.generate_password_reset_otp()

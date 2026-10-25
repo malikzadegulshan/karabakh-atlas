@@ -13,6 +13,7 @@ from models.forum_post import ForumPost
 from models.post_report import PostReport
 from models.region import Region
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 PASSWORD = "correcthorsebattery"
 
@@ -36,8 +37,7 @@ def _reset_limiters():
 def _register(name="Reader"):
     client = app.test_client()
     email = _email()
-    resp = _json(client, "post", "/api/v1/auth/register", {
-        "name": name, "email": email, "password": PASSWORD})
+    resp = register_and_login(client, name, email, PASSWORD)
     return client, json.loads(resp.data)["id"], email
 
 
@@ -259,7 +259,8 @@ class TestAccountDeletion(unittest.TestCase):
         reader, _, email = _register()
         self._delete(reader)
         resp = _json(app.test_client(), "post", "/api/v1/auth/register", {
-            "name": "Back", "email": email, "password": PASSWORD})
+            "name": "Back", "email": email, "password": PASSWORD,
+            "join_reason": "I'm back"})
         self.assertEqual(resp.status_code, 201)
 
 

@@ -124,6 +124,7 @@ def _bootstrap_admin():
         # Trusted by construction — whoever set these env vars controls
         # the server itself, so there's no separate identity to verify.
         email_verified=True,
+        approved=True,
     )
     admin.set_password(password)
     admin.save()

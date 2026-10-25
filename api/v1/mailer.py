@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-"""Sends transactional email (verification links, password-reset codes)
+"""Sends transactional email (password-reset codes)
 via the Resend API (https://resend.com).
 
 Falls back to printing the message when RESEND_API_KEY isn't
-configured, so registration/verification/reset stay fully testable in
+configured, so password reset stays fully testable in
 local dev without a real account.
 
 This used to talk to Gmail over raw SMTP, but PaaS hosts commonly
@@ -42,8 +42,8 @@ def _resend_config():
 def send_email(to_addr, subject, body):
     """Send a plain-text email, or print it to stderr if Resend isn't
     configured. Never raises — a mail failure shouldn't break the
-    request that triggered it (e.g. registration should still succeed
-    even if the verification email couldn't be sent).
+    request that triggered it (e.g. a password-reset request should
+    still return 200 even if the email couldn't be sent).
     """
     config = _resend_config()
     if config is None:

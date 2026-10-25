@@ -57,7 +57,7 @@ services:
         sync: false
       - key: KBA_ADMIN_NAME
         sync: false
-      # Sends verification/password-reset emails via the Resend API
+      # Sends password-reset emails via the Resend API
       # (resend.com). Fill in via the dashboard, same as the admin vars
       # above — never commit a real key. Left unset, those emails just
       # don't send (registration/reset still work either way — see

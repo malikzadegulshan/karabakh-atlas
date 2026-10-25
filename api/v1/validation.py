@@ -34,6 +34,75 @@ def require_non_empty_string(data, field, max_length=MAX_NAME_LENGTH):
             "{} must be at most {} characters".format(field, max_length))
 
 
+DANGEROUS_TAG_RE = re.compile(
+    r"<\s*/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|"
+    r"applet|form|input|button|base|video|audio)\b",
+    re.IGNORECASE)
+EVENT_HANDLER_RE = re.compile(r"\bon\w+\s*=", re.IGNORECASE)
+SCRIPT_URI_RE = re.compile(
+    r"(?:javascript|vbscript|data\s*:\s*text/html)\s*:", re.IGNORECASE)
+MARKDOWN_IMAGE_RE = re.compile(r"!\[.*?\]\(.*?\)")
+EXECUTABLE_REF_RE = re.compile(
+    r"\b[a-zA-Z0-9_\-]+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|"
+    r"ps1|com|pif)\b",
+    re.IGNORECASE)
+EXECUTABLE_URL_RE = re.compile(
+    r"https?://\S+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|ps1|"
+    r"com|pif)(?:[?#\s]|$)",
+    re.IGNORECASE)
+BIDI_OVERRIDE_RE = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
+NAME_SPECIAL_RE = re.compile(r"[<>{}\\]|\bhttps?://")
+
+
+def require_safe_text(data, field, max_length=MAX_TEXT_LENGTH):
+    """Raise ValidationError if data[field] is empty, overlength, or
+    contains suspicious code, HTML/script tags, executable links, embedded
+    images, or control characters."""
+    require_non_empty_string(data, field, max_length=max_length)
+    value = data[field]
+
+    if any(ord(c) < 32 and c not in "\n\r\t" for c in value):
+        raise ValidationError(
+            "{} contains invalid control characters".format(field))
+
+    if BIDI_OVERRIDE_RE.search(value):
+        raise ValidationError(
+            "{} contains invalid bidirectional formatting".format(field))
+
+    if DANGEROUS_TAG_RE.search(value):
+        raise ValidationError(
+            "{} contains disallowed HTML or script tags".format(field))
+
+    if EVENT_HANDLER_RE.search(value):
+        raise ValidationError(
+            "{} contains disallowed script attributes".format(field))
+
+    if SCRIPT_URI_RE.search(value):
+        raise ValidationError(
+            "{} contains disallowed script URIs".format(field))
+
+    if MARKDOWN_IMAGE_RE.search(value):
+        raise ValidationError(
+            "{} cannot contain embedded images".format(field))
+
+    if EXECUTABLE_URL_RE.search(value) or EXECUTABLE_REF_RE.search(value):
+        raise ValidationError(
+            "{} cannot contain links to or names of executable files"
+            .format(field))
+
+
+def require_safe_name(data, field="name", max_length=MAX_NAME_LENGTH):
+    """Validate that data[field] is a clean person or entity name.
+
+    Names cannot contain tags, special bracket characters, or URLs.
+    """
+    require_safe_text(data, field, max_length=max_length)
+    value = data[field]
+    if NAME_SPECIAL_RE.search(value):
+        raise ValidationError(
+            "{} cannot contain special characters or URLs".format(field))
+
+
 def optional_string(data, field, max_length=MAX_TEXT_LENGTH):
     """Raise ValidationError if data[field] is present but not a valid
     string."""

@@ -7,6 +7,7 @@ from api.v1.app import app
 from models import storage
 from models.city import City
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 PASSWORD = "correcthorsebattery"
 
@@ -206,8 +207,7 @@ class TestImport(unittest.TestCase):
         anon = app.test_client()
         self.assertEqual(self._import(rows, client=anon).status_code, 401)
         user = app.test_client()
-        _post(user, "/api/v1/auth/register", {
-            "name": "Reader", "email": _email(), "password": PASSWORD})
+        register_and_login(user, "Reader", _email(), PASSWORD)
         self.assertEqual(self._import(rows, client=user).status_code, 403)
         self.assertEqual(self._cities(), [])
 

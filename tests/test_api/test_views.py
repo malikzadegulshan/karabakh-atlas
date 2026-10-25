@@ -5,6 +5,7 @@ import unittest
 import uuid
 from api.v1.app import app
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -86,13 +87,9 @@ class TestAPIViews(unittest.TestCase):
 
     def test_stats_excludes_pending_forum_posts(self):
         regular = app.test_client()
-        regular.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Regular User",
-                "email": "regular-{}@example.com".format(uuid.uuid4()),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        register_and_login(
+            regular, "Regular User",
+            "regular-{}@example.com".format(uuid.uuid4()), TEST_PASSWORD)
         before = json.loads(self.client.get("/api/v1/stats").data)
 
         # A non-admin's post starts "pending" — not publicly visible.

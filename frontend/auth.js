@@ -10,7 +10,6 @@ const accountAvatarToggleEl = document.getElementById("account-avatar-toggle");
 const accountStatusEl = document.getElementById("account-status");
 const accountNameEl = document.getElementById("account-name");
 const accountTierBadgeEl = document.getElementById("account-tier-badge");
-const accountResendEl = document.getElementById("account-resend-verification");
 const accountLogoutEl = document.getElementById("account-logout");
 const accountDeleteEl = document.getElementById("account-delete");
 const accountDeleteFormEl = document.getElementById("account-delete-form");
@@ -36,6 +35,7 @@ const registerFormEl = document.getElementById("register-form");
 const registerNameInputEl = document.getElementById("register-name-input");
 const registerEmailInputEl = document.getElementById("register-email-input");
 const registerPasswordInputEl = document.getElementById("register-password-input");
+const registerReasonInputEl = document.getElementById("register-reason-input");
 const registerFormSubmitEl = document.getElementById("register-form-submit");
 const accountLegalNoteEl = document.getElementById("account-legal-note");
 const adminToggleEl = document.getElementById("admin-toggle");
@@ -74,6 +74,7 @@ function applyAccountStaticTranslations() {
   setPlaceholderLabel(registerNameInputEl, t("fieldName"));
   setPlaceholderLabel(registerEmailInputEl, t("accountEmail"));
   setPlaceholderLabel(registerPasswordInputEl, t("accountPassword"));
+  setPlaceholderLabel(registerReasonInputEl, t("accountJoinReason"));
   registerFormSubmitEl.textContent = t("accountCreateAccount");
   forgotPasswordLinkEl.textContent = t("accountForgotPassword");
   setPlaceholderLabel(forgotPasswordEmailInputEl, t("accountEmail"));
@@ -83,7 +84,6 @@ function applyAccountStaticTranslations() {
   setPlaceholderLabel(resetNewPasswordInputEl, t("accountPassword"));
   resetPasswordSubmitEl.textContent = t("accountResetPasswordSubmit");
   resetPasswordBackEl.textContent = t("accountBackToSignIn");
-  accountResendEl.textContent = t("accountResendVerification");
   // Re-derives the title for whichever view is currently showing —
   // ACCOUNT_VIEW_TITLES is defined below, alongside showAccountView(),
   // which is the only other thing that needs to agree on view names.
@@ -119,7 +119,6 @@ function renderAccountWidget() {
   accountSigninToggleEl.hidden = loggedIn;
   accountAvatarToggleEl.hidden = !loggedIn;
   adminToggleEl.hidden = !loggedIn || currentUser.role !== "admin";
-  accountResendEl.hidden = !loggedIn || currentUser.email_verified;
   accountDeleteEl.hidden = !loggedIn || currentUser.role === "admin" ||
     !accountDeleteFormEl.hidden;
   if (loggedIn) {
@@ -300,17 +299,35 @@ loginFormEl.addEventListener("submit", async (event) => {
   }
 });
 
+const SUSPICIOUS_INPUT_RE =
+  /<\s*\/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|video|audio)\b|\bon\w+\s*=|(?:javascript|data\s*:\s*text\/html)\s*:|!\[.*?\]\(.*?\)|\b\w+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|ps1)\b/i;
+
 registerFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   registerFormSubmitEl.disabled = true;
+  const name = registerNameInputEl.value.trim();
+  const reason = registerReasonInputEl.value.trim();
+  if (
+    SUSPICIOUS_INPUT_RE.test(name) ||
+    SUSPICIOUS_INPUT_RE.test(reason) ||
+    /[<>{}\\]/.test(name)
+  ) {
+    showAccountMessage(t("accountInputSuspicious"), true);
+    registerFormSubmitEl.disabled = false;
+    return;
+  }
   try {
-    currentUser = await authRequest("/auth/register", {
-      name: registerNameInputEl.value.trim(),
+    // Registering only files a request — the account can't sign in
+    // until an admin approves it, so there's no session to start here.
+    await authRequest("/auth/register", {
+      name,
       email: registerEmailInputEl.value.trim(),
       password: registerPasswordInputEl.value,
+      join_reason: reason,
     });
-    renderAccountWidget();
-    closeAccountPanel();
+    registerFormEl.reset();
+    showAccountView("login");
+    showAccountMessage(t("accountRegisterPending"), false);
   } catch (err) {
     showAccountMessage(err.message, true);
   } finally {
@@ -398,43 +415,5 @@ accountLogoutEl.addEventListener("click", async () => {
   renderAccountWidget();
 });
 
-accountResendEl.addEventListener("click", async () => {
-  accountResendEl.disabled = true;
-  try {
-    await authRequest("/auth/resend-verification", {});
-    accountResendEl.textContent = t("accountVerificationSent");
-  } catch (err) {
-    window.alert(err.message);
-  } finally {
-    setTimeout(() => {
-      accountResendEl.disabled = false;
-      accountResendEl.textContent = t("accountResendVerification");
-    }, 4000);
-  }
-});
-
-// The verification email links back here with ?verify=<token>. Strip it
-// from the URL right away (so a refresh/bookmark/share doesn't resend
-// the same request), then submit it and report the result.
-async function handleEmailVerificationLink() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("verify");
-  if (!token) {
-    return;
-  }
-  const url = new URL(window.location.href);
-  url.searchParams.delete("verify");
-  window.history.replaceState({}, "", url);
-
-  openAccountPanel();
-  try {
-    await authRequest("/auth/verify", { token });
-    await refreshCurrentUser();
-    showAccountMessage(t("accountVerifySuccess"), false);
-  } catch (err) {
-    showAccountMessage(err.message, true);
-  }
-}
-
 applyAccountStaticTranslations();
-refreshCurrentUser().then(handleEmailVerificationLink);
+refreshCurrentUser();

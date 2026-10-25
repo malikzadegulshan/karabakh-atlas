@@ -107,7 +107,6 @@
         <div id="account-status" role="menu" hidden>
           <span id="account-name"></span>
           <span id="account-tier-badge" class="tier-badge" hidden></span>
-          <button type="button" id="account-resend-verification" hidden>Verify email</button>
           <div id="account-favorites">
             <h4 id="account-favorites-title">My Favorites</h4>
             <ul id="account-favorites-list"></ul>
@@ -244,6 +243,7 @@
         <input type="text" id="register-name-input" required maxlength="128" autocomplete="name">
         <input type="email" id="register-email-input" required autocomplete="username">
         <input type="password" id="register-password-input" required minlength="8" autocomplete="new-password">
+        <textarea id="register-reason-input" required maxlength="500" rows="3"></textarea>
         <label class="account-legal-checkbox">
           <input type="checkbox" id="register-legal-checkbox" required>
           <span id="account-legal-note"></span>
@@ -343,6 +343,7 @@
           <button type="button" id="admin-tab-events" class="admin-tab">Timeline events</button>
           <button type="button" id="admin-tab-news" class="admin-tab">News</button>
           <button type="button" id="admin-tab-forum" class="admin-tab">Forum moderation</button>
+          <button type="button" id="admin-tab-users" class="admin-tab">Join requests</button>
         </div>
 
         <div id="admin-view-data" class="admin-view">
@@ -378,6 +379,13 @@
             <div id="admin-forum-list"></div>
             <h3 id="admin-reports-title" class="admin-subsection-title">Reported posts</h3>
             <div id="admin-reports-list"></div>
+          </section>
+        </div>
+
+        <div id="admin-view-users" class="admin-view" hidden>
+          <section class="admin-section">
+            <h3 id="admin-users-title">Join requests</h3>
+            <div id="admin-users-list"></div>
           </section>
         </div>
 

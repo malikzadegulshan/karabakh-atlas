@@ -9,6 +9,7 @@ from api.v1.app import app
 from api.v1.contributions import approved_post_count, contribution_tier
 from models.user import User
 from models.forum_post import ForumPost
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -83,12 +84,9 @@ class TestContributionsInApiResponses(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
         self.email = _unique_email()
-        resp = self.client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Tiered User", "email": self.email,
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        resp = register_and_login(
+            self.client, "Tiered User",
+            self.email, TEST_PASSWORD)
         self.user_id = json.loads(resp.data)["id"]
 
     def test_me_has_no_tier_with_zero_posts(self):

@@ -149,6 +149,10 @@ const adminTabDataEl = document.getElementById("admin-tab-data");
 const adminTabEventsEl = document.getElementById("admin-tab-events");
 const adminTabForumEl = document.getElementById("admin-tab-forum");
 const adminTabNewsEl = document.getElementById("admin-tab-news");
+const adminTabUsersEl = document.getElementById("admin-tab-users");
+const adminViewUsersEl = document.getElementById("admin-view-users");
+const adminUsersTitleEl = document.getElementById("admin-users-title");
+const adminUsersListEl = document.getElementById("admin-users-list");
 const adminViewNewsEl = document.getElementById("admin-view-news");
 const adminNewsTitleEl = document.getElementById("admin-news-title");
 const adminAddNewsToggleEl = document.getElementById("admin-add-news-toggle");
@@ -241,6 +245,8 @@ function applyAdminStaticTranslations() {
   adminTabEventsEl.textContent = t("adminEventsTitle");
   adminTabForumEl.textContent = t("adminForumTitle");
   adminTabNewsEl.textContent = t("adminNewsTitle");
+  adminTabUsersEl.textContent = t("adminUsersTitle");
+  adminUsersTitleEl.textContent = t("adminUsersTitle");
   adminNewsTitleEl.textContent = t("adminNewsTitle");
   adminAddNewsToggleEl.textContent = t("adminAddNewsButton");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
@@ -266,6 +272,7 @@ function openAdminEditView(form) {
   adminViewEventsEl.hidden = true;
   adminViewNewsEl.hidden = true;
   adminViewForumEl.hidden = true;
+  adminViewUsersEl.hidden = true;
   adminEditViewBodyEl.innerHTML = "";
   adminEditViewBodyEl.appendChild(form);
   adminEditViewEl.hidden = false;
@@ -278,6 +285,7 @@ function closeAdminEditView() {
   adminViewEventsEl.hidden = adminActiveTab !== "events";
   adminViewNewsEl.hidden = adminActiveTab !== "news";
   adminViewForumEl.hidden = adminActiveTab !== "forum";
+  adminViewUsersEl.hidden = adminActiveTab !== "users";
 }
 
 adminEditBackEl.addEventListener("click", closeAdminEditView);
@@ -290,6 +298,7 @@ function selectAdminTab(tab) {
   adminTabEventsEl.classList.toggle("active", tab === "events");
   adminTabNewsEl.classList.toggle("active", tab === "news");
   adminTabForumEl.classList.toggle("active", tab === "forum");
+  adminTabUsersEl.classList.toggle("active", tab === "users");
   // Leaving a tab (or reopening one) shouldn't leave a stale edit/add
   // form open underneath the tab switch — also restores the right
   // tab's visibility, so the explicit hidden= sets below are just
@@ -299,12 +308,17 @@ function selectAdminTab(tab) {
   adminViewEventsEl.hidden = tab !== "events";
   adminViewNewsEl.hidden = tab !== "news";
   adminViewForumEl.hidden = tab !== "forum";
+  adminViewUsersEl.hidden = tab !== "users";
 }
 
 adminTabDataEl.addEventListener("click", () => selectAdminTab("data"));
 adminTabEventsEl.addEventListener("click", () => selectAdminTab("events"));
 adminTabNewsEl.addEventListener("click", () => selectAdminTab("news"));
 adminTabForumEl.addEventListener("click", () => selectAdminTab("forum"));
+adminTabUsersEl.addEventListener("click", () => {
+  selectAdminTab("users");
+  refreshAdminUsers();
+});
 
 function showAdminMessage(message, isError) {
   adminMessageEl.textContent = message;
@@ -1352,6 +1366,85 @@ function buildAdminForumCard(post) {
   card.appendChild(body);
 
   return card;
+}
+
+async function refreshAdminUsers() {
+  adminUsersListEl.textContent = t("adminLoading");
+  try {
+    renderAdminUsers(await apiRequest("GET", "/users/pending"));
+  } catch (err) {
+    adminUsersListEl.textContent = "";
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminUsers(users) {
+  adminUsersListEl.innerHTML = "";
+  if (users.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminUsersEmpty");
+    adminUsersListEl.appendChild(empty);
+    return;
+  }
+  users.forEach((user) => adminUsersListEl.appendChild(buildAdminUserCard(user)));
+}
+
+function buildAdminUserCard(user) {
+  const card = document.createElement("div");
+  card.className = "admin-region admin-forum-card";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+
+  const meta = document.createElement("strong");
+  meta.textContent = `${user.name} — ${user.email}`;
+  headerRow.appendChild(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+
+  const approveBtn = document.createElement("button");
+  approveBtn.type = "button";
+  approveBtn.textContent = t("adminApprove");
+  approveBtn.addEventListener("click", () => decideUser(user, "approve"));
+
+  const rejectBtn = document.createElement("button");
+  rejectBtn.type = "button";
+  rejectBtn.className = "danger";
+  rejectBtn.textContent = t("adminReject");
+  rejectBtn.addEventListener("click", () => {
+    if (window.confirm(t("adminRejectUserConfirm")(user.name))) {
+      decideUser(user, "reject");
+    }
+  });
+
+  actions.appendChild(approveBtn);
+  actions.appendChild(rejectBtn);
+  headerRow.appendChild(actions);
+  card.appendChild(headerRow);
+
+  // textContent, not innerHTML — the name and reason are text an
+  // anonymous visitor typed, shown here in the admin's own browser.
+  const reason = document.createElement("p");
+  reason.className = "admin-region-description";
+  reason.textContent = user.join_reason || "";
+  card.appendChild(reason);
+
+  return card;
+}
+
+async function decideUser(user, decision) {
+  try {
+    if (decision === "approve") {
+      await apiRequest("POST", `/users/${user.id}/approve`);
+    } else {
+      await apiRequest("DELETE", `/users/${user.id}/reject`);
+    }
+    await refreshAdminUsers();
+  } catch (err) {
+    showAdminMessage(err.message, true);
+  }
 }
 
 async function refreshAdminReports() {

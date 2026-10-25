@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 from api.v1.app import app
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 CURRENT_YEAR = datetime.utcnow().year
@@ -59,13 +60,9 @@ class TestHistoricalEventViews(unittest.TestCase):
     def test_create_rejects_non_admin(self):
         """A logged-in non-admin can't create an event."""
         user_client = app.test_client()
-        user_client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Regular User",
-                "email": "user-{}@example.com".format(uuid.uuid4()),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        register_and_login(
+            user_client, "Regular User",
+            "user-{}@example.com".format(uuid.uuid4()), TEST_PASSWORD)
         resp = user_client.post(
             "/api/v1/historical-events",
             data=json.dumps({

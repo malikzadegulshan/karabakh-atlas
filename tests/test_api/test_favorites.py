@@ -7,6 +7,7 @@ import uuid
 from api.v1.app import app
 from api.v1 import auth_utils
 from models.user import User
+from tests.test_api.helpers import register_and_login
 
 TEST_PASSWORD = "correcthorsebattery"
 
@@ -23,12 +24,9 @@ class TestFavoritesViews(unittest.TestCase):
         auth_utils.login_limiter._attempts.clear()
 
         self.client = app.test_client()
-        resp = self.client.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Favorites User", "email": _unique_email(),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        resp = register_and_login(
+            self.client, "Favorites User",
+            _unique_email(), TEST_PASSWORD)
         self.user_id = json.loads(resp.data)["id"]
 
         # Region/city writes are admin-gated (see require_admin_for_writes
@@ -58,12 +56,9 @@ class TestFavoritesViews(unittest.TestCase):
 
     def _other_client(self):
         other = app.test_client()
-        other.post(
-            "/api/v1/auth/register",
-            data=json.dumps({
-                "name": "Other User", "email": _unique_email(),
-                "password": TEST_PASSWORD}),
-            content_type="application/json")
+        register_and_login(
+            other, "Other User",
+            _unique_email(), TEST_PASSWORD)
         return other
 
     # -- Auth gating ---------------------------------------------------

@@ -1,21 +1,54 @@
-# Main ones
+# Secrets, credentials and environment configs
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+credentials.json
+secrets.json
+
+# Local databases and runtime state
+kba_file.json
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+
+# Logs and runtime processes
+*.log
+*.pid
+
+# Python artifacts and virtual environments
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 .venv/
 venv/
 env/
-.env
-kba_file.json
-*.sqlite3
+ENV/
+
+# Testing and coverage
 .pytest_cache/
 .coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# Editor/OS cruft
+# Editor and OS cruft
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
+.#*
 
 # In case npm tooling is ever used in frontend/ (e.g. for vendoring)
 node_modules/
+
