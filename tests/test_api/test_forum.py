@@ -129,14 +129,11 @@ class TestForumViews(unittest.TestCase):
         resp = self._create_post(target_city_id="not-a-real-city-id")
         self.assertEqual(resp.status_code, 400)
 
-    def test_create_stores_html_payload_as_plain_text(self):
-        """A script-tag payload is stored verbatim as inert text, not
-        executed or mangled — escaping is the frontend's job at render
-        time, so the API itself just needs to round-trip it exactly."""
+    def test_create_rejects_html_script_payload(self):
+        """A script-tag payload is rejected at the API boundary."""
         payload = "<script>alert(1)</script>"
         resp = self._create_post(body=payload)
-        self.assertEqual(resp.status_code, 201)
-        self.assertEqual(json.loads(resp.data)["body"], payload)
+        self.assertEqual(resp.status_code, 400)
 
     def test_create_is_rate_limited(self):
         """Repeated posting eventually gets rate-limited."""
