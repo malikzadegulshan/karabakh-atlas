@@ -1,8 +1,7 @@
-# Karabakh Atlas - Dirchalish
-
-Karabakh Atlas is an interactive map for exploring Karabakh — its
-regions, cities, points of interest, and history — through a
-Leaflet-based visual interface backed by a REST API.
+<div align="center">
+ <h1>Dirchalish - Karabakh Atlas</h1>
+  <p>Dirchalish - Karabakh Atlas is an interactive map for exploring Karabakh — its regions, cities, points of interest, and history — through a Leaflet-based visual interface backed by a REST API.</p>
+</div>
 
 ## Features
 
@@ -59,17 +58,6 @@ frontend/           Static site — no build step, served as-is
 tests/              Test suite
 ```
 
-## Running locally
-
-See `.env.example` for the environment variables needed and their
-defaults. At minimum:
-
-```bash
-pip install -r requirements.txt
-python3 -m api.v1.app  # backend on :5000
-
-cd frontend && python3 -m http.server 8000  # frontend on :8000
-```
 
 ## Testing
 
