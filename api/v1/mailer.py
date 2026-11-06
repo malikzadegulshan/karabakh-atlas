@@ -166,4 +166,3 @@ def send_email(to_addr, subject, body):
             _sanitize_for_log(error),
         )
         return False
-
