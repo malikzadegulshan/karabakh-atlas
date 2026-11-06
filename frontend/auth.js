@@ -48,6 +48,73 @@ const resetOtpInputEl = document.getElementById("reset-otp-input");
 const resetNewPasswordInputEl = document.getElementById("reset-new-password-input");
 const resetPasswordSubmitEl = document.getElementById("reset-password-submit");
 const resetPasswordBackEl = document.getElementById("reset-password-back");
+const registerPasswordGuidelinesTitleEl = document.getElementById(
+  "register-password-guidelines-title"
+);
+const resetPasswordGuidelinesTitleEl = document.getElementById(
+  "reset-password-guidelines-title"
+);
+
+const PASSWORD_RULE_DEFS = [
+  {
+    key: "length",
+    labelKey: "passwordRuleLength",
+    test: (pw) => pw.length >= 8 && pw.length <= 128,
+  },
+  {
+    key: "case",
+    labelKey: "passwordRuleCase",
+    test: (pw) => /\p{Lu}/u.test(pw) && /\p{Ll}/u.test(pw),
+  },
+  {
+    key: "number",
+    labelKey: "passwordRuleNumber",
+    test: (pw) => /\d/.test(pw),
+  },
+  {
+    key: "symbol",
+    labelKey: "passwordRuleSymbol",
+    test: (pw) => /[^\p{L}\p{N}\p{C}\s]/u.test(pw),
+  },
+];
+
+const INVALID_PW_CHARS_RE =
+  /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/;
+
+function evaluatePasswordRules(password) {
+  const pw = typeof password === "string" ? password : "";
+  const results = {};
+  let allMet = !INVALID_PW_CHARS_RE.test(pw);
+  for (const rule of PASSWORD_RULE_DEFS) {
+    const met = rule.test(pw);
+    results[rule.key] = met;
+    if (!met) {
+      allMet = false;
+    }
+  }
+  return { results, allMet };
+}
+
+function updatePasswordChecklist(prefix, password) {
+  const { results, allMet } = evaluatePasswordRules(password);
+  for (const rule of PASSWORD_RULE_DEFS) {
+    const itemEl = document.getElementById(`${prefix}-pw-rule-${rule.key}`);
+    if (!itemEl) {
+      continue;
+    }
+    const met = Boolean(results[rule.key]);
+    itemEl.classList.toggle("met", met);
+    const iconEl = itemEl.querySelector(".password-rule-icon");
+    if (iconEl) {
+      iconEl.textContent = met ? "✓" : "○";
+    }
+    const textEl = itemEl.querySelector(".password-rule-text");
+    if (textEl) {
+      textEl.textContent = t(rule.labelKey);
+    }
+  }
+  return allMet;
+}
 
 // Set by the forgot-password form's own submit handler and read by the
 // reset-password form's — the OTP the visitor types is only ever
@@ -84,6 +151,14 @@ function applyAccountStaticTranslations() {
   setPlaceholderLabel(resetNewPasswordInputEl, t("accountPassword"));
   resetPasswordSubmitEl.textContent = t("accountResetPasswordSubmit");
   resetPasswordBackEl.textContent = t("accountBackToSignIn");
+  if (registerPasswordGuidelinesTitleEl) {
+    registerPasswordGuidelinesTitleEl.textContent = t("passwordGuidelinesTitle");
+  }
+  if (resetPasswordGuidelinesTitleEl) {
+    resetPasswordGuidelinesTitleEl.textContent = t("passwordGuidelinesTitle");
+  }
+  updatePasswordChecklist("reg", registerPasswordInputEl.value);
+  updatePasswordChecklist("reset", resetNewPasswordInputEl.value);
   // Re-derives the title for whichever view is currently showing —
   // ACCOUNT_VIEW_TITLES is defined below, alongside showAccountView(),
   // which is the only other thing that needs to agree on view names.
@@ -236,6 +311,8 @@ function closeAccountPanel() {
   registerFormEl.reset();
   forgotPasswordFormEl.reset();
   resetPasswordFormEl.reset();
+  updatePasswordChecklist("reg", "");
+  updatePasswordChecklist("reset", "");
   pendingResetEmail = null;
   closeModalFocus();
 }
@@ -302,6 +379,14 @@ loginFormEl.addEventListener("submit", async (event) => {
 const SUSPICIOUS_INPUT_RE =
   /<\s*\/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|video|audio)\b|\bon\w+\s*=|(?:javascript|data\s*:\s*text\/html)\s*:|!\[[^\]\r\n]{0,500}\]\([^)\r\n]{0,2000}\)|\b\w+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|ps1|jar)\b/i;
 
+registerPasswordInputEl.addEventListener("input", () => {
+  updatePasswordChecklist("reg", registerPasswordInputEl.value);
+});
+
+resetNewPasswordInputEl.addEventListener("input", () => {
+  updatePasswordChecklist("reset", resetNewPasswordInputEl.value);
+});
+
 registerFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   registerFormSubmitEl.disabled = true;
@@ -316,6 +401,11 @@ registerFormEl.addEventListener("submit", async (event) => {
     registerFormSubmitEl.disabled = false;
     return;
   }
+  if (!evaluatePasswordRules(registerPasswordInputEl.value).allMet) {
+    showAccountMessage(t("passwordRequirementsUnmet"), true);
+    registerFormSubmitEl.disabled = false;
+    return;
+  }
   try {
     // Registering only files a request — the account can't sign in
     // until an admin approves it, so there's no session to start here.
@@ -327,6 +417,7 @@ registerFormEl.addEventListener("submit", async (event) => {
       lang: currentLang,
     });
     registerFormEl.reset();
+    updatePasswordChecklist("reg", "");
     showAccountView("login");
     showAccountMessage(t("accountRegisterPending"), false);
   } catch (err) {
@@ -363,6 +454,11 @@ forgotPasswordFormEl.addEventListener("submit", async (event) => {
 resetPasswordFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   resetPasswordSubmitEl.disabled = true;
+  if (!evaluatePasswordRules(resetNewPasswordInputEl.value).allMet) {
+    showAccountMessage(t("passwordRequirementsUnmet"), true);
+    resetPasswordSubmitEl.disabled = false;
+    return;
+  }
   try {
     currentUser = await authRequest("/auth/reset-password", {
       email: pendingResetEmail,

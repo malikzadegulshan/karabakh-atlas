@@ -18,9 +18,9 @@ from models.post_report import PostReport
 from models.region import Region
 from models.user import User
 
-TEST_PASSWORD = "correcthorsebattery"
+TEST_PASSWORD = "CorrectHorse1!"
 PASSWORD = TEST_PASSWORD
-NEW_PASSWORD = "anotherlongpassword"
+NEW_PASSWORD = "AnotherLongPass2!"
 EVIL = "https://evil.example"
 FRONTEND = "http://localhost:8000"
 
@@ -238,9 +238,20 @@ class TestAuthViews(unittest.TestCase):
             "/api/v1/auth/register",
             data=json.dumps(
                 {"name": "New User", "email": _unique_email(),
-                 "password": "short"}),
+                 "password": "short", "join_reason": "Because"}),
             content_type="application/json")
         self.assertEqual(resp.status_code, 400)
+
+    def test_register_enforces_password_guidelines(self):
+        weak_passwords = [
+            "alllowercase1!",
+            "ALLUPPERCASE1!",
+            "NoDigitsHere!!",
+            "NoSpecialChar123",
+        ]
+        for pwd in weak_passwords:
+            _, resp = self._register(password=pwd)
+            self.assertEqual(resp.status_code, 400)
 
     def test_register_rejects_invalid_email(self):
         resp = self.client.post(
@@ -387,7 +398,7 @@ class TestAuthViews(unittest.TestCase):
         resp = self.client.post(
             "/api/v1/auth/reset-password",
             data=json.dumps(
-                {"email": email, "otp": otp, "password": "newpassword123"}),
+                {"email": email, "otp": otp, "password": "Newpassword123!"}),
             content_type="application/json")
         self.assertEqual(resp.status_code, 200)
         self.assertNotIn("password_hash", json.loads(resp.data))
@@ -406,7 +417,7 @@ class TestAuthViews(unittest.TestCase):
         self.client.post(
             "/api/v1/auth/reset-password",
             data=json.dumps(
-                {"email": email, "otp": otp, "password": "newpassword123"}),
+                {"email": email, "otp": otp, "password": "Newpassword123!"}),
             content_type="application/json")
         self.client.post("/api/v1/auth/logout")
 
@@ -419,7 +430,7 @@ class TestAuthViews(unittest.TestCase):
         new_resp = self.client.post(
             "/api/v1/auth/login",
             data=json.dumps(
-                {"email": email, "password": "newpassword123"}),
+                {"email": email, "password": "Newpassword123!"}),
             content_type="application/json")
         self.assertEqual(new_resp.status_code, 200)
 
@@ -433,7 +444,7 @@ class TestAuthViews(unittest.TestCase):
             "/api/v1/auth/reset-password",
             data=json.dumps({
                 "email": email, "otp": "000000",
-                "password": "newpassword123",
+                "password": "Newpassword123!",
             }),
             content_type="application/json")
         self.assertEqual(resp.status_code, 400)
@@ -454,7 +465,7 @@ class TestAuthViews(unittest.TestCase):
         resp = self.client.post(
             "/api/v1/auth/reset-password",
             data=json.dumps(
-                {"email": email, "otp": otp, "password": "newpassword123"}),
+                {"email": email, "otp": otp, "password": "Newpassword123!"}),
             content_type="application/json")
         self.assertEqual(resp.status_code, 400)
 
@@ -468,14 +479,14 @@ class TestAuthViews(unittest.TestCase):
         first = self.client.post(
             "/api/v1/auth/reset-password",
             data=json.dumps(
-                {"email": email, "otp": otp, "password": "newpassword123"}),
+                {"email": email, "otp": otp, "password": "Newpassword123!"}),
             content_type="application/json")
         self.assertEqual(first.status_code, 200)
 
         second = self.client.post(
             "/api/v1/auth/reset-password",
             data=json.dumps(
-                {"email": email, "otp": otp, "password": "anotherpass456"}),
+                {"email": email, "otp": otp, "password": "Anotherpass456!"}),
             content_type="application/json")
         self.assertEqual(second.status_code, 400)
 
@@ -505,7 +516,7 @@ class TestAuthViews(unittest.TestCase):
                 "/api/v1/auth/reset-password",
                 data=json.dumps({
                     "email": email, "otp": "000000",
-                    "password": "newpassword123",
+                    "password": "Newpassword123!",
                 }),
                 content_type="application/json")
             last_status = resp.status_code

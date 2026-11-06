@@ -216,7 +216,7 @@ def require_email(data, field="email"):
 
 
 def require_password(data, field="password"):
-    """Raise ValidationError unless data[field] is a usable password."""
+    """Raise ValidationError unless data[field] meets password guidelines."""
     value = data.get(field)
     if not isinstance(value, str):
         raise ValidationError("{} must be a string".format(field))
@@ -228,6 +228,22 @@ def require_password(data, field="password"):
         raise ValidationError(
             "{} must be at most {} characters".format(
                 field, MAX_PASSWORD_LENGTH))
+    has_ctrl = any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in value)
+    if has_ctrl or BIDI_OVERRIDE_RE.search(value):
+        raise ValidationError(
+            "{} contains invalid control characters".format(field))
+    has_upper = any(c.isupper() for c in value)
+    has_lower = any(c.islower() for c in value)
+    if not (has_upper and has_lower):
+        raise ValidationError(
+            "{} must include both uppercase and lowercase letters".format(
+                field))
+    if not any(c.isascii() and c.isdigit() for c in value):
+        raise ValidationError(
+            "{} must include at least one number".format(field))
+    if not any(not c.isalnum() and not c.isspace() for c in value):
+        raise ValidationError(
+            "{} must include at least one special character".format(field))
 
 
 def only_allowed_fields(data, allowed):

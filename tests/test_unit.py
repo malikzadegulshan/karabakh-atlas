@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 from api.v1 import mailer
 from api.v1.validation import (
     ValidationError,
+    require_password,
     require_safe_name,
     require_safe_text,
 )
@@ -127,6 +128,32 @@ class TestSecurityValidation(unittest.TestCase):
         for p in payloads:
             with self.assertRaises(ValidationError):
                 require_safe_name({"name": p}, "name")
+
+    def test_password_guidelines_enforced(self):
+        """require_password enforces length, case, digit, and symbol rules."""
+        valid_passwords = [
+            "CorrectHorse1!",
+            "Qarabag2026#Atlas",
+            "Str0ng_Pass$99",
+        ]
+        for pwd in valid_passwords:
+            require_password({"password": pwd})
+
+        invalid_passwords = [
+            "Short1!",
+            "a" * 129 + "A1!",
+            "alllowercase1!",
+            "ALLUPPERCASE1!",
+            "NoDigitsHere!!",
+            "NoSymbolHere123",
+            "Bad\x00Pass1!",
+            "Bad\x7fPass12",
+            "Bad\u202ePass1!",
+            "Superscript\u00b2!",
+        ]
+        for pwd in invalid_passwords:
+            with self.assertRaises(ValidationError):
+                require_password({"password": pwd})
 
 
 class TestMailer(unittest.TestCase):

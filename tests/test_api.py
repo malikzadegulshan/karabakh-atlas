@@ -19,7 +19,7 @@ from models.forum_post import ForumPost
 from models.region import Region
 from models.user import User
 
-TEST_PASSWORD = "correcthorsebattery"
+TEST_PASSWORD = "CorrectHorse1!"
 PASSWORD = TEST_PASSWORD
 CURRENT_YEAR = datetime.utcnow().year
 FRONTEND = "http://localhost:8000"

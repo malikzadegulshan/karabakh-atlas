@@ -242,7 +242,16 @@
       <form id="register-form" class="admin-form" hidden>
         <input type="text" id="register-name-input" required maxlength="128" autocomplete="name">
         <input type="email" id="register-email-input" required autocomplete="username">
-        <input type="password" id="register-password-input" required minlength="8" autocomplete="new-password">
+        <input type="password" id="register-password-input" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="register-password-guidelines">
+        <div id="register-password-guidelines" class="password-guidelines" aria-live="polite">
+          <p id="register-password-guidelines-title" class="password-guidelines-title"></p>
+          <ul class="password-guidelines-list">
+            <li id="reg-pw-rule-length" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reg-pw-rule-case" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reg-pw-rule-number" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reg-pw-rule-symbol" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+          </ul>
+        </div>
         <textarea id="register-reason-input" required maxlength="500" rows="3"></textarea>
         <label class="account-legal-checkbox">
           <input type="checkbox" id="register-legal-checkbox" required>
@@ -257,7 +266,16 @@
       </form>
       <form id="reset-password-form" class="admin-form" hidden>
         <input type="text" id="reset-otp-input" required maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code">
-        <input type="password" id="reset-new-password-input" required minlength="8" autocomplete="new-password">
+        <input type="password" id="reset-new-password-input" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="reset-password-guidelines">
+        <div id="reset-password-guidelines" class="password-guidelines" aria-live="polite">
+          <p id="reset-password-guidelines-title" class="password-guidelines-title"></p>
+          <ul class="password-guidelines-list">
+            <li id="reset-pw-rule-length" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reset-pw-rule-case" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reset-pw-rule-number" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+            <li id="reset-pw-rule-symbol" class="password-rule"><span class="password-rule-icon" aria-hidden="true">○</span><span class="password-rule-text"></span></li>
+          </ul>
+        </div>
         <button type="submit" id="reset-password-submit">Reset password</button>
         <button type="button" id="reset-password-back" class="account-link-btn">Back to sign in</button>
       </form>
