@@ -190,6 +190,10 @@ def import_cities(region_id):
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         abort(400, description="Not a JSON")
+    try:
+        only_allowed_fields(body, {"rows", "dry_run"})
+    except ValidationError as error:
+        abort(400, description=error.message)
     rows = body.get("rows")
     dry_run = body.get("dry_run", True)
     if not isinstance(rows, list) or not rows:

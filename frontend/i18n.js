@@ -247,6 +247,16 @@ const TRANSLATIONS = {
     adminUsersTitle: "Join requests",
     adminUsersEmpty: "No accounts awaiting approval.",
     adminRejectUserConfirm: (name) => `Reject and delete the request from ${name}?`,
+    adminMembersTitle: "Members & banned users",
+    adminMembersSearchPlaceholder: "Search members by name or email…",
+    adminMembersEmpty: "No approved members yet.",
+    adminBanUser: "Ban user",
+    adminUnbanUser: "Unban",
+    adminBannedBadge: "Banned",
+    adminBanUserConfirm: (name) =>
+      `Ban ${name} and delete all their forum posts and reports?`,
+    adminUserBanned: (name) => `${name} has been banned.`,
+    adminUserUnbanned: (name) => `${name} has been unbanned.`,
     adminEventsTitle: "Timeline events",
     adminEventsSearchPlaceholder: "Search events…",
     adminEventsSearchHint: "Type an event title or year to search.",
@@ -554,6 +564,16 @@ const TRANSLATIONS = {
     adminUsersTitle: "Qoşulma sorğuları",
     adminUsersEmpty: "Təsdiq gözləyən hesab yoxdur.",
     adminRejectUserConfirm: (name) => `${name} adlı istifadəçinin sorğusu rədd edilib silinsin?`,
+    adminMembersTitle: "Üzvlər və bloklanmış istifadəçilər",
+    adminMembersSearchPlaceholder: "Üzvü ad və ya e-poçtla axtar…",
+    adminMembersEmpty: "Hələ təsdiqlənmiş üzv yoxdur.",
+    adminBanUser: "Blokla",
+    adminUnbanUser: "Bloku götür",
+    adminBannedBadge: "Bloklanıb",
+    adminBanUserConfirm: (name) =>
+      `${name} bloklansın və bütün forum paylaşımları silinsin?`,
+    adminUserBanned: (name) => `${name} bloklandı.`,
+    adminUserUnbanned: (name) => `${name} blokdan çıxarıldı.`,
     adminEventsTitle: "Tarixi hadisələr",
     adminEventsSearchPlaceholder: "Hadisə axtar…",
     adminEventsSearchHint: "Axtarmaq üçün hadisə adı və ya il yazın.",
@@ -859,6 +879,16 @@ const TRANSLATIONS = {
     adminUsersTitle: "Katılma istekleri",
     adminUsersEmpty: "Onay bekleyen hesap yok.",
     adminRejectUserConfirm: (name) => `${name} kişisinin isteği reddedilip silinsin mi?`,
+    adminMembersTitle: "Üyeler ve yasaklı kullanıcılar",
+    adminMembersSearchPlaceholder: "Üyeyi ad veya e-posta ile ara…",
+    adminMembersEmpty: "Henüz onaylanmış üye yok.",
+    adminBanUser: "Yasakla",
+    adminUnbanUser: "Yasağı kaldır",
+    adminBannedBadge: "Yasaklı",
+    adminBanUserConfirm: (name) =>
+      `${name} yasaklansın ve tüm forum gönderileri silinsin mi?`,
+    adminUserBanned: (name) => `${name} yasaklandı.`,
+    adminUserUnbanned: (name) => `${name} yasağı kaldırıldı.`,
     adminEventsTitle: "Zaman çizelgesi olayları",
     adminEventsSearchPlaceholder: "Olay ara…",
     adminEventsSearchHint: "Aramak için olay başlığı veya yıl yazın.",
@@ -1163,6 +1193,16 @@ const TRANSLATIONS = {
     adminUsersTitle: "Заявки на вступление",
     adminUsersEmpty: "Нет аккаунтов, ожидающих одобрения.",
     adminRejectUserConfirm: (name) => `Отклонить и удалить заявку от ${name}?`,
+    adminMembersTitle: "Участники и заблокированные",
+    adminMembersSearchPlaceholder: "Поиск участников по имени или эл. почте…",
+    adminMembersEmpty: "Пока нет одобренных участников.",
+    adminBanUser: "Заблокировать",
+    adminUnbanUser: "Разблокировать",
+    adminBannedBadge: "Заблокирован",
+    adminBanUserConfirm: (name) =>
+      `Заблокировать ${name} и удалить все его сообщения на форуме?`,
+    adminUserBanned: (name) => `Пользователь ${name} заблокирован.`,
+    adminUserUnbanned: (name) => `Пользователь ${name} разблокирован.`,
     adminEventsTitle: "События на шкале времени",
     adminEventsSearchPlaceholder: "Поиск событий…",
     adminEventsSearchHint: "Введите название события или год для поиска.",
@@ -1228,6 +1268,103 @@ const TRANSLATIONS = {
 };
 
 const DEFAULT_LANG = "en";
+
+// Country -> UI language mapping:
+//   Azerbaijan (AZ)         -> az
+//   Turkiye (TR)            -> tr
+//   Russia (RU) / Belarus (BY) -> ru
+//   Any other country       -> en
+const COUNTRY_TO_LANG = {
+  AZ: "az",
+  TR: "tr",
+  RU: "ru",
+  BY: "ru",
+};
+
+// IANA timezones belonging to Azerbaijan, Turkiye, Belarus, and Russia
+// so detectLocationLang() can pick the right language synchronously on
+// first paint before any network call completes.
+const TIMEZONE_TO_COUNTRY = {
+  "Asia/Baku": "AZ",
+  "Europe/Istanbul": "TR",
+  "Asia/Istanbul": "TR",
+  "Turkey": "TR",
+  "Europe/Minsk": "BY",
+  "Europe/Kaliningrad": "RU",
+  "Europe/Moscow": "RU",
+  "Europe/Simferopol": "RU",
+  "Europe/Kirov": "RU",
+  "Europe/Volgograd": "RU",
+  "Europe/Astrakhan": "RU",
+  "Europe/Saratov": "RU",
+  "Europe/Ulyanovsk": "RU",
+  "Europe/Samara": "RU",
+  "Asia/Yekaterinburg": "RU",
+  "Asia/Omsk": "RU",
+  "Asia/Novosibirsk": "RU",
+  "Asia/Barnaul": "RU",
+  "Asia/Tomsk": "RU",
+  "Asia/Novokuznetsk": "RU",
+  "Asia/Krasnoyarsk": "RU",
+  "Asia/Irkutsk": "RU",
+  "Asia/Chita": "RU",
+  "Asia/Yakutsk": "RU",
+  "Asia/Khandyga": "RU",
+  "Asia/Vladivostok": "RU",
+  "Asia/Ust-Nera": "RU",
+  "Asia/Magadan": "RU",
+  "Asia/Sakhalin": "RU",
+  "Asia/Srednekolymsk": "RU",
+  "Asia/Kamchatka": "RU",
+  "Asia/Anadyr": "RU",
+};
+
+function langForCountry(countryCode) {
+  if (!countryCode || typeof countryCode !== "string") {
+    return DEFAULT_LANG;
+  }
+  const code = countryCode.trim().toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(COUNTRY_TO_LANG, code)) {
+    return COUNTRY_TO_LANG[code];
+  }
+  return DEFAULT_LANG;
+}
+
+function detectLocationLang() {
+  try {
+    if (typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function") {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && tz !== "UTC" && tz !== "Etc/UTC" && tz !== "Etc/GMT") {
+        if (Object.prototype.hasOwnProperty.call(TIMEZONE_TO_COUNTRY, tz)) {
+          return langForCountry(TIMEZONE_TO_COUNTRY[tz]);
+        }
+        return DEFAULT_LANG;
+      }
+    }
+  } catch (err) {
+    /* Intl unavailable; fall back to navigator locale region below */
+  }
+  try {
+    const locales =
+      typeof navigator !== "undefined"
+        ? (Array.isArray(navigator.languages) && navigator.languages.length > 0
+            ? navigator.languages
+            : [navigator.language])
+        : [];
+    for (const raw of locales) {
+      if (typeof raw !== "string") {
+        continue;
+      }
+      const match = raw.match(/[-_]([A-Za-z]{2})\b/);
+      if (match) {
+        return langForCountry(match[1]);
+      }
+    }
+  } catch (err) {
+    /* ignore */
+  }
+  return DEFAULT_LANG;
+}
 
 function getStoredLang() {
   try {

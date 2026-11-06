@@ -4,11 +4,17 @@ const DEFAULT_ZOOM = 9;
 
 // A shared place link carries the sharer's language (?lang=, see
 // placeShareUrl()) — honored only for someone with no saved preference,
-// so it never overrides a choice they made themselves.
+// so it never overrides a choice they made themselves. When neither a
+// saved preference nor ?lang= is present, detectLocationLang() picks the
+// default language from the visitor's detected country/timezone:
+//   Azerbaijan -> az, Turkiye -> tr, Russia/Belarus -> ru, else -> en.
+const hasExplicitLangPreference = Boolean(
+  getStoredLang() || new URLSearchParams(window.location.search).get("lang")
+);
 let currentLang =
   getStoredLang() ||
   new URLSearchParams(window.location.search).get("lang") ||
-  DEFAULT_LANG;
+  detectLocationLang();
 // hasOwn, not a plain lookup: "?lang=__proto__" or "?lang=constructor"
 // would otherwise resolve to Object.prototype / Object and pass.
 if (!Object.prototype.hasOwnProperty.call(TRANSLATIONS, currentLang)) {
@@ -688,14 +694,21 @@ langToggleEl.addEventListener("click", (event) => {
   langToggleEl.setAttribute("aria-expanded", String(willOpen));
 });
 
-langMenuEl.addEventListener("click", (event) => {
-  const lang = event.target.dataset.lang;
-  closeLangMenu();
-  if (!lang || lang === currentLang || !TRANSLATIONS[lang]) {
+function setLanguage(lang, { persist = true } = {}) {
+  if (
+    !lang ||
+    lang === currentLang ||
+    !Object.prototype.hasOwnProperty.call(TRANSLATIONS, lang)
+  ) {
+    if (persist && lang && Object.prototype.hasOwnProperty.call(TRANSLATIONS, lang)) {
+      setStoredLang(lang);
+    }
     return;
   }
   currentLang = lang;
-  setStoredLang(lang);
+  if (persist) {
+    setStoredLang(lang);
+  }
   applyStaticTranslations();
   refreshLayerControl();
   renderCategoryGrid();
@@ -731,7 +744,31 @@ langMenuEl.addEventListener("click", (event) => {
   if (typeof renderNews === "function") {
     renderNews();
   }
+}
+
+langMenuEl.addEventListener("click", (event) => {
+  const lang = event.target.dataset.lang;
+  closeLangMenu();
+  setLanguage(lang, { persist: true });
 });
+
+async function syncLocationLangFromApi() {
+  if (hasExplicitLangPreference || getStoredLang()) {
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/status`);
+    if (!res.ok) {
+      return;
+    }
+    const data = await res.json();
+    if (!getStoredLang() && data && typeof data.detected_lang === "string") {
+      setLanguage(data.detected_lang, { persist: false });
+    }
+  } catch (err) {
+    /* Non-fatal: synchronous detectLocationLang() remains in effect */
+  }
+}
 
 document.addEventListener("click", (event) => {
   if (!langSwitcherEl.contains(event.target)) {
@@ -2060,5 +2097,6 @@ async function loadCities() {
 }
 
 setStatus(t("loading"), false);
+syncLocationLangFromApi();
 loadCities();
 loadHistoricalEvents();

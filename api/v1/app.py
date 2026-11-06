@@ -21,7 +21,7 @@ WRITE_METHODS = {"POST", "PUT", "DELETE"}
 # itself via decorators instead of this prefix list.
 ADMIN_GATED_PREFIXES = (
     "/api/v1/regions", "/api/v1/cities", "/api/v1/historical-events",
-    "/api/v1/images", "/api/v1/news")
+    "/api/v1/images", "/api/v1/news", "/api/v1/users")
 OPENAPI_SPEC_PATH = "/api/v1/openapi.yaml"
 SWAGGER_UI_PATH = "/api/docs"
 

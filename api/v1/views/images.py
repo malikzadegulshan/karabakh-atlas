@@ -7,6 +7,7 @@ which path a given image came from.
 """
 import base64
 import binascii
+import os
 from flask import jsonify, abort, request, Response
 from api.v1.views import app_views
 from models import storage
@@ -57,7 +58,9 @@ def upload_image():
         content_type=content_type,
         data_base64=base64.b64encode(data).decode("ascii"))
     image.save()
-    url = "{}api/v1/images/{}".format(request.host_url, image.id)
+    public_base = os.environ.get("KBA_PUBLIC_URL", "").strip().rstrip("/")
+    base_url = (public_base + "/") if public_base else request.host_url
+    url = "{}api/v1/images/{}".format(base_url, image.id)
     return jsonify({"url": url}), 201
 
 

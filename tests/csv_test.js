@@ -1,9 +1,9 @@
-// Run by tests/test_frontend/test_csv.py: exercises frontend/csv.js (the
+// Run by tests/test_unit.py: exercises frontend/csv.js (the
 // admin CSV import parser/mapper) in a bare VM context.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
-const root = path.join(__dirname, '..', '..', 'frontend') + path.sep;
+const root = path.join(__dirname, '..', 'frontend') + path.sep;
 // i18n.js declares `const TRANSLATIONS`; CITY_CATEGORY_VALUES comes from admin.js's header.
 const adminHead = fs.readFileSync(root + 'admin.js', 'utf8').match(/const CITY_CATEGORY_VALUES = \[[\s\S]*?\];/)[0];
 const ctx = {};

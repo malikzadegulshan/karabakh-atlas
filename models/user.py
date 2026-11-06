@@ -37,6 +37,11 @@ class User(BaseModel, Base):
     # Why the person wants to join, as typed on the registration form —
     # shown to the admin when deciding whether to approve.
     join_reason = Column(String(500), nullable=True)
+    # Preferred UI language ("en", "az", "tr", "ru") captured at sign-up
+    # so admin-approval and account emails arrive in their language.
+    lang = Column(String(8), nullable=True, default="en")
+    # Admin ban flag. Nullable so existing rows default to unbanned.
+    banned = Column(Boolean, nullable=True, default=False)
     password_reset_otp = Column(String(6), nullable=True)
     password_reset_otp_expires_at = Column(DateTime, nullable=True)
     # Bumped whenever the password is reset. Each login stores the value
@@ -53,6 +58,11 @@ class User(BaseModel, Base):
         the approval column) counts as approved.
         """
         return self.approved is not False
+
+    @property
+    def is_banned(self):
+        """True when an admin has banned this account."""
+        return self.banned is True
 
     def set_password(self, raw_password):
         """Hash `raw_password` with a salted, slow KDF and store the hash.
@@ -104,4 +114,6 @@ class User(BaseModel, Base):
         data = self.to_dict()
         data.pop("password_hash", None)
         data.pop("password_reset_otp", None)
+        data.pop("password_reset_otp_expires_at", None)
+        data.pop("session_epoch", None)
         return data

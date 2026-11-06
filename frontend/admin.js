@@ -153,6 +153,9 @@ const adminTabUsersEl = document.getElementById("admin-tab-users");
 const adminViewUsersEl = document.getElementById("admin-view-users");
 const adminUsersTitleEl = document.getElementById("admin-users-title");
 const adminUsersListEl = document.getElementById("admin-users-list");
+const adminMembersTitleEl = document.getElementById("admin-members-title");
+const adminMembersSearchEl = document.getElementById("admin-members-search");
+const adminMembersListEl = document.getElementById("admin-members-list");
 const adminViewNewsEl = document.getElementById("admin-view-news");
 const adminNewsTitleEl = document.getElementById("admin-news-title");
 const adminAddNewsToggleEl = document.getElementById("admin-add-news-toggle");
@@ -247,6 +250,14 @@ function applyAdminStaticTranslations() {
   adminTabNewsEl.textContent = t("adminNewsTitle");
   adminTabUsersEl.textContent = t("adminUsersTitle");
   adminUsersTitleEl.textContent = t("adminUsersTitle");
+  if (adminMembersTitleEl) {
+    adminMembersTitleEl.textContent = t("adminMembersTitle");
+  }
+  if (adminMembersSearchEl) {
+    setPlaceholderLabel(
+      adminMembersSearchEl, t("adminMembersSearchPlaceholder")
+    );
+  }
   adminNewsTitleEl.textContent = t("adminNewsTitle");
   adminAddNewsToggleEl.textContent = t("adminAddNewsButton");
   adminEventsTitleEl.textContent = t("adminEventsTitle");
@@ -1346,6 +1357,16 @@ function buildAdminForumCard(post) {
 
   actions.appendChild(approveBtn);
   actions.appendChild(rejectBtn);
+  if (post.author_id && (!currentUser || post.author_id !== currentUser.id)) {
+    const banBtn = document.createElement("button");
+    banBtn.type = "button";
+    banBtn.className = "danger";
+    banBtn.textContent = t("adminBanUser");
+    banBtn.addEventListener("click", () =>
+      banUserById(post.author_id, post.author_name || "?")
+    );
+    actions.appendChild(banBtn);
+  }
   headerRow.appendChild(actions);
   card.appendChild(headerRow);
 
@@ -1368,12 +1389,129 @@ function buildAdminForumCard(post) {
   return card;
 }
 
+let adminMembersCache = [];
+let adminMembersQuery = "";
+
+if (adminMembersSearchEl) {
+  adminMembersSearchEl.addEventListener("input", () => {
+    adminMembersQuery = adminMembersSearchEl.value;
+    renderAdminMembers(adminMembersCache, adminMembersQuery);
+  });
+}
+
 async function refreshAdminUsers() {
   adminUsersListEl.textContent = t("adminLoading");
+  if (adminMembersListEl) {
+    adminMembersListEl.textContent = t("adminLoading");
+  }
   try {
-    renderAdminUsers(await apiRequest("GET", "/users/pending"));
+    const [pendingUsers, members] = await Promise.all([
+      apiRequest("GET", "/users/pending"),
+      apiRequest("GET", "/users"),
+    ]);
+    renderAdminUsers(pendingUsers);
+    adminMembersCache = members;
+    renderAdminMembers(adminMembersCache, adminMembersQuery);
   } catch (err) {
     adminUsersListEl.textContent = "";
+    if (adminMembersListEl) {
+      adminMembersListEl.textContent = "";
+    }
+    showAdminMessage(err.message, true);
+  }
+}
+
+function renderAdminMembers(members, query) {
+  if (!adminMembersListEl) {
+    return;
+  }
+  adminMembersListEl.innerHTML = "";
+  if (members.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminMembersEmpty");
+    adminMembersListEl.appendChild(empty);
+    return;
+  }
+  const q = (query || "").trim().toLowerCase();
+  const matches = q
+    ? members.filter(
+        (u) =>
+          (u.name && u.name.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q))
+      )
+    : members;
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-empty";
+    empty.textContent = t("adminSearchNoMatches");
+    adminMembersListEl.appendChild(empty);
+    return;
+  }
+  matches.forEach((user) =>
+    adminMembersListEl.appendChild(buildAdminMemberCard(user))
+  );
+}
+
+function buildAdminMemberCard(user) {
+  const card = document.createElement("div");
+  card.className = "admin-region admin-forum-card";
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "admin-region-header";
+
+  const meta = document.createElement("strong");
+  meta.textContent = user.banned
+    ? `${user.name} — ${user.email} (${t("adminBannedBadge")})`
+    : `${user.name} — ${user.email}`;
+  headerRow.appendChild(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-actions";
+
+  if (user.banned) {
+    const unbanBtn = document.createElement("button");
+    unbanBtn.type = "button";
+    unbanBtn.textContent = t("adminUnbanUser");
+    unbanBtn.addEventListener("click", () => unbanUser(user));
+    actions.appendChild(unbanBtn);
+  } else {
+    const banBtn = document.createElement("button");
+    banBtn.type = "button";
+    banBtn.className = "danger";
+    banBtn.textContent = t("adminBanUser");
+    banBtn.addEventListener("click", () => banUserById(user.id, user.name));
+    actions.appendChild(banBtn);
+  }
+
+  headerRow.appendChild(actions);
+  card.appendChild(headerRow);
+  return card;
+}
+
+async function banUserById(userId, userName) {
+  if (!window.confirm(t("adminBanUserConfirm")(userName))) {
+    return;
+  }
+  try {
+    await apiRequest("POST", `/users/${userId}/ban`);
+    showAdminMessage(t("adminUserBanned")(userName), false);
+    await refreshAdminUsers();
+    await refreshAdminForumQueue();
+    if (typeof loadGeneralForumPosts === "function") {
+      loadGeneralForumPosts();
+    }
+  } catch (err) {
+    showAdminMessage(err.message, true);
+  }
+}
+
+async function unbanUser(user) {
+  try {
+    await apiRequest("POST", `/users/${user.id}/unban`);
+    showAdminMessage(t("adminUserUnbanned")(user.name), false);
+    await refreshAdminUsers();
+  } catch (err) {
     showAdminMessage(err.message, true);
   }
 }
@@ -1512,6 +1650,16 @@ function buildAdminReportCard(entry) {
   });
   actions.appendChild(dismissBtn);
   actions.appendChild(deleteBtn);
+  if (post.author_id && (!currentUser || post.author_id !== currentUser.id)) {
+    const banBtn = document.createElement("button");
+    banBtn.type = "button";
+    banBtn.className = "danger";
+    banBtn.textContent = t("adminBanUser");
+    banBtn.addEventListener("click", () =>
+      banUserById(post.author_id, post.author_name || "?")
+    );
+    actions.appendChild(banBtn);
+  }
   headerRow.appendChild(actions);
   card.appendChild(headerRow);
 

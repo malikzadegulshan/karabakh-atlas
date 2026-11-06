@@ -41,14 +41,14 @@ DANGEROUS_TAG_RE = re.compile(
 EVENT_HANDLER_RE = re.compile(r"\bon\w+\s*=", re.IGNORECASE)
 SCRIPT_URI_RE = re.compile(
     r"(?:javascript|vbscript|data\s*:\s*text/html)\s*:", re.IGNORECASE)
-MARKDOWN_IMAGE_RE = re.compile(r"!\[.*?\]\(.*?\)")
+MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]\r\n]{0,500}\]\([^)\r\n]{0,2000}\)")
 EXECUTABLE_REF_RE = re.compile(
     r"\b[a-zA-Z0-9_\-]+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|"
-    r"ps1|com|pif)\b",
+    r"ps1|com|pif|jar|scr)\b",
     re.IGNORECASE)
 EXECUTABLE_URL_RE = re.compile(
-    r"https?://\S+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|ps1|"
-    r"com|pif)(?:[?#\s]|$)",
+    r"https?://[^\s?#]+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|ps1|"
+    r"com|pif|jar|scr)(?:[?#\s]|$)",
     re.IGNORECASE)
 BIDI_OVERRIDE_RE = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
 NAME_SPECIAL_RE = re.compile(r"[<>{}\\]|\bhttps?://")
@@ -165,9 +165,12 @@ def require_integer_in_range(data, field, minimum, maximum):
             "{} must be between {} and {}".format(field, minimum, maximum))
 
 
-def optional_i18n_dict(data, field):
+ALLOWED_I18N_LANGS = {"en", "az", "tr", "ru"}
+
+
+def optional_i18n_dict(data, field, max_length=MAX_TEXT_LENGTH):
     """Raise ValidationError if data[field] is present but not a
-    dict mapping string language codes to string values."""
+    dict mapping supported language codes to bounded safe strings."""
     if field not in data or data[field] is None:
         return
     value = data[field]
@@ -177,6 +180,18 @@ def optional_i18n_dict(data, field):
         if not isinstance(key, str) or not isinstance(val, str):
             raise ValidationError(
                 "{} entries must map language codes to strings".format(field))
+        if key not in ALLOWED_I18N_LANGS:
+            raise ValidationError(
+                "{} contains unsupported language code".format(field))
+        if len(val) > max_length:
+            raise ValidationError(
+                "{} entries must be at most {} characters".format(
+                    field, max_length))
+        if BIDI_OVERRIDE_RE.search(val) or any(
+            ord(c) < 32 and c not in "\n\r\t" for c in val
+        ):
+            raise ValidationError(
+                "{} contains invalid control characters".format(field))
 
 
 def optional_enum(data, field, choices):

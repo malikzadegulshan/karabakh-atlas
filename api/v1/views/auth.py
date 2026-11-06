@@ -3,6 +3,7 @@
 email verification."""
 import logging
 from flask import jsonify, abort, request, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from api.v1.views import app_views
 from api.v1.auth_utils import (
     get_current_user,
@@ -16,9 +17,15 @@ from api.v1.auth_utils import (
     password_reset_attempt_limiter,
 )
 from api.v1.contributions import approved_post_count, contribution_tier
-from api.v1.mailer import send_email
+from api.v1.mailer import (
+    SUPPORTED_LANGS,
+    build_password_reset_email,
+    normalize_lang,
+    send_email,
+)
 from api.v1.validation import (
     ValidationError,
+    optional_enum,
     require_non_empty_string,
     require_safe_name,
     require_safe_text,
@@ -33,12 +40,13 @@ from models.forum_post import ForumPost
 from models.post_report import PostReport
 from models.user import User
 
-REGISTER_FIELDS = {"name", "email", "password", "join_reason"}
+REGISTER_FIELDS = {"name", "email", "password", "join_reason", "lang"}
 LOGIN_FIELDS = {"email", "password"}
-FORGOT_PASSWORD_FIELDS = {"email"}
+FORGOT_PASSWORD_FIELDS = {"email", "lang"}
 RESET_PASSWORD_FIELDS = {"email", "otp", "password"}
 
 MAX_JOIN_REASON_LENGTH = 500
+_DUMMY_PASSWORD_HASH = generate_password_hash("kba-timing-guard-password")
 
 logger = logging.getLogger(__name__)
 
@@ -63,16 +71,12 @@ def _serialize_user(user):
     return data
 
 
-def _send_password_reset_email(user, otp):
-    send_email(
-        user.email,
-        "Your Karabakh Atlas password reset code",
-        "Hi {},\n\n"
-        "Your password reset code is: {}\n\n"
-        "This code expires in 15 minutes. If you didn't request this, "
-        "you can ignore this email — your password hasn't been "
-        "changed.".format(user.name, otp),
+def _send_password_reset_email(user, otp, lang=None):
+    target_lang = normalize_lang(lang or getattr(user, "lang", None))
+    subject, text_body, html_body = build_password_reset_email(
+        user.name, otp, lang=target_lang
     )
+    send_email(user.email, subject, text_body, html_body=html_body)
 
 
 @app_views.route("/auth/register", methods=["POST"])
@@ -100,6 +104,7 @@ def register():
         require_password(data)
         require_safe_text(
             data, "join_reason", max_length=MAX_JOIN_REASON_LENGTH)
+        optional_enum(data, "lang", SUPPORTED_LANGS)
     except ValidationError as error:
         abort(400, description=error.message)
 
@@ -112,7 +117,8 @@ def register():
     user = User(
         name=data["name"].strip(), email=email, role="user",
         email_verified=False, approved=False,
-        join_reason=data["join_reason"].strip())
+        join_reason=data["join_reason"].strip(),
+        lang=normalize_lang(data.get("lang")))
     user.set_password(data["password"])
     user.save()
     return jsonify({"pending_approval": True}), 201
@@ -140,7 +146,12 @@ def login():
         }), 429
 
     user = _find_user_by_email(email)
-    if user is None or not user.check_password(data["password"]):
+    if user is None:
+        check_password_hash(_DUMMY_PASSWORD_HASH, data["password"])
+        password_ok = False
+    else:
+        password_ok = user.check_password(data["password"])
+    if not password_ok:
         record_login_failure(rate_key)
         logger.warning("Failed login attempt for %s", rate_key)
         # Same message either way — don't reveal whether the email is
@@ -148,6 +159,13 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     clear_login_failures(rate_key)
+    if user.is_banned:
+        return jsonify({
+            "error": (
+                "Your account has been banned for violating community rules"
+            ),
+            "banned": True,
+        }), 403
     if not user.is_approved:
         # Only said after the password checked out, so this can't be
         # used to learn which emails have pending accounts.
@@ -259,17 +277,18 @@ def forgot_password():
     try:
         only_allowed_fields(data, FORGOT_PASSWORD_FIELDS)
         require_email(data)
+        optional_enum(data, "lang", SUPPORTED_LANGS)
     except ValidationError as error:
         abort(400, description=error.message)
 
     password_reset_request_limiter.record(request.remote_addr)
     user = _find_user_by_email(data["email"])
-    if user is not None and not user.is_approved:
+    if user is not None and (not user.is_approved or user.is_banned):
         user = None
     if user is not None:
         otp = user.generate_password_reset_otp()
         user.save()
-        _send_password_reset_email(user, otp)
+        _send_password_reset_email(user, otp, lang=data.get("lang"))
     return jsonify({}), 200
 
 
@@ -301,17 +320,17 @@ def reset_password():
         }), 429
 
     user = _find_user_by_email(email)
-    if user is None or not user.consume_password_reset_otp(data["otp"]):
+    if (
+        user is None
+        or not user.is_approved
+        or user.is_banned
+        or not user.consume_password_reset_otp(data["otp"])
+    ):
         password_reset_attempt_limiter.record(rate_key)
         logger.warning("Failed password-reset attempt for %s", rate_key)
         return jsonify({"error": "Invalid or expired code"}), 400
 
     password_reset_attempt_limiter.clear(rate_key)
-    if not user.is_approved:
-        return jsonify({
-            "error": "Your account is awaiting admin approval",
-            "pending_approval": True,
-        }), 403
     user.set_password(data["password"])
     # Sign every other device/cookie out: a reset usually means the old
     # password (and so possibly an old session) can't be trusted.

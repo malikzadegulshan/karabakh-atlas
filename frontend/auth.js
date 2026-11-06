@@ -300,7 +300,7 @@ loginFormEl.addEventListener("submit", async (event) => {
 });
 
 const SUSPICIOUS_INPUT_RE =
-  /<\s*\/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|video|audio)\b|\bon\w+\s*=|(?:javascript|data\s*:\s*text\/html)\s*:|!\[.*?\]\(.*?\)|\b\w+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|ps1)\b/i;
+  /<\s*\/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|video|audio)\b|\bon\w+\s*=|(?:javascript|data\s*:\s*text\/html)\s*:|!\[[^\]\r\n]{0,500}\]\([^)\r\n]{0,2000}\)|\b\w+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|ps1|jar)\b/i;
 
 registerFormEl.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -324,6 +324,7 @@ registerFormEl.addEventListener("submit", async (event) => {
       email: registerEmailInputEl.value.trim(),
       password: registerPasswordInputEl.value,
       join_reason: reason,
+      lang: currentLang,
     });
     registerFormEl.reset();
     showAccountView("login");
@@ -345,7 +346,10 @@ forgotPasswordFormEl.addEventListener("submit", async (event) => {
     // comment on the backend's forgot_password() view. Advancing to
     // the OTP-entry step either way is deliberate: anything else would
     // leak account existence right back out through the UI.
-    await authRequest("/auth/forgot-password", { email });
+    await authRequest("/auth/forgot-password", {
+      email,
+      lang: currentLang,
+    });
     pendingResetEmail = email;
     showAccountView("reset-password");
     showAccountMessage(t("accountResetCodeSent"), false);

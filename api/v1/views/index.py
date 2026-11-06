@@ -2,18 +2,56 @@
 """Index view: status and stats endpoints for the API."""
 from collections import Counter
 from api.v1.views import app_views
-from flask import jsonify
+from flask import jsonify, request
 from models import storage
 from models.region import Region
 from models.city import City
 from models.historical_event import HistoricalEvent
 from models.forum_post import ForumPost
 
+COUNTRY_TO_LANG = {
+    "AZ": "az",
+    "TR": "tr",
+    "RU": "ru",
+    "BY": "ru",
+}
+
+
+def country_to_lang(country_code):
+    """Map an ISO 3166-1 alpha-2 country code to a supported UI language.
+
+    Azerbaijan -> 'az', Turkiye -> 'tr', Russia/Belarus -> 'ru',
+    any other country -> 'en'.
+    """
+    if not country_code or not isinstance(country_code, str):
+        return "en"
+    code = country_code.strip().upper()
+    return COUNTRY_TO_LANG.get(code, "en")
+
+
+def detect_request_country():
+    """Extract a validated 2-letter ISO country code from CF-IPCountry."""
+    raw = (request.headers.get("CF-IPCountry") or "").strip().upper()
+    if len(raw) == 2 and raw.isalpha() and raw.isascii() and raw not in {
+        "XX",
+        "T1",
+    }:
+        return raw
+    return None
+
 
 @app_views.route("/status", methods=["GET"])
 def status():
-    """Return a simple OK status payload."""
-    return jsonify({"status": "OK"})
+    """Return status payload along with IP-detected country language."""
+    payload = {"status": "OK"}
+    country = detect_request_country()
+    if country:
+        payload["country"] = country
+        payload["detected_lang"] = country_to_lang(country)
+    resp = jsonify(payload)
+    resp.headers["Vary"] = "CF-IPCountry"
+    resp.headers["Cache-Control"] = "private, no-store"
+    return resp
 
 
 @app_views.route("/stats", methods=["GET"])
