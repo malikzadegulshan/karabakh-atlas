@@ -57,19 +57,18 @@ services:
         sync: false
       - key: KBA_ADMIN_NAME
         sync: false
-      # Sends password-reset emails via the Resend API
-      # (resend.com). Fill in via the dashboard, same as the admin vars
-      # above — never commit a real key. Left unset, those emails just
-      # don't send (registration/reset still work either way — see
-      # api/v1/mailer.py). HTTP-based rather than SMTP on purpose: PaaS
-      # hosts commonly block outbound SMTP ports on free/starter tiers,
-      # which is exactly what happened when this used Gmail SMTP.
-      - key: RESEND_API_KEY
+      # Sends password-reset emails via the Brevo HTTP API
+      # (brevo.com). Fill in via the dashboard, same as the admin vars
+      # above — never commit a real key. Verify a sender email address
+      # in Brevo (Senders & IP -> Senders; no custom domain required)
+      # and set BREVO_SENDER_EMAIL to that address. Left unset, emails
+      # are logged instead of sent (see api/v1/mailer.py).
+      - key: BREVO_API_KEY
         sync: false
-      # Optional — defaults to Resend's own "onboarding@resend.dev",
-      # which works without verifying a custom domain first.
-      - key: RESEND_FROM
+      - key: BREVO_SENDER_EMAIL
         sync: false
+      - key: BREVO_SENDER_NAME
+        value: "Karabakh Atlas"
 
   - type: web
     name: karabakh-atlas-frontend
