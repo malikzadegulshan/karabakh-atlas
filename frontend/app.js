@@ -1489,7 +1489,7 @@ function renderWeatherPanel() {
     return;
   }
   const info = weatherInfo(weatherCurrent.weather_code);
-  weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 20);
+  weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 22);
   weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
   weatherDescEl.textContent = info.labelKey ? t(info.labelKey) : "—";
   weatherMetaEl.textContent =
