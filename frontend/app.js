@@ -1001,6 +1001,13 @@ function selectPanelTab(tab) {
     activateTab(tab);
     return;
   }
+  if (typeof isNewsArticleOpen === "function" && isNewsArticleOpen()) {
+    closeNewsArticle();
+    if (activePanelTab !== tab) {
+      activateTab(tab);
+    }
+    return;
+  }
   if (activePanelTab === tab && !isPanelCollapsed()) {
     setPanelCollapsed(true);
     return;
@@ -2019,7 +2026,11 @@ function updateSearchResultsVisibility() {
   if (isPlaceSelected()) {
     return;
   }
-  weatherPanelEl.hidden = false;
+  const articleOpen = activePanelTab === "news" &&
+    typeof isNewsArticleOpen === "function" && isNewsArticleOpen();
+  searchBoxEl.hidden = articleOpen;
+  weatherPanelEl.hidden = articleOpen;
+  panelEl.classList.toggle("panel-detail-open", articleOpen);
   panelViewCitiesEl.hidden = activePanelTab !== "cities";
   panelViewPlacesEl.hidden = activePanelTab !== "places";
   panelViewForumEl.hidden = activePanelTab !== "forum";

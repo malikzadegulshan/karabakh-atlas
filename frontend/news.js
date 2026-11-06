@@ -5,8 +5,8 @@
 // every other forum post — this file just renders and submits them via
 // forum.js's renderForumList()/buildForumComposer(). Shares globals
 // (t, escapeHtml, isSafeUrl, compressedImageUrl, currentLang,
-// apiRequest, currentUser) with app.js/auth.js/admin.js/forum.js, all
-// loaded earlier on the page.
+// apiRequest, currentUser, updateSearchResultsVisibility) with
+// app.js/auth.js/admin.js/forum.js, all loaded earlier on the page.
 //
 // Security note: titles, bodies, and comment bodies are all rendered
 // with textContent (never innerHTML), and URLs only after isSafeUrl().
@@ -18,9 +18,42 @@ let newsItems = [];
 // a re-render triggered by a login/language change would flash "No news
 // yet" for a list that simply hasn't loaded.
 let newsLoaded = false;
-// Items whose comment thread is open, so a re-render (login, logout,
-// language change) puts them back instead of collapsing everything.
-const newsOpenComments = new Set();
+// The news article whose dedicated page is currently open in the sidebar,
+// or null when showing the news card feed. Kept across re-renders (login,
+// logout, language change) so the reader stays on the open article.
+let newsCurrentItemId = null;
+
+function isNewsArticleOpen() {
+  return newsCurrentItemId !== null &&
+    newsItems.some((item) => item.id === newsCurrentItemId);
+}
+
+function openNewsItem(itemId, { scrollToComments = false } = {}) {
+  newsCurrentItemId = itemId;
+  if (typeof updateSearchResultsVisibility === "function") {
+    updateSearchResultsVisibility();
+  }
+  if (itemId !== null && typeof setPanelCollapsed === "function") {
+    setPanelCollapsed(false);
+  }
+  renderNews();
+  const panelContentEl = document.getElementById("panel-content");
+  if (!panelContentEl) {
+    return;
+  }
+  if (scrollToComments && itemId !== null) {
+    const commentsEl = newsListEl.querySelector(".news-comments");
+    if (commentsEl) {
+      commentsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+  }
+  panelContentEl.scrollTop = 0;
+}
+
+function closeNewsArticle() {
+  openNewsItem(null);
+}
 
 function localizedNewsTitle(item) {
   return (item.title_i18n && item.title_i18n[currentLang]) || item.title;
@@ -39,23 +72,35 @@ function newsDateLabel(isoString) {
     currentLang, { year: "numeric", month: "long", day: "numeric" });
 }
 
-function buildNewsComments(item, toggleBtn) {
+function attachNewsImageFallback(img, originalUrl) {
+  img.addEventListener("error", () => {
+    if (img.dataset.fallback === "1") {
+      img.hidden = true;
+      return;
+    }
+    img.dataset.fallback = "1";
+    img.src = originalUrl;
+  });
+}
+
+function buildNewsComments(item) {
   const section = document.createElement("div");
   section.className = "news-comments";
 
+  const heading = document.createElement("h4");
+  heading.className = "news-comments-heading";
+  heading.textContent = t("newsComments")(item.comment_count || 0);
+  section.appendChild(heading);
+
   const list = document.createElement("ul");
   list.className = "forum-post-list";
-
-  function updateToggleLabel() {
-    toggleBtn.textContent = t("newsComments")(item.comment_count);
-  }
 
   async function refreshComments() {
     try {
       const posts = await apiRequest(
         "GET", `/forum/posts?news_id=${encodeURIComponent(item.id)}`);
       item.comment_count = posts.length;
-      updateToggleLabel();
+      heading.textContent = t("newsComments")(item.comment_count);
       renderForumList(list, posts, t("newsCommentsEmpty"), refreshComments);
     } catch (err) {
       renderForumList(list, [], t("newsCommentsEmpty"), refreshComments);
@@ -69,9 +114,66 @@ function buildNewsComments(item, toggleBtn) {
   return section;
 }
 
+function buildNewsArticlePage(item) {
+  const page = document.createElement("li");
+  page.className = "news-article-page";
+
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "forum-topic-back news-article-back";
+  const arrow = document.createElement("span");
+  arrow.setAttribute("aria-hidden", "true");
+  arrow.textContent = "←";
+  back.appendChild(arrow);
+  back.appendChild(document.createTextNode(` ${t("adminBack")}`));
+  back.addEventListener("click", () => openNewsItem(null));
+  page.appendChild(back);
+
+  if (item.image_url && isSafeUrl(item.image_url)) {
+    const img = document.createElement("img");
+    img.className = "news-article-image";
+    img.alt = localizedNewsTitle(item);
+    img.src = compressedImageUrl(item.image_url, 760, 428);
+    attachNewsImageFallback(img, item.image_url);
+    page.appendChild(img);
+  }
+
+  const date = document.createElement("div");
+  date.className = "news-card-date";
+  date.textContent = newsDateLabel(item.created_at);
+  page.appendChild(date);
+
+  const title = document.createElement("h3");
+  title.className = "news-article-title";
+  title.textContent = localizedNewsTitle(item);
+  page.appendChild(title);
+
+  const body = document.createElement("p");
+  body.className = "news-article-body";
+  body.textContent = localizedNewsBody(item);
+  page.appendChild(body);
+
+  if (item.source_url && isSafeUrl(item.source_url)) {
+    const metaFooter = document.createElement("div");
+    metaFooter.className = "news-article-meta";
+    const source = document.createElement("a");
+    source.className = "news-link-btn";
+    source.href = item.source_url;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    source.textContent = `${t("newsSource")} ↗`;
+    metaFooter.appendChild(source);
+    page.appendChild(metaFooter);
+  }
+
+  page.appendChild(buildNewsComments(item));
+  return page;
+}
+
 function buildNewsCard(item) {
   const card = document.createElement("li");
-  card.className = "news-card";
+  card.className = "news-card news-card-clickable";
+  card.tabIndex = 0;
 
   if (item.image_url && isSafeUrl(item.image_url)) {
     const img = document.createElement("img");
@@ -79,17 +181,7 @@ function buildNewsCard(item) {
     img.loading = "lazy";
     img.alt = localizedNewsTitle(item);
     img.src = compressedImageUrl(item.image_url, 640, 360);
-    // The compression proxy can't always reach a given host (or the
-    // image may already be small) — fall back to the original once,
-    // and only hide the picture if that fails too.
-    img.addEventListener("error", () => {
-      if (img.dataset.fallback === "1") {
-        img.hidden = true;
-        return;
-      }
-      img.dataset.fallback = "1";
-      img.src = item.image_url;
-    });
+    attachNewsImageFallback(img, item.image_url);
     card.appendChild(img);
   }
 
@@ -115,10 +207,9 @@ function buildNewsCard(item) {
   moreBtn.type = "button";
   moreBtn.className = "news-link-btn";
   moreBtn.textContent = t("newsReadMore");
-  moreBtn.hidden = true;
-  moreBtn.addEventListener("click", () => {
-    const clamped = body.classList.toggle("clamped");
-    moreBtn.textContent = clamped ? t("newsReadMore") : t("newsShowLess");
+  moreBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openNewsItem(item.id);
   });
   footer.appendChild(moreBtn);
 
@@ -129,46 +220,41 @@ function buildNewsCard(item) {
     source.target = "_blank";
     source.rel = "noopener noreferrer";
     source.textContent = t("newsSource");
+    source.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
     footer.appendChild(source);
   }
 
   const commentsBtn = document.createElement("button");
   commentsBtn.type = "button";
   commentsBtn.className = "news-link-btn news-comments-toggle";
-  commentsBtn.setAttribute("aria-expanded", "false");
   commentsBtn.textContent = t("newsComments")(item.comment_count || 0);
-  let commentsSection = null;
-  function setCommentsOpen(open) {
-    if (open && commentsSection === null) {
-      commentsSection = buildNewsComments(item, commentsBtn);
-      card.appendChild(commentsSection);
-    }
-    if (commentsSection !== null) {
-      commentsSection.hidden = !open;
-    }
-    commentsBtn.setAttribute("aria-expanded", String(open));
-    if (open) {
-      newsOpenComments.add(item.id);
-    } else {
-      newsOpenComments.delete(item.id);
-    }
-  }
-  commentsBtn.addEventListener("click", () => {
-    setCommentsOpen(commentsSection === null || commentsSection.hidden);
+  commentsBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openNewsItem(item.id, { scrollToComments: true });
   });
   footer.appendChild(commentsBtn);
 
   card.appendChild(footer);
-  if (newsOpenComments.has(item.id)) {
-    setCommentsOpen(true);
-  }
 
-  // "Read more" only when the text is actually cut off, which needs
-  // real layout — checked once the card is in the document.
-  card._checkOverflow = () => {
-    moreBtn.hidden = body.scrollHeight <= body.clientHeight + 1 &&
-      body.classList.contains("clamped");
-  };
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("a, button")) {
+      return;
+    }
+    openNewsItem(item.id);
+  });
+
+  card.addEventListener("keydown", (event) => {
+    if (event.target !== card) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openNewsItem(item.id);
+    }
+  });
+
   return card;
 }
 
@@ -184,9 +270,13 @@ function renderNews() {
     newsListEl.appendChild(empty);
     return;
   }
-  const cards = newsItems.map(buildNewsCard);
-  cards.forEach((card) => newsListEl.appendChild(card));
-  cards.forEach((card) => card._checkOverflow());
+  const activeItem = newsItems.find((item) => item.id === newsCurrentItemId);
+  if (activeItem) {
+    newsListEl.appendChild(buildNewsArticlePage(activeItem));
+    return;
+  }
+  newsCurrentItemId = null;
+  newsItems.forEach((item) => newsListEl.appendChild(buildNewsCard(item)));
 }
 
 async function loadNews() {
@@ -196,5 +286,8 @@ async function loadNews() {
     newsItems = [];
   }
   newsLoaded = true;
+  if (typeof updateSearchResultsVisibility === "function") {
+    updateSearchResultsVisibility();
+  }
   renderNews();
 }
