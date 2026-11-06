@@ -5,7 +5,7 @@
 // weather to someone who's actually online. Bump CACHE_NAME whenever
 // the shell file list below changes, so activate() below evicts the
 // old cache instead of an install silently reusing it.
-const CACHE_NAME = "kba-shell-v19";
+const CACHE_NAME = "kba-shell-v20";
 const SHELL_ASSETS = [
   "./",
   "index.html",
@@ -14,6 +14,7 @@ const SHELL_ASSETS = [
   "config.js",
   "i18n.js",
   "theme-init.js",
+  "register-sw.js",
   "app.js",
   "auth.js",
   "admin.js",
@@ -22,6 +23,7 @@ const SHELL_ASSETS = [
   "news.js",
   "favorites.js",
   "stats.js",
+  "tour.js",
   "vendor/leaflet/leaflet.js",
   "vendor/leaflet/leaflet.css",
   "vendor/leaflet/images/layers.png",

@@ -138,8 +138,9 @@ def login():
         abort(400, description=error.message)
 
     email = data["email"].strip().lower()
-    rate_key = "{}:{}".format(request.remote_addr, email)
-    if is_login_rate_limited(rate_key):
+    ip = request.remote_addr or "unknown"
+    rate_key = "{}:{}".format(ip, email)
+    if is_login_rate_limited(rate_key, ip=ip):
         logger.warning("Login rate limit hit for %s", rate_key)
         return jsonify({
             "error": "Too many failed login attempts. Try again later.",
@@ -152,7 +153,7 @@ def login():
     else:
         password_ok = user.check_password(data["password"])
     if not password_ok:
-        record_login_failure(rate_key)
+        record_login_failure(rate_key, ip=ip)
         logger.warning("Failed login attempt for %s", rate_key)
         # Same message either way — don't reveal whether the email is
         # registered at all.

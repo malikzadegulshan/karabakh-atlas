@@ -18,7 +18,7 @@ from models.forum_post import ForumPost
 from models.news_item import NewsItem
 from api.v1.validation import (
     ValidationError,
-    require_non_empty_string,
+    require_safe_text,
     optional_url,
     optional_i18n_dict,
     only_allowed_fields,
@@ -34,9 +34,9 @@ def _validate_news_data(data, *, require_required_fields):
     failure."""
     only_allowed_fields(data, NEWS_FIELDS)
     if require_required_fields or "title" in data:
-        require_non_empty_string(data, "title", max_length=200)
+        require_safe_text(data, "title", max_length=200)
     if require_required_fields or "body" in data:
-        require_non_empty_string(data, "body", max_length=5000)
+        require_safe_text(data, "body", max_length=5000)
     optional_url(data, "image_url", max_length=500)
     optional_url(data, "source_url", max_length=500)
     optional_i18n_dict(data, "title_i18n")

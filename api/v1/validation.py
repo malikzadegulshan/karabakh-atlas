@@ -24,16 +24,7 @@ class ValidationError(Exception):
         self.message = message
 
 
-def require_non_empty_string(data, field, max_length=MAX_NAME_LENGTH):
-    """Raise ValidationError unless data[field] is a non-empty string."""
-    value = data.get(field)
-    if not isinstance(value, str) or not value.strip():
-        raise ValidationError("{} must be a non-empty string".format(field))
-    if len(value) > max_length:
-        raise ValidationError(
-            "{} must be at most {} characters".format(field, max_length))
-
-
+BIDI_OVERRIDE_RE = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
 DANGEROUS_TAG_RE = re.compile(
     r"<\s*/?\s*(?:script|img|iframe|object|embed|svg|style|link|meta|"
     r"applet|form|input|button|base|video|audio)\b",
@@ -50,8 +41,23 @@ EXECUTABLE_URL_RE = re.compile(
     r"https?://[^\s?#]+\.(?:exe|bat|cmd|sh|vbs|scr|msi|dll|apk|bin|elf|ps1|"
     r"com|pif|jar|scr)(?:[?#\s]|$)",
     re.IGNORECASE)
-BIDI_OVERRIDE_RE = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
 NAME_SPECIAL_RE = re.compile(r"[<>{}\\]|\bhttps?://")
+
+
+def require_non_empty_string(data, field, max_length=MAX_NAME_LENGTH):
+    """Raise ValidationError unless data[field] is a non-empty string."""
+    value = data.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ValidationError("{} must be a non-empty string".format(field))
+    if len(value) > max_length:
+        raise ValidationError(
+            "{} must be at most {} characters".format(field, max_length))
+    if any(ord(c) < 32 and c not in "\n\r\t" for c in value):
+        raise ValidationError(
+            "{} contains invalid control characters".format(field))
+    if BIDI_OVERRIDE_RE.search(value):
+        raise ValidationError(
+            "{} contains invalid bidirectional formatting".format(field))
 
 
 def require_safe_text(data, field, max_length=MAX_TEXT_LENGTH):
@@ -114,6 +120,12 @@ def optional_string(data, field, max_length=MAX_TEXT_LENGTH):
     if len(value) > max_length:
         raise ValidationError(
             "{} must be at most {} characters".format(field, max_length))
+    if any(ord(c) < 32 and c not in "\n\r\t" for c in value):
+        raise ValidationError(
+            "{} contains invalid control characters".format(field))
+    if BIDI_OVERRIDE_RE.search(value):
+        raise ValidationError(
+            "{} contains invalid bidirectional formatting".format(field))
 
 
 SAFE_URL_SCHEMES = {"http", "https"}
@@ -192,6 +204,15 @@ def optional_i18n_dict(data, field, max_length=MAX_TEXT_LENGTH):
         ):
             raise ValidationError(
                 "{} contains invalid control characters".format(field))
+        if DANGEROUS_TAG_RE.search(val):
+            raise ValidationError(
+                "{} contains disallowed HTML or script tags".format(field))
+        if EVENT_HANDLER_RE.search(val):
+            raise ValidationError(
+                "{} contains disallowed script attributes".format(field))
+        if SCRIPT_URI_RE.search(val):
+            raise ValidationError(
+                "{} contains disallowed script URIs".format(field))
 
 
 def optional_enum(data, field, choices):

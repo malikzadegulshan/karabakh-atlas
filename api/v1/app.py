@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+MAX_GENERAL_CONTENT_LENGTH = 1 * 1024 * 1024
 # Render (and most PaaS hosts) terminate HTTPS and forward to this app
 # over plain HTTP, setting X-Forwarded-Proto/Host instead — without
 # this, request.host_url would report "http://" even for a real HTTPS
@@ -155,6 +156,17 @@ def _start_request_timer():
 
 
 @app.before_request
+def enforce_content_length_limit():
+    """Limit general endpoints to 1MB, allowing images up to 5MB."""
+    if request.path.startswith("/api/v1/images") and request.method == "POST":
+        return None
+    if request.content_length and (
+        request.content_length > MAX_GENERAL_CONTENT_LENGTH
+    ):
+        return jsonify({"error": "Request body exceeds 1MB limit"}), 413
+
+
+@app.before_request
 def reject_cross_origin_writes():
     """Refuse a state-changing request whose Origin header names some
     other site. Browsers always send Origin on cross-site writes, and
@@ -228,6 +240,8 @@ def set_security_headers(response):
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
+        "object-src 'none'; "
+        "form-action 'self'; "
         "frame-ancestors 'none'; "
         "base-uri 'none'"
     )

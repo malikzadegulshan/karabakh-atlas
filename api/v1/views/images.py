@@ -10,6 +10,7 @@ import binascii
 import os
 from flask import jsonify, abort, request, Response
 from api.v1.views import app_views
+from api.v1.auth_utils import get_current_user, image_upload_limiter
 from models import storage
 from models.image import Image
 
@@ -39,10 +40,12 @@ def _sniff_content_type(head):
 @app_views.route("/images", methods=["POST"])
 def upload_image():
     """Accept one multipart image upload, return its retrieval URL."""
-    # Overrides the app-wide MAX_CONTENT_LENGTH (api/v1/app.py), sized
-    # for small JSON bodies, for this endpoint only — photos routinely
-    # exceed it. Only takes effect if set before the body is read.
-    request.max_content_length = MAX_IMAGE_BYTES + 64 * 1024
+    user = get_current_user()
+    rate_key = user.id if user else (request.remote_addr or "unknown")
+    if image_upload_limiter.is_limited(rate_key):
+        return jsonify({
+            "error": "Too many image uploads. Try again later.",
+        }), 429
     upload = request.files.get("file")
     if upload is None or upload.filename == "":
         abort(400, description="file is required")
@@ -58,6 +61,7 @@ def upload_image():
         content_type=content_type,
         data_base64=base64.b64encode(data).decode("ascii"))
     image.save()
+    image_upload_limiter.record(rate_key)
     public_base = os.environ.get("KBA_PUBLIC_URL", "").strip().rstrip("/")
     base_url = (public_base + "/") if public_base else request.host_url
     url = "{}api/v1/images/{}".format(base_url, image.id)

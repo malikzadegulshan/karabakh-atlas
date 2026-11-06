@@ -69,8 +69,10 @@ def _admin_client():
 
 
 def _reset_limiters():
-    for limiter in (auth_utils.login_limiter, auth_utils.register_limiter,
-                    auth_utils.forum_post_limiter, auth_utils.report_limiter):
+    for limiter in (auth_utils.login_limiter, auth_utils.login_ip_limiter,
+                    auth_utils.register_limiter,
+                    auth_utils.forum_post_limiter, auth_utils.report_limiter,
+                    auth_utils.image_upload_limiter):
         limiter._attempts.clear()
 
 
@@ -1717,6 +1719,139 @@ class TestRegionDeleteCleanup(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(any(
             f.city_id == city["id"] for f in storage.all(Favorite).values()))
+
+
+class TestSecurityReviewHardening(unittest.TestCase):
+    """Test the newly added security hardening rules."""
+
+    def setUp(self):
+        _reset_limiters()
+
+    def test_rate_limiter_memory_bounding_and_cleanup(self):
+        """RateLimiter prunes expired keys and caps tracked keys."""
+        limiter = auth_utils.RateLimiter(
+            max_attempts=3, window_seconds=10, max_tracked_keys=4)
+        for i in range(10):
+            limiter.record("key-{}".format(i))
+        self.assertLessEqual(len(limiter._attempts), 4)
+
+        # Non-existent key check does not pollute _attempts with empty lists
+        self.assertFalse(limiter.is_limited("nonexistent-key"))
+        self.assertNotIn("nonexistent-key", limiter._attempts)
+
+    def test_login_ip_rate_limiter(self):
+        """Aggregate per-IP login limit blocks credential stuffing."""
+        client = app.test_client()
+        ip = "198.51.100.42"
+        # 30 attempts on 30 different accounts should succeed to attempt
+        for i in range(30):
+            resp = client.post(
+                "/api/v1/auth/login",
+                data=json.dumps({
+                    "email": "target-{}@example.com".format(i),
+                    "password": "WrongPassword1!",
+                }),
+                content_type="application/json",
+                environ_base={"REMOTE_ADDR": ip},
+            )
+            self.assertEqual(resp.status_code, 401)
+
+        # 31st attempt from same IP must hit 429 even with new email
+        resp = client.post(
+            "/api/v1/auth/login",
+            data=json.dumps({
+                "email": "target-new@example.com",
+                "password": "WrongPassword1!",
+            }),
+            content_type="application/json",
+            environ_base={"REMOTE_ADDR": ip},
+        )
+        self.assertEqual(resp.status_code, 429)
+        self.assertIn(
+            "Too many failed login attempts", resp.get_json()["error"])
+
+    def test_general_content_length_limit(self):
+        """Endpoints other than /api/v1/images cap body at 1MB."""
+        client = app.test_client()
+        # Non-image endpoint with body > 1MB but < 5MB (app-wide cap)
+        resp = client.post(
+            "/api/v1/auth/login",
+            data=b"x" * (1024 * 1024 + 100),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 413)
+
+    def test_news_item_safe_text_validation(self):
+        """NewsItem rejects HTML/script tags and BiDi characters."""
+        admin = _admin_client()
+        resp = _post(admin, "/api/v1/news", {
+            "title": "Clean Title",
+            "body": "Normal body with <script>alert(1)</script>",
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("HTML or script tags", resp.get_json()["error"])
+
+        resp = _post(admin, "/api/v1/news", {
+            "title": "Title with \u202e evil",
+            "body": "Normal body",
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("bidirectional", resp.get_json()["error"])
+
+    def test_i18n_dict_script_rejection(self):
+        """optional_i18n_dict rejects script tags and event handlers."""
+        from api.v1.validation import optional_i18n_dict, ValidationError
+        data = {"desc_i18n": {"en": "Safe", "az": "<img src=x onerror=1>"}}
+        with self.assertRaises(ValidationError):
+            optional_i18n_dict(data, "desc_i18n")
+
+        data2 = {"desc_i18n": {"en": "javascript:alert(1)"}}
+        with self.assertRaises(ValidationError):
+            optional_i18n_dict(data2, "desc_i18n")
+
+    def test_string_control_chars_and_bidi_rejection(self):
+        """require_non_empty_string and optional_string reject ctrl/BiDi."""
+        from api.v1.validation import (
+            require_non_empty_string, optional_string, ValidationError
+        )
+        with self.assertRaises(ValidationError):
+            require_non_empty_string({"k": "Bad \x00 Null"}, "k")
+        with self.assertRaises(ValidationError):
+            require_non_empty_string({"k": "Bad \u202e BiDi"}, "k")
+
+        with self.assertRaises(ValidationError):
+            optional_string({"k": "Bad \x1f Ctrl"}, "k")
+        with self.assertRaises(ValidationError):
+            optional_string({"k": "Bad \u2067 BiDi"}, "k")
+
+    def test_image_upload_rate_limiting(self):
+        """POST /api/v1/images rate limits after 20 uploads."""
+        import io
+        client = _admin_client()
+        # 1x1 GIF bytes
+        gif_bytes = (
+            b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff"
+            b"\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00"
+            b"\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        )
+        for i in range(20):
+            data = {"file": (io.BytesIO(gif_bytes), "test.gif")}
+            resp = client.post(
+                "/api/v1/images",
+                data=data,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(resp.status_code, 201)
+
+        # 21st attempt should be 429
+        data = {"file": (io.BytesIO(gif_bytes), "test.gif")}
+        resp = client.post(
+            "/api/v1/images",
+            data=data,
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(resp.status_code, 429)
+        self.assertIn("Too many image uploads", resp.get_json()["error"])
 
 
 if __name__ == "__main__":
