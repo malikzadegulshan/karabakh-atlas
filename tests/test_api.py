@@ -575,11 +575,11 @@ class TestImport(unittest.TestCase):
             {"name": "Bad lat", "latitude": 999, "longitude": 46.9},
             {"name": "", "latitude": 39.9, "longitude": 46.9},
             {"name": "Bad category", "latitude": 39.9, "longitude": 46.9,
-              "category": "spaceship"},
+             "category": "spaceship"},
             {"name": "Bad url", "latitude": 39.9, "longitude": 46.9,
-              "website": "javascript:alert(1)"},
+             "website": "javascript:alert(1)"},
             {"name": "Unknown field", "latitude": 39.9, "longitude": 46.9,
-              "id": "x"},
+             "id": "x"},
             "not an object",
         ])
         body = json.loads(resp.data)
