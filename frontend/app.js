@@ -1485,13 +1485,17 @@ function renderWeatherPanel() {
     weatherTempEl.textContent = "";
     weatherDescEl.textContent = t("weatherLoading");
     weatherMetaEl.textContent = "";
+    weatherMetaEl.removeAttribute("title");
     return;
   }
   const info = weatherInfo(weatherCurrent.weather_code);
-  weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 26);
+  weatherIconEl.innerHTML = KBA_ICON_SVG(info.icon, 20);
   weatherTempEl.textContent = `${Math.round(weatherCurrent.temperature_2m)}°C`;
   weatherDescEl.textContent = info.labelKey ? t(info.labelKey) : "—";
   weatherMetaEl.textContent =
+    `${weatherCurrent.relative_humidity_2m}% · ` +
+    `${Math.round(weatherCurrent.wind_speed_10m)} km/h`;
+  weatherMetaEl.title =
     `${t("weatherHumidity")}: ${weatherCurrent.relative_humidity_2m}% · ` +
     `${t("weatherWind")}: ${Math.round(weatherCurrent.wind_speed_10m)} km/h`;
 }
@@ -1525,6 +1529,7 @@ async function loadWeatherFor(city) {
     weatherTempEl.textContent = "";
     weatherDescEl.textContent = t("weatherError");
     weatherMetaEl.textContent = "";
+    weatherMetaEl.removeAttribute("title");
   }
 }
 

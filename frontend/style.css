@@ -75,40 +75,40 @@
    prefers-color-scheme so the whole UI follows the system setting
    automatically. The #theme-toggle button (app.js) can also force a
    scheme explicitly via [data-theme] on <html>, overriding the system
-   setting in either direction:
-     - [data-theme="light"] suppresses the prefers-color-scheme block
-       below (the :not() guard) so an explicit light choice sticks even
-       when the OS is in dark mode.
-     - [data-theme="dark"] repeats the same dark tokens unconditionally,
-       so an explicit dark choice applies even when the OS is in light
-       mode (prefers-color-scheme: dark wouldn't otherwise match). */
+   setting in either direction. */
 :root {
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --color-bg: #ffffff;
-  --color-bg-subtle: #f8fafc;
-  --color-bg-muted: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  --color-text: #1f2937;
-  --color-text-muted: #475569;
-  --color-text-faint: #64748b;
+  --color-bg-subtle: #f7f9f8;
+  --color-bg-muted: #eef2f0;
+  --color-surface: #ffffff;
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-border-strong: rgba(15, 23, 42, 0.15);
+  --color-text: #111827;
+  --color-text-muted: #4b5563;
+  --color-text-faint: #6b7280;
   --color-accent: #43756c;
-  --color-accent-hover: #549286;
-  --color-accent-soft: #e7f8f5;
+  --color-accent-hover: #366058;
+  --color-accent-soft: #e6f2ef;
+  --color-accent-ring: rgba(67, 117, 108, 0.22);
   --color-danger: #b91c1c;
-  --color-danger-bg: #fee2e2;
+  --color-danger-bg: #fef2f2;
   --color-danger-border: #fecaca;
-  --color-success-bg: #dcfce7;
-  --color-success-text: #166534;
-  --color-warn-bg: #fef3c7;
-  --color-warn-bg-hover: #fde68a;
+  --color-success-bg: #ecfdf5;
+  --color-success-text: #065f46;
+  --color-warn-bg: #fffbeb;
+  --color-warn-bg-hover: #fef3c7;
   --color-warn-text: #92400e;
-  --shadow-color: rgba(0, 0, 0, 0.25);
-  /* Stats composition bar — one hue (the brand teal), monotone
-     lightness steps rather than the usual multi-hue categorical
-     palette, so the bar reads as part of the app instead of a
-     stock chart. Ordinal-ramp validated: adjacent ΔL >= 0.06,
-     light-end contrast >= 2:1 vs the chart surface. */
+  --shadow-color: rgba(15, 23, 42, 0.14);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --shadow-floating: 0 12px 32px -4px rgba(15, 23, 42, 0.12),
+    0 2px 6px -1px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05),
+    0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-modal: 0 24px 48px -12px rgba(15, 23, 42, 0.24),
+    0 0 0 1px rgba(15, 23, 42, 0.07);
+  /* Stats composition bar — brand teal ordinal lightness ramp */
   --viz-series-1: #2d4e48;
   --viz-series-2: #43756c;
   --viz-series-3: #599b8f;
@@ -117,26 +117,35 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #1c1c1e;
-    --color-bg-subtle: #232326;
-    --color-bg-muted: #2c2c2e;
-    --color-border: #3a3a3d;
-    --color-border-strong: #4b4b4f;
-    --color-text: #f1f5f9;
-    --color-text-muted: #a1a1aa;
-    --color-text-faint: #8a8a90;
+    --color-bg: #151819;
+    --color-bg-subtle: #1c2022;
+    --color-bg-muted: #252a2d;
+    --color-surface: #1c2022;
+    --color-border: rgba(255, 255, 255, 0.09);
+    --color-border-strong: rgba(255, 255, 255, 0.16);
+    --color-text: #f3f4f6;
+    --color-text-muted: #9ca3af;
+    --color-text-faint: #848d97;
     --color-accent: #5da295;
-    --color-accent-hover: #77b1a6;
-    --color-accent-soft: #24423d;
+    --color-accent-hover: #72b3a6;
+    --color-accent-soft: rgba(93, 162, 149, 0.18);
+    --color-accent-ring: rgba(93, 162, 149, 0.28);
     --color-danger: #f87171;
-    --color-danger-bg: #451a1a;
-    --color-danger-border: #7f1d1d;
-    --color-success-bg: #06301b;
-    --color-success-text: #4ade80;
-    --color-warn-bg: #452c06;
-    --color-warn-bg-hover: #5a3a08;
+    --color-danger-bg: rgba(127, 29, 29, 0.35);
+    --color-danger-border: rgba(248, 113, 113, 0.35);
+    --color-success-bg: rgba(6, 78, 59, 0.4);
+    --color-success-text: #6ee7b7;
+    --color-warn-bg: rgba(120, 53, 15, 0.35);
+    --color-warn-bg-hover: rgba(146, 64, 14, 0.45);
     --color-warn-text: #fbbf24;
     --shadow-color: rgba(0, 0, 0, 0.55);
+    --glass-bg: rgba(21, 24, 25, 0.86);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-floating: 0 16px 36px -4px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.65),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
     --viz-series-1: #477b72;
     --viz-series-2: #5da295;
     --viz-series-3: #84b8af;
@@ -145,26 +154,35 @@
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #1c1c1e;
-  --color-bg-subtle: #232326;
-  --color-bg-muted: #2c2c2e;
-  --color-border: #3a3a3d;
-  --color-border-strong: #4b4b4f;
-  --color-text: #f1f5f9;
-  --color-text-muted: #a1a1aa;
-  --color-text-faint: #8a8a90;
+  --color-bg: #151819;
+  --color-bg-subtle: #1c2022;
+  --color-bg-muted: #252a2d;
+  --color-surface: #1c2022;
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-text: #f3f4f6;
+  --color-text-muted: #9ca3af;
+  --color-text-faint: #848d97;
   --color-accent: #5da295;
-  --color-accent-hover: #77b1a6;
-  --color-accent-soft: #24423d;
+  --color-accent-hover: #72b3a6;
+  --color-accent-soft: rgba(93, 162, 149, 0.18);
+  --color-accent-ring: rgba(93, 162, 149, 0.28);
   --color-danger: #f87171;
-  --color-danger-bg: #451a1a;
-  --color-danger-border: #7f1d1d;
-  --color-success-bg: #06301b;
-  --color-success-text: #4ade80;
-  --color-warn-bg: #452c06;
-  --color-warn-bg-hover: #5a3a08;
+  --color-danger-bg: rgba(127, 29, 29, 0.35);
+  --color-danger-border: rgba(248, 113, 113, 0.35);
+  --color-success-bg: rgba(6, 78, 59, 0.4);
+  --color-success-text: #6ee7b7;
+  --color-warn-bg: rgba(120, 53, 15, 0.35);
+  --color-warn-bg-hover: rgba(146, 64, 14, 0.45);
   --color-warn-text: #fbbf24;
   --shadow-color: rgba(0, 0, 0, 0.55);
+  --glass-bg: rgba(21, 24, 25, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --shadow-floating: 0 16px 36px -4px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
   --viz-series-1: #477b72;
   --viz-series-2: #5da295;
   --viz-series-3: #84b8af;
@@ -179,17 +197,19 @@ body {
   font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--color-text);
   background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .skip-link {
   position: absolute;
   top: -3rem;
-  left: 0.5rem;
+  left: 0.75rem;
   z-index: 3000;
   padding: 0.6rem 1rem;
   background: var(--color-accent);
   color: #fff;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 10px 10px;
   font-weight: 600;
   font-size: 0.85rem;
   text-decoration: none;
@@ -212,51 +232,54 @@ body {
   border: 0;
 }
 
-/* Apple-Maps-style layout: a narrow persistent icon rail, a single
-   panel next to it that the rail switches between "Cities" and
-   "Places" views (search + weather stay pinned at the top of the panel
-   regardless of which view is active), and the map filling the rest —
-   a proper side-by-side flex layout, not floating overlays. */
+/* Spatial-web layout: full-bleed map canvas with floating frosted-glass
+   navigation rail (#rail) and floating sidebar panel (#panel) on desktop,
+   transitioning cleanly to a draggable bottom sheet on mobile. */
 
 main {
   display: flex;
   flex: 1;
   min-height: 0;
   position: relative;
+  overflow: hidden;
 }
 
 #rail {
-  width: 48px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
+  width: 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.6rem 0;
-  background: var(--color-bg);
-  border-right: 1px solid var(--color-border);
+  gap: 0.35rem;
+  padding: 0.65rem 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-floating);
   z-index: 20;
 }
 
-/* Non-interactive brand mark, sitting above the functional rail buttons.
-   Sized to match .rail-btn for column alignment, but no hover/active
-   states of its own since it doesn't do anything when clicked. */
 #brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #43756c;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
+  color: var(--color-accent);
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.45rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .rail-btn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -266,17 +289,24 @@ main {
   color: var(--color-text-muted);
   background: transparent;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 .rail-btn:hover {
+  color: var(--color-text);
   background: var(--color-bg-muted);
+}
+
+.rail-btn:active {
+  transform: scale(0.95);
 }
 
 .rail-btn.active {
   color: #fff;
   background: var(--color-accent);
+  box-shadow: 0 2px 8px var(--color-accent-ring);
 }
 
 .rail-btn[hidden] {
@@ -297,120 +327,95 @@ main {
   background: var(--color-accent);
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  box-shadow: 0 2px 6px var(--color-accent-ring);
 }
 
 #account-avatar-toggle:hover {
   background: var(--color-accent-hover);
+  color: #fff;
 }
 
-/* Popovers open to the right of the rail, not below it — there's no
-   room below a 34px-tall icon button in a vertical rail.
-
-   position: fixed with left/bottom set inline by JS (positionPopover()
-   in app.js), not position: absolute anchored to .rail-widget. A
-   Firefox user reported these completely failing to render — hidden
-   became false, the computed rect/z-index/opacity/visibility all
-   looked correct, elementFromPoint even confirmed the popover was the
-   topmost hit at its own coordinates, and yet nothing painted, on a
-   fully updated deploy with hardware acceleration and extensions both
-   ruled out. Never reproduced in Chromium here, so this couldn't be
-   verified as the actual fix — but position: fixed removes the
-   dependency on .rail-widget (a flex item) as the containing block
-   for an absolutely-positioned descendant, which is the more unusual
-   part of the original setup and the more likely thing for a browser
-   engine to mishandle. */
-#lang-menu {
-  position: fixed;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  min-width: 50px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 0.3rem;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 6px 16px var(--shadow-color);
-}
+#lang-menu,
 #account-status {
   position: fixed;
   z-index: 1200;
   display: flex;
   flex-direction: column;
-  min-width: 90px;
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 0.3rem;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 6px 16px var(--shadow-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-floating);
 }
 
-/* Both have their own explicit "display" (flex/flex-column), which
-   would otherwise beat the [hidden] attribute's default UA rule —
-   author styles always win over UA styles at equal specificity. */
+#lang-menu {
+  min-width: 58px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.35rem;
+  gap: 0.15rem;
+}
+
+#account-status {
+  min-width: 190px;
+  max-height: 340px;
+  overflow-y: auto;
+  gap: 0.4rem;
+  padding: 0.7rem;
+}
+
 #lang-menu[hidden],
 #account-status[hidden] {
   display: none;
 }
 
 #lang-menu button {
-  padding: 0.45rem 0.7rem;
-  font-size: 0.85rem;
+  padding: 0.42rem 0.75rem;
+  font-size: 0.82rem;
   font-weight: 600;
   text-align: center;
-  color: var(--color-text);
+  color: var(--color-text-muted);
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: 7px;
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 #lang-menu button:hover {
+  color: var(--color-text);
   background: var(--color-bg-muted);
 }
 
 #lang-menu button.active {
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  color: var(--color-accent);
   background: var(--color-accent-soft);
 }
 
-#account-status {
-  gap: 0.35rem;
-  padding: 0.6rem;
-}
-
 #account-name {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
-  max-width: 160px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 0.2rem;
 }
 
-/* Contribution tier badge — shared by #account-tier-badge (the
-   signed-in user's own, in the account popover) and the one
-   renderForumList() builds per post author in forum.js. Each tier's
-   background is a fixed hex (not a --color-* token that flips with
-   light/dark theme): the pairing being checked is the badge's own
-   background against ITS text, not against the page, so theme has no
-   bearing on it — all three combinations clear 7:1+, comfortably past
-   WCAG AA's 4.5:1 floor for text this size. */
+/* Contribution tier badge */
 .tier-badge {
   display: inline-block;
   align-self: flex-start;
-  padding: 0.08rem 0.4rem;
-  border-radius: 8px;
+  padding: 0.1rem 0.48rem;
+  border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
   vertical-align: middle;
 }
 
@@ -430,28 +435,26 @@ main {
 }
 
 #account-logout {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.78rem;
+  padding: 0.42rem 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   background: var(--color-bg-muted);
-  border: none;
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  transition: background-color 0.15s ease;
 }
 
 #account-logout:hover {
-  background: var(--color-border);
+  background: var(--color-border-strong);
 }
 
-/* Delete account: a quiet danger-colored link in the popover (danger
-   text is 5.9:1 light / 5.0:1 dark on the muted fill), expanding into a
-   short form with the warning and the password. */
 .account-danger-link {
-  padding: 0.2rem 0.7rem;
+  padding: 0.25rem 0.5rem;
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-danger);
   background: none;
@@ -473,7 +476,7 @@ main {
 #account-delete-error {
   margin: 0;
   font-size: 0.76rem;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--color-text-muted);
 }
 
@@ -491,13 +494,13 @@ main {
 }
 
 #account-resend-verification {
-  padding: 0.35rem 0.7rem;
+  padding: 0.4rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-warn-text);
   background: var(--color-warn-bg);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   text-align: left;
 }
@@ -511,13 +514,12 @@ main {
   opacity: 0.7;
 }
 
-/* Same [hidden] specificity issue noted above. */
 #account-resend-verification[hidden] {
   display: none;
 }
 
 #account-favorites {
-  padding-top: 0.3rem;
+  padding-top: 0.4rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -526,18 +528,18 @@ main {
 }
 
 #account-favorites-title {
-  margin: 0.2rem 0 0.3rem;
-  font-size: 0.72rem;
+  margin: 0.2rem 0 0.35rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   color: var(--color-text-faint);
 }
 
 #account-favorites-list {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -548,13 +550,15 @@ main {
 }
 
 .account-favorite-row {
-  padding: 0.3rem 0.4rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
   font-size: 0.82rem;
+  font-weight: 500;
   text-align: left;
   color: var(--color-text);
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -576,48 +580,50 @@ main {
   display: none;
 }
 
+/* Segmented control for Sign in / Create account */
 .account-tabs {
   display: flex;
-  gap: 0.4rem;
-  margin: 0 1.25rem 0.75rem;
+  gap: 0.25rem;
+  margin: 0.9rem 1.35rem 0.85rem;
+  padding: 0.25rem;
+  background: var(--color-bg-muted);
+  border-radius: 10px;
 }
 
-/* Same [hidden]-specificity issue as #login-form/#register-form above
-   — showAccountView() in auth.js hides this row entirely outside the
-   login/register views (forgot/reset password aren't "tabs" the way
-   those two are). */
 .account-tabs[hidden] {
   display: none;
 }
 
 .account-tab {
   flex: 1;
-  padding: 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.84rem;
   font-weight: 600;
-  color: var(--color-text-faint);
-  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
-  margin-top: 16px
+  margin-top: 0;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.account-tab:hover {
+  color: var(--color-text);
 }
 
 .account-tab.active {
   color: var(--color-text);
-  background: var(--color-accent-soft);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-card);
 }
 
-/* "Forgot password?" / "Back to sign in" — reads as a plain text link
-   rather than a button, matching how these are styled everywhere else
-   this pattern shows up on the web. align-self: center (not the
-   .admin-form default of flex-start) so a short line of link text
-   doesn't stretch to the form's full width the way a real button
-   should. */
 .account-link-btn {
   align-self: center;
-  padding: 0.2rem;
-  font-size: 0.8rem;
+  padding: 0.25rem;
+  font-family: inherit;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-accent);
   background: none;
@@ -632,50 +638,45 @@ main {
 .account-legal-checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 0.4rem;
-  margin: -0.1rem 0 0;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0;
   cursor: pointer;
 }
 
 .account-legal-checkbox input[type="checkbox"] {
-  /* .admin-form input { width: 100% } (below, in source order) ties
-     this selector on specificity, so a plain "input" selector here
-     loses that tie-break and the checkbox silently stays full-width,
-     squeezing the label text into a sliver. The [type="checkbox"]
-     attribute bumps specificity enough to actually win. */
   width: auto;
   flex-shrink: 0;
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
+  accent-color: var(--color-accent);
 }
 
 #account-legal-note {
-  font-size: 0.75rem;
-  color: var(--color-text-faint);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
 }
 
 #account-legal-note a {
   color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#account-legal-note a:hover {
+  text-decoration: underline;
 }
 
 .password-hint {
-  margin: -0.2rem 0 0;
+  margin: -0.15rem 0 0.1rem;
   font-size: 0.75rem;
-  line-height: 1.35;
+  line-height: 1.38;
   color: var(--color-text-faint);
 }
 
-/* A fixed footer pinned to the bottom of #panel itself (a flex-column
-   sibling of #panel-content, not a child of it) — regardless of how
-   short the current view is (e.g. the cities list), it always sits at
-   the panel's actual bottom edge instead of floating up right under
-   whatever content happens to be showing. Plain text, not styled as a
-   button, and deliberately muted (not the brand accent color the
-   account form's own legal note uses) so it reads as quiet footer fine
-   print rather than a call to action. */
 #panel-legal {
   flex-shrink: 0;
-  margin: 1rem 0.9rem 0.9rem;
-  padding-top: 0.75rem;
+  margin: 0.75rem 1rem 0.85rem;
+  padding-top: 0.65rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.72rem;
   color: var(--color-text-faint);
@@ -689,113 +690,118 @@ main {
 
 #panel-legal a:hover,
 #panel-legal a:focus-visible {
+  color: var(--color-text-muted);
   text-decoration: underline;
 }
 
+/* Floating frosted-glass sidebar panel */
 #panel {
-  width: 320px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 74px;
+  width: 340px;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
-  border-right: 1px solid var(--color-border);
-  transition: width 0.2s ease;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-floating);
+  z-index: 15;
+  overflow: hidden;
+  transition: width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* #panel-content owns its own scrolling (not #panel as a whole) so
-   that #panel-legal below, a flex sibling rather than a child of it,
-   stays put at the panel's bottom edge instead of scrolling away with
-   the cities/places/forum/detail view above it. */
 #panel-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* Nothing in here should ever scroll sideways; without this, any
-     sliver of horizontal overflow (e.g. a bleed that slightly exceeds
-     the padding) shows up as a stray scrollbar above the footer. */
   overflow-x: hidden;
-  /* The panel's padding lives here, inside the scroll box, rather than
-     on #panel: .detail-hero bleeds out to the panel's edges with
-     negative margins, which this element's overflow would clip if that
-     padding were outside it. */
-  padding: 0.9rem 0.9rem 0;
+  padding: 1rem 1rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
-/* A little extra room for the place-detail view's hero photo and
-   contact buttons — same transition as the collapse below, just a
-   different target width. #panel-toggle's own left offset (below) has
-   to move with it, since that offset is just this width plus a
-   constant (48px rail + a few px border/centering). Declared before
-   #panel.collapsed so that if both classes ever end up on #panel at
-   once (collapsing while a place detail is open), the collapse — same
-   specificity, later in the cascade — wins and the panel actually
-   goes to 0 instead of the two rules fighting over the width. */
 #panel.panel-detail-open {
-  width: 380px;
+  width: 388px;
 }
 
 #panel.collapsed {
   width: 0;
-  overflow: hidden;
-  border-right: none;
+  opacity: 0;
+  pointer-events: none;
+  border-width: 0;
+  box-shadow: none;
 }
 
 #panel-toggle {
   position: absolute;
   top: 50%;
-  left: 371px;
+  left: 422px;
   transform: translate(-50%, -50%);
   z-index: 1000;
-  width: 22px;
-  height: 46px;
+  width: 24px;
+  height: 48px;
   padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 0 6px 6px 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.9rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-card);
+  font-size: 0.95rem;
   line-height: 1;
   cursor: pointer;
-  transition: left 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-/* Same ordering reasoning as above — collapsed's toggle position has
-   to win over panel-detail-open's whenever both classes are present,
-   or the toggle button ends up somewhere that doesn't match the
-   panel's actual (collapsed) width. */
+#panel-toggle:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
 #panel.panel-detail-open ~ #panel-toggle {
-  left: 431px;
+  left: 470px;
 }
 
 #panel.collapsed ~ #panel-toggle {
-  left: 59px;
+  left: 76px;
 }
 
-/* Bottom-sheet drag handle and segmented Cities/Places/Forum tabs —
-   both mobile-only (see the max-width: 700px block below for their
-   actual layout). Hidden here so they take up no space and don't need
-   an explicit override at every breakpoint above mobile; the desktop
-   layout keeps using the icon rail for tab-switching instead. */
 #panel-handle,
 #sheet-tabs {
   display: none;
 }
 
+/* Search box */
 #search-box {
   display: flex;
   align-items: center;
   background: var(--color-bg-muted);
-  border-radius: 10px;
-  padding: 0.55rem 0.8rem;
-  margin-bottom: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.58rem 0.85rem;
+  margin-bottom: 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-/* #search-box's own "display: flex" otherwise beats the [hidden]
-   attribute's default UA rule (same specificity issue called out
-   elsewhere in this file for #lang-menu, etc.) — without
-   this, openDetailView() hiding it during a place selection wouldn't
-   actually work. */
+#search-box:focus-within {
+  background: var(--color-bg);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
 #search-box[hidden] {
   display: none;
 }
@@ -810,20 +816,19 @@ main {
   color: var(--color-text);
 }
 
+#search-input::placeholder {
+  color: var(--color-text-faint);
+}
+
 .panel-view[hidden] {
   display: none;
 }
 
-/* Search recommendations — a flat, cross-category results list shown
-   in place of whichever tab is active while there's a search query
-   (see updateSearchResultsVisibility() in app.js), styled the same
-   "colored circular icon + label" language as .category-grid-item
-   below and .poi-marker on the map itself, so a result reads as the
-   same kind of place regardless of where else it shows up. */
+/* Search results */
 #search-results {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 #search-results[hidden] {
@@ -833,16 +838,17 @@ main {
 .search-result-row {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.75rem;
   width: 100%;
-  padding: 0.4rem;
+  padding: 0.48rem 0.55rem;
   font: inherit;
   color: inherit;
   text-align: left;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.12s ease;
 }
 
 .search-result-row:hover {
@@ -850,18 +856,16 @@ main {
 }
 
 .search-result-icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
-/* Lets the name's own text-overflow ellipsis (below) actually kick in
-   — a flex child's default min-width is auto (its content's natural
-   width), which would keep the row growing instead of truncating. */
 .search-result-text {
   min-width: 0;
 }
@@ -883,48 +887,54 @@ main {
 }
 
 .search-empty {
-  padding: 0.6rem 0.4rem;
+  padding: 0.75rem 0.5rem;
   font-size: 0.85rem;
   color: var(--color-text-faint);
 }
 
-/* Category grid — Apple Maps' "Find Nearby" pattern: a colored
-   circular icon plus a label, two per row. */
+/* Category grid — Apple Maps "Find Nearby" pattern with emerald tone swatches */
 #category-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .category-grid-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.4rem;
+  gap: 0.5rem;
+  padding: 0.48rem 0.55rem;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 11px;
   cursor: pointer;
   text-align: left;
-  font-size: 0.72rem;
+  font-family: inherit;
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .category-grid-item:hover {
   background: var(--color-bg-muted);
+  border-color: var(--color-border-strong);
+}
+
+.category-grid-item:active {
+  transform: scale(0.98);
 }
 
 .category-grid-item.active {
   background: var(--color-accent-soft);
   border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
-/* Background and glyph color come from renderCategoryGrid() in app.js,
-   so the sidebar swatches use the same tone ramp as the map markers. */
 .category-grid-icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -938,20 +948,13 @@ main {
   white-space: nowrap;
 }
 
-/* Forum: a topic's page on the Forum tab, the per-city widget
-   appended into #city-detail (#city-forum), and news comments all share
-   these rules — same post-card look everywhere. */
+/* Forum & topics */
 .forum-topic-page textarea,
 #city-forum textarea,
 .news-comments textarea {
   resize: vertical;
 }
 
-/* Forum topics (forum.js): the Forum tab is a list of topic cards
-   (name, description, post count, chevron); tapping one swaps in that
-   topic's page — Back link, serif title, description, posting box,
-   posts. Count pill is muted text on the muted background (6.9:1 light
-   / 5.4:1 dark). */
 .forum-topic-list {
   display: flex;
   flex-direction: column;
@@ -961,109 +964,114 @@ main {
 .forum-topic-card {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   width: 100%;
-  padding: 0.7rem 0.8rem;
+  padding: 0.78rem 0.88rem;
   font-family: inherit;
   text-align: left;
   color: var(--color-text);
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
   cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease;
 }
 
 .forum-topic-card:hover,
 .forum-topic-card:focus-visible {
   border-color: var(--color-accent);
+  background: var(--color-bg);
 }
 
 .forum-topic-card-text {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.18rem;
   min-width: 0;
 }
 
 .forum-topic-card-name {
   font-family: var(--font-serif);
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .forum-topic-card-hint {
   font-size: 0.78rem;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--color-text-muted);
 }
 
 .forum-topic-card-count {
-  padding: 0.05rem 0.5rem;
+  padding: 0.1rem 0.55rem;
   font-size: 0.72rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   background: var(--color-bg-muted);
   border-radius: 999px;
 }
 
 .forum-topic-card-chevron {
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.2rem;
-  border-top: 2px solid var(--color-text-muted);
-  border-right: 2px solid var(--color-text-muted);
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.15rem;
+  border-top: 1.75px solid var(--color-text-faint);
+  border-right: 1.75px solid var(--color-text-faint);
   transform: rotate(45deg);
 }
 
 .forum-topic-back {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  margin: -0.2rem 0 0.5rem -0.3rem;
-  padding: 0.35rem 0.5rem;
+  gap: 0.35rem;
+  margin: -0.1rem 0 0.6rem -0.3rem;
+  padding: 0.35rem 0.55rem;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--color-accent);
   background: none;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
 }
 
 .forum-topic-back:hover {
-  text-decoration: underline;
+  background: var(--color-accent-soft);
 }
 
 .forum-topic-title {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.25rem;
   font-family: var(--font-serif);
-  font-size: 1.15rem;
+  font-size: 1.18rem;
+  letter-spacing: -0.01em;
   color: var(--color-text);
 }
 
 .forum-topic-hint {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.75rem;
   font-size: 0.82rem;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--color-text-muted);
 }
 
 .forum-signin-btn {
   width: 100%;
-  padding: 0.5rem 0.7rem;
-  margin-bottom: 0.6rem;
-  font-size: 0.82rem;
+  padding: 0.58rem 0.85rem;
+  margin-bottom: 0.65rem;
+  font-family: inherit;
+  font-size: 0.84rem;
   font-weight: 600;
-  /* Matches .admin-form button's fill/no-border treatment — this is the
-     most-seen call to action in the app (forum tab + every place detail
-     with opinions), so it should read as a button, not as another muted
-     info card sitting next to the weather widget. */
   color: #fff;
   background: var(--color-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
 .forum-signin-btn:hover {
@@ -1072,11 +1080,11 @@ main {
 
 .forum-pending-notice {
   margin: 0.5rem 0 0;
-  padding: 0.5rem 0.7rem;
+  padding: 0.55rem 0.75rem;
   font-size: 0.8rem;
   color: var(--color-success-text);
   background: var(--color-success-bg);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .forum-pending-notice[hidden] {
@@ -1089,20 +1097,16 @@ main {
   padding: 0;
 }
 
-/* Replies (forum.js): nested under their post behind a left rule, with
-   a link-style Reply button and an inline reply form. The button is
-   accent text on the page or card background (5.0:1+ in both themes,
-   past AA's 4.5:1). */
 .forum-replies {
   list-style: none;
-  margin: 0.2rem 0 0.1rem 0.4rem;
-  padding: 0 0 0 0.7rem;
-  border-left: 2px solid var(--color-border);
+  margin: 0.3rem 0 0.15rem 0.4rem;
+  padding: 0 0 0 0.75rem;
+  border-left: 2px solid var(--color-border-strong);
 }
 
 .forum-reply {
   border-top: none;
-  padding: 0.4rem 0;
+  padding: 0.45rem 0;
 }
 
 .forum-reply-btn {
@@ -1124,40 +1128,38 @@ main {
 .forum-post-actions {
   display: flex;
   gap: 0.9rem;
+  margin-top: 0.35rem;
 }
 
 .forum-report-btn {
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
 }
 
-/* Report dialog (forum.js): the post being reported, quoted; a radio
-   list of reasons whose chosen row gets a filled background and an
-   accent ring (the ring is the non-color cue); Send stays disabled
-   until one is chosen. */
+/* Report dialog */
 #report-panel .admin-form,
 #report-thanks {
-  margin: 1rem 1.25rem 1.25rem;
+  margin: 1rem 1.35rem 1.35rem;
 }
 
 #report-post-preview {
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.8rem;
   font-size: 0.84rem;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-border-strong);
-  border-radius: 6px;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 8px;
   overflow-wrap: anywhere;
 }
 
 #report-post-preview p {
-  margin: 0.2rem 0 0;
+  margin: 0.25rem 0 0;
   color: var(--color-text-muted);
 }
 
 #report-reasons {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   margin: 0;
   padding: 0;
   border: none;
@@ -1165,7 +1167,7 @@ main {
 
 #report-reasons legend {
   padding: 0;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.45rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
@@ -1175,12 +1177,13 @@ main {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   font-size: 0.88rem;
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 #report-panel .report-reason input {
@@ -1209,7 +1212,7 @@ main {
 }
 
 #report-thanks p {
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.85rem;
   font-size: 0.9rem;
   color: var(--color-text);
 }
@@ -1231,7 +1234,7 @@ main {
 }
 
 .forum-reply-form {
-  margin-top: 0.4rem;
+  margin-top: 0.45rem;
 }
 
 .forum-reply-form textarea {
@@ -1240,17 +1243,18 @@ main {
 
 .admin-reply-context {
   margin: 0.3rem 0 0;
-  padding-left: 0.6rem;
+  padding-left: 0.65rem;
   font-size: 0.8rem;
   font-style: italic;
   color: var(--color-text-faint);
-  border-left: 2px solid var(--color-border);
+  border-left: 2px solid var(--color-border-strong);
 }
 
 .forum-post {
-  padding: 0.6rem 0;
+  padding: 0.7rem 0;
   border-top: 1px solid var(--color-border);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .forum-post:first-child {
@@ -1259,26 +1263,28 @@ main {
 
 .forum-post-meta {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
   font-size: 0.78rem;
   color: var(--color-text-faint);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
 
 .forum-post-meta strong {
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .forum-post-delete {
   margin-left: auto;
-  padding: 0.1rem 0.4rem;
+  padding: 0.12rem 0.45rem;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-danger);
   background: none;
   border: 1px solid var(--color-danger-border);
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -1294,65 +1300,107 @@ main {
 }
 
 #city-forum {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
 }
 
 #city-forum h4 {
   font-family: var(--font-serif);
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  margin: 0 0 0.55rem;
+  font-size: 0.94rem;
   color: var(--color-text);
 }
 
+/* Weather panel — compact horizontal spatial bar */
 #weather-panel {
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "icon city temp"
+    "icon desc meta";
+  align-items: center;
+  column-gap: 0.65rem;
+  row-gap: 0.08rem;
+  margin-bottom: 0.85rem;
+  padding: 0.62rem 0.78rem;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
 }
 
-#weather-city {
-  font-family: var(--font-serif);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  margin-bottom: 0.3rem;
+#weather-panel[hidden] {
+  display: none;
 }
 
 #weather-main {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: contents;
 }
 
 #weather-icon {
-  font-size: 1.8rem;
-  line-height: 1;
+  grid-area: icon;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-#weather-temp {
-  font-size: 1.6rem;
-  font-weight: 700;
+#weather-icon:empty {
+  display: none;
+}
+
+#weather-city {
+  grid-area: city;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--color-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #weather-desc {
-  font-size: 0.82rem;
+  grid-area: desc;
+  font-size: 0.76rem;
+  font-weight: 500;
   color: var(--color-text-muted);
-  margin-top: 0.15rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#weather-temp {
+  grid-area: temp;
+  justify-self: end;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  line-height: 1.15;
 }
 
 #weather-meta {
-  font-size: 0.78rem;
+  grid-area: meta;
+  justify-self: end;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
-  margin-top: 0.4rem;
+  margin: 0;
+  white-space: nowrap;
 }
 
 #status {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: var(--color-text-muted);
 }
 
@@ -1360,32 +1408,56 @@ main {
   color: var(--color-danger);
 }
 
+/* City index list */
 #city-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
 }
 
 #city-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: var(--font-serif);
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
+  font-size: 0.96rem;
+  font-weight: 600;
+  padding: 0.52rem 0.7rem;
+  border-radius: 10px;
+  color: var(--color-text);
   cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease, transform 0.12s ease;
+}
+
+#city-list li::after {
+  content: "›";
+  font-family: system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  opacity: 0.55;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 #city-list li:hover {
   background: var(--color-bg-muted);
 }
 
-#city-list li.active {
-  background: var(--color-accent-soft);
-  font-weight: 600;
+#city-list li:hover::after {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
-/* News tab (news.js): one card per post — optional picture, date,
-   serif headline, body clamped to a few lines until "Read more", then a
-   footer row of link-style buttons (accent text on the card's subtle
-   background measures 5.0:1 light / 5.3:1 dark, past AA's 4.5:1). */
+#city-list li.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* News tab */
 #news-list {
   list-style: none;
   margin: 0;
@@ -1393,40 +1465,44 @@ main {
 }
 
 .news-card {
-  margin-bottom: 0.9rem;
-  padding: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 
 .news-card-image {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.65rem;
   object-fit: cover;
   background: var(--color-bg-muted);
-  border-radius: 7px;
+  border-radius: 9px;
 }
 
 .news-card-date {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-text-faint);
 }
 
 .news-card-title {
-  margin: 0.15rem 0 0.4rem;
+  margin: 0.2rem 0 0.45rem;
   font-family: var(--font-serif);
-  font-size: 1.05rem;
-  line-height: 1.25;
+  font-size: 1.06rem;
+  line-height: 1.28;
   color: var(--color-text);
 }
 
 .news-card-body {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.87rem;
+  line-height: 1.48;
   color: var(--color-text);
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -1442,8 +1518,8 @@ main {
 .news-card-footer {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 0.9rem;
-  margin-top: 0.6rem;
+  gap: 0.45rem 0.9rem;
+  margin-top: 0.65rem;
 }
 
 .news-link-btn {
@@ -1467,8 +1543,8 @@ main {
 }
 
 .news-comments {
-  margin-top: 0.6rem;
-  padding-top: 0.6rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -1476,15 +1552,9 @@ main {
   display: none;
 }
 
-/* Place-detail view (#detail-view) — replaces search/weather/the active
-   tab entirely while a city or POI is selected, Apple-Maps-style, rather
-   than stacking underneath them. See openDetailView()/closeDetailView()
-   in app.js. */
+/* Place-detail view (#detail-view) */
 #detail-view {
-  /* How far .detail-hero's negative top margin reaches up to touch the
-     panel's own top edge — the panel's padding-top on desktop, nothing
-     on the mobile sheet (see the max-width: 700px block). */
-  --detail-bleed-top: 0.9rem;
+  --detail-bleed-top: 1rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1495,93 +1565,85 @@ main {
 }
 
 .detail-back-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.75rem;
   color: var(--color-text-muted);
   background: var(--color-bg-muted);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-/* Absolutely positioned (rather than a flex sibling of .detail-back-btn)
-   so it sits at the opposite corner of the same header row without
-   needing a wrapping element — #detail-view is already position:
-   relative for exactly this. */
 .detail-favorite-btn {
   position: absolute;
   top: 0;
   right: 0;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
   background: var(--color-bg-muted);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
-.detail-favorite-btn:hover {
-  background: var(--color-border);
+.detail-favorite-btn:hover,
+.detail-back-btn:hover {
+  color: var(--color-text);
+  background: var(--color-border-strong);
+}
+
+.detail-favorite-btn:active {
+  transform: scale(0.92);
 }
 
 .detail-favorite-btn.is-favorited {
   color: #e0245e;
 }
 
-/* KBA_ICON_SVG hardcodes fill="none" on every icon — this is the one
-   place that needs a filled heart once saved, so it's overridden here
-   rather than in the shared icon helper (which every other icon relies
-   on staying outline-only). */
 .detail-favorite-btn.is-favorited svg {
   fill: currentColor;
 }
 
-.detail-back-btn:hover {
-  background: var(--color-border);
-}
-
 #city-detail {
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
-/* Bleeds out to the panel's own edges (negative margin matching #panel's
-   own padding) so the hero photo runs edge-to-edge instead of sitting in
-   a padded box like everything else in the sidebar. */
 .detail-hero {
-  margin: calc(-1 * var(--detail-bleed-top)) -0.9rem 0.9rem;
+  margin: calc(-1 * var(--detail-bleed-top)) -1rem 0.95rem;
 }
 
-/* With a photo, the back/save buttons float over its top corners instead
-   of taking a white row of their own above it. Fixed light chip colors
-   (not the theme tokens) since what they sit on is a photo, not the
-   panel background. Without a photo (or if it fails to load and gets
-   hidden) the :has() no longer matches and they stay in the normal flow. */
 #detail-view:has(.detail-hero:not([hidden])) .detail-back-btn,
 #detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
   position: absolute;
   z-index: 2;
-  top: calc(0.6rem - var(--detail-bleed-top));
+  top: calc(0.65rem - var(--detail-bleed-top));
   margin: 0;
-  color: #1f2937;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: #111827;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 #detail-view:has(.detail-hero:not([hidden])) .detail-back-btn {
-  left: calc(0.6rem - 0.9rem);
+  left: calc(0.65rem - 1rem);
 }
 
 #detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn {
-  right: calc(0.6rem - 0.9rem);
+  right: calc(0.65rem - 1rem);
 }
 
 #detail-view:has(.detail-hero:not([hidden])) .detail-favorite-btn.is-favorited {
@@ -1593,14 +1655,9 @@ main {
   background: #ffffff;
 }
 
-/* Before/after photo compare — see the has-compare markup in
-   buildDetailCardHtml() (app.js). Both images are stacked and sized to
-   fill the same box instead of the single block-flow <img> below;
-   .compare-after starts clipped to its right half by wireCompareSlider()
-   in showCityDetail(), revealing .compare-before underneath on drag. */
 .detail-hero.has-compare {
   position: relative;
-  height: 180px;
+  height: 196px;
   overflow: hidden;
 }
 
@@ -1619,50 +1676,54 @@ main {
 .detail-hero img {
   display: block;
   width: 100%;
-  height: 180px;
+  height: 196px;
   object-fit: cover;
 }
 
 .detail-title {
   font-family: var(--font-serif);
   margin: 0 0 0.2rem;
-  font-size: 1.15rem;
+  font-size: 1.28rem;
+  letter-spacing: -0.015em;
   color: var(--color-text);
 }
 
 .detail-alt-names {
   margin: 0 0 0.3rem;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-style: italic;
   color: var(--color-text-faint);
 }
 
 .detail-subtitle {
   margin: 0 0 0.9rem;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 500;
   color: var(--color-text-muted);
 }
 
 .detail-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .detail-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.9rem;
+  gap: 0.4rem;
+  padding: 0.52rem 0.95rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: #fff;
   background: var(--color-accent);
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
   cursor: pointer;
   border: 0;
   font-family: inherit;
+  transition: background-color 0.15s ease, transform 0.12s ease;
 }
 
 .detail-action-btn:hover {
@@ -1670,20 +1731,21 @@ main {
 }
 
 .detail-about {
-  padding-top: 0.9rem;
+  padding-top: 0.95rem;
   border-top: 1px solid var(--color-border);
 }
 
 .detail-about h3 {
   font-family: var(--font-serif);
   margin: 0 0 0.4rem;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--color-text);
 }
 
 .detail-about p {
   margin: 0;
   color: var(--color-text);
+  line-height: 1.52;
 }
 
 .detail-about .no-info {
@@ -1692,69 +1754,65 @@ main {
 }
 
 .detail-distance {
-  padding-top: 0.9rem;
+  margin-top: 0.95rem;
+  padding-top: 0.95rem;
   border-top: 1px solid var(--color-border);
 }
 
 .detail-distance h3 {
   font-family: var(--font-serif);
-  margin: 0 0 0.4rem;
-  font-size: 0.9rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
   color: var(--color-text);
 }
 
 .distance-select {
   width: 100%;
-  padding: 0.5rem 0.6rem;
+  padding: 0.55rem 0.7rem;
   font-size: 0.85rem;
   font-family: inherit;
   color: var(--color-text);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.distance-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .distance-result {
-  margin: 0.5rem 0 0;
-  font-size: 0.82rem;
-  color: var(--color-text-faint);
+  margin: 0.55rem 0 0;
+  font-size: 0.83rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
 }
 
+/* Full-bleed Map Canvas */
 #map {
   flex: 1;
-  /* Isolates Leaflet's internal panes (tile/marker/popup panes go up
-     to z-index: 700+, in vendor/leaflet/leaflet.css) inside their own
-     stacking context. Without this, .leaflet-container sits at
-     position: relative with z-index: auto — which does NOT create a
-     stacking context — so those pane z-indexes escape #map entirely
-     and compare directly against #rail's z-index: 20 in the parent
-     flex container. 200+ beats 20, so as soon as real tiles are
-     loaded, every one of them paints above the entire rail — including
-     #lang-menu/#account-status, regardless of their own z-index: 1200,
-     since that value is already capped by #rail's stacking context
-     before it's ever compared against anything outside #rail.
-     Reproduced and confirmed by serving real tiles to a local build
-     (this sandbox's own tests never loaded real tiles otherwise, since
-     the actual tile hosts are network-blocked here — which is exactly
-     why this never showed up in testing until diagnosed directly). */
   position: relative;
   z-index: 0;
 }
 
-/* Leaflet's built-in zoom/layers/attribution controls (vendor/leaflet/
-   leaflet.css) ship hardcoded white/black colors with no awareness of
-   this app's theme at all — left alone, they sit on the dark map as
-   glaring white boxes. #map as a prefix beats every one of Leaflet's
-   own selectors on specificity (an ID always outweighs any number of
-   classes), so these apply cleanly with no !important needed. */
 #map .leaflet-bar {
-  box-shadow: 0 2px 8px var(--shadow-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-floating);
 }
 
 #map .leaflet-bar a {
-  background-color: var(--color-bg);
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-bottom-color: var(--color-border);
   color: var(--color-text);
+  transition: background-color 0.15s ease;
 }
 
 #map .leaflet-bar a:hover,
@@ -1768,13 +1826,18 @@ main {
 }
 
 #map .leaflet-control-layers {
-  box-shadow: 0 2px 8px var(--shadow-color);
-  background: var(--color-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-floating);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
 }
 
 #map .leaflet-control-layers-expanded {
   color: var(--color-text);
-  background: var(--color-bg);
+  background: var(--glass-bg);
+  padding: 0.5rem 0.75rem;
 }
 
 #map .leaflet-control-layers-separator {
@@ -1782,18 +1845,17 @@ main {
 }
 
 #map .leaflet-control-attribution {
-  background: var(--color-bg-subtle);
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
   color: var(--color-text-faint);
+  border-radius: 6px 0 0 0;
+  padding: 2px 6px;
 }
 
 #map .leaflet-control-attribution a {
   color: var(--color-text-muted);
 }
 
-/* The layers-toggle icon itself is a bundled raster image (dark lines
-   on a transparent ground) — inverting it is the only way to make it
-   read against the now-dark control background above, short of
-   shipping a second icon asset. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) #map .leaflet-control-layers-toggle {
     filter: invert(1);
@@ -1804,50 +1866,42 @@ main {
   filter: invert(1);
 }
 
-/* .detail-about p (above) sets color: var(--color-text) at the same
-   "class + element" specificity as a bare ".image-credit" would — the
-   extra .detail-about qualifier here is what actually wins the tie, so
-   the muted color takes effect instead of silently losing to it. */
 .detail-about .image-credit {
-  margin: 0.2rem 0 0;
+  margin: 0.25rem 0 0;
   font-size: 0.75rem;
   color: var(--color-text-faint);
 }
 
 .city-label {
   white-space: nowrap;
-  padding: 2px 7px;
-  font-size: 0.8rem;
+  padding: 3px 9px;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #1f2937;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  letter-spacing: -0.01em;
+  color: #111827;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
   cursor: pointer;
   pointer-events: auto;
 }
 
-/* The city label sits directly on the basemap tiles rather than on the
-   app's own surfaces, so it follows the *map*, not the chrome. Streets
-   now ships a dark variant too (STREET_TILE_URLS in app.js), so the chip
-   has to darken with it — a white chip on Dark Matter tiles glares. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .city-label {
-    color: #f1f5f9;
-    background: rgba(28, 28, 30, 0.85);
+    color: #f3f4f6;
+    background: rgba(21, 24, 25, 0.88);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 }
 
 :root[data-theme="dark"] .city-label {
-  color: #f1f5f9;
-  background: rgba(28, 28, 30, 0.85);
+  color: #f3f4f6;
+  background: rgba(21, 24, 25, 0.88);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Hides the redundant label text on Streets (which already has its own
-   place labels) while keeping the marker itself attached to the map —
-   see markersLayer's comment in app.js for why that distinction matters
-   (a detached marker can't show its popup, breaking search/sidebar
-   "jump to this city"). */
 #map.hide-city-labels .city-label {
   display: none;
 }
@@ -1868,54 +1922,29 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Both the fill and the ring color are set inline by buildMarker() in
-     app.js, which reads them off the active color scheme's tone ramp. */
   border: 2px solid;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
 }
 
-/* Same "follows the map, not the chrome" reasoning as .city-label
-   above — including its dark-map chip below, since Streets now has a
-   dark variant too (STREET_TILE_URLS in app.js). */
-/* Outlined text instead of a filled chip: the outline is the stack of
-   text-shadows (more reliably cross-browser than -webkit-text-stroke at
-   this font size), colored opposite the fill so it reads on either a
-   light or dark basemap without needing a background box at all. */
 .poi-marker-label {
   white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: #1f2937;
+  color: #111827;
   text-shadow:
-    -1px -1px 0 rgba(255, 255, 255, 0.9),
-     1px -1px 0 rgba(255, 255, 255, 0.9),
-    -1px  1px 0 rgba(255, 255, 255, 0.9),
-     1px  1px 0 rgba(255, 255, 255, 0.9),
-     0    0    3px rgba(255, 255, 255, 0.9);
+    -1px -1px 0 rgba(255, 255, 255, 0.92),
+     1px -1px 0 rgba(255, 255, 255, 0.92),
+    -1px  1px 0 rgba(255, 255, 255, 0.92),
+     1px  1px 0 rgba(255, 255, 255, 0.92),
+     0    0    3px rgba(255, 255, 255, 0.92);
 }
 
-/* Set by updatePoiLabelCollisions() in app.js when this label's
-   measured screen box overlaps a higher-priority one that's already
-   showing — the icon stays put and clickable either way, only the
-   competing text disappears. display: none (not visibility: hidden)
-   so .poi-marker-wrapper's flex layout collapses the gap instead of
-   leaving an empty space next to the icon. */
 .poi-marker-label--collision-hidden {
   display: none;
 }
 
-/* Institutional names ("Karabakh University Dormitory 2") are the
-   usual source of label-on-label overlap at typical marker spacing —
-   past POI_LONG_NAME_LENGTH characters (app.js adds this class then),
-   the label wraps onto a second line within a fixed width instead of
-   stretching further sideways, which is what was actually eating the
-   horizontal room; the smaller font/tighter tracking alone (kept from
-   before) wasn't enough on its own since the text was still forced
-   onto one line via .poi-marker-label's white-space: nowrap. Short
-   names (most hotels/cafes/shops) are untouched, still one line at
-   full size. */
 .poi-marker-label--long {
   font-size: 0.68rem;
   letter-spacing: -0.02em;
@@ -1924,12 +1953,6 @@ main {
   line-height: 1.15;
 }
 
-/* Historical-timeline event markers (app.js buildEventMarker) — same
-   circle-with-glyph shape as .poi-marker above, but a warm/amber tone
-   instead of the neutral POI grays so an event pin reads as distinct
-   from a place pin at a glance. Uses the shared --color-warn-* tokens
-   (already themed for light/dark elsewhere) instead of a fixed color,
-   so no separate dark-mode override is needed here. */
 .event-marker-wrapper {
   background: transparent;
   border: none;
@@ -1945,71 +1968,77 @@ main {
   background: var(--color-warn-text);
   border: 2px solid var(--color-bg);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.38);
 }
 
-/* Leaflet's own default popup chrome is hardcoded white/black — themed
-   here so an event marker's popup doesn't jar against a dark map. */
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
   background: var(--color-bg);
   color: var(--color-text);
+  border-radius: 12px;
+  box-shadow: var(--shadow-floating);
 }
 
 .event-popup-title {
   margin: 0 0 0.25em;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 .event-popup-year {
   margin: 0 0 0.5em;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-accent);
 }
 
 .event-popup-description {
   margin: 0 0 0.5em;
   font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .event-popup-source {
   font-size: 0.8rem;
+  font-weight: 600;
   color: var(--color-accent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .poi-marker-label {
-    color: #f1f5f9;
+    color: #f3f4f6;
     text-shadow:
-      -1px -1px 0 rgba(28, 28, 30, 0.9),
-       1px -1px 0 rgba(28, 28, 30, 0.9),
-      -1px  1px 0 rgba(28, 28, 30, 0.9),
-       1px  1px 0 rgba(28, 28, 30, 0.9),
-       0    0    3px rgba(28, 28, 30, 0.9);
+      -1px -1px 0 rgba(21, 24, 25, 0.92),
+       1px -1px 0 rgba(21, 24, 25, 0.92),
+      -1px  1px 0 rgba(21, 24, 25, 0.92),
+       1px  1px 0 rgba(21, 24, 25, 0.92),
+       0    0    3px rgba(21, 24, 25, 0.92);
   }
 }
 
 :root[data-theme="dark"] .poi-marker-label {
-  color: #f1f5f9;
+  color: #f3f4f6;
   text-shadow:
-    -1px -1px 0 rgba(28, 28, 30, 0.9),
-     1px -1px 0 rgba(28, 28, 30, 0.9),
-    -1px  1px 0 rgba(28, 28, 30, 0.9),
-     1px  1px 0 rgba(28, 28, 30, 0.9),
-     0    0    3px rgba(28, 28, 30, 0.9);
+    -1px -1px 0 rgba(21, 24, 25, 0.92),
+     1px -1px 0 rgba(21, 24, 25, 0.92),
+    -1px  1px 0 rgba(21, 24, 25, 0.92),
+     1px  1px 0 rgba(21, 24, 25, 0.92),
+     0    0    3px rgba(21, 24, 25, 0.92);
 }
 
-/* Inline icons from vendor/icons/icons.js. display: block drops the
-   baseline gap an inline SVG leaves inside a flex parent, which would
-   otherwise push every glyph a pixel off-center in its circle. */
 .kba-icon {
   display: block;
 }
 
-/* Admin panel */
+/* Modal overlays & panels (Admin, Account, Stats, Report) —
+   refined surface header with subtle bottom divider instead of a
+   heavy solid-colored bar. */
 
-#admin-overlay {
+#admin-overlay,
+#account-overlay,
+#report-overlay,
+#stats-overlay {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -2017,22 +2046,54 @@ main {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(15, 10, 25, 0.55);
+  background: rgba(10, 14, 18, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-#admin-overlay[hidden] {
+#admin-overlay[hidden],
+#account-overlay[hidden],
+#report-overlay[hidden],
+#stats-overlay[hidden] {
   display: none;
 }
 
 #admin-panel {
   width: 100%;
-  max-width: 640px;
-  max-height: 85vh;
+  max-width: 660px;
+  max-height: 86vh;
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+
+#account-panel,
+#report-panel {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+
+#stats-panel {
+  width: 100%;
+  max-width: 440px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
 
@@ -2040,84 +2101,68 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: var(--color-accent);
-  color: #fff;
+  padding: 1.1rem 1.35rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
 .admin-panel-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-#admin-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0.1rem 0.4rem;
-}
-
-.admin-panel-body {
-  padding: 1rem 1.25rem 1.5rem;
-  overflow-y: auto;
-}
-
-/* Account panel (sign in / register) — shares .admin-panel-header,
-   .admin-form, and .admin-message with the admin panel above. */
-
-#account-overlay,
-#report-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
+#admin-close,
+#account-close,
+#report-close,
+#stats-close {
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  background: rgba(15, 10, 25, 0.55);
-}
-
-#account-overlay[hidden],
-#report-overlay[hidden] {
-  display: none;
-}
-
-#account-panel,
-#report-panel {
-  width: 100%;
-  max-width: 380px;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-}
-
-#account-close,
-#report-close {
-  background: none;
+  background: var(--color-bg-muted);
   border: none;
-  color: #fff;
-  font-size: 1.4rem;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0.1rem 0.4rem;
+  padding: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#admin-close:hover,
+#account-close:hover,
+#report-close:hover,
+#stats-close:hover {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.admin-panel-body {
+  padding: 1.15rem 1.35rem 1.5rem;
+  overflow-y: auto;
 }
 
 #account-panel .admin-form,
 #account-panel .admin-message {
-  margin: 0 1.25rem 1rem;
+  margin: 0 1.35rem 1.25rem;
 }
 
-/* .admin-form's own "display: flex" otherwise beats the [hidden]
-   attribute's default UA rule (same specificity, author stylesheet
-   wins), so these forms wouldn't actually hide without this override
-   when their view isn't the active one. */
+#account-panel .admin-form button[type="submit"] {
+  align-self: stretch;
+  width: 100%;
+  padding: 0.62rem 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  border-radius: 10px;
+}
+
 #login-form[hidden],
 #register-form[hidden],
 #forgot-password-form[hidden],
@@ -2126,10 +2171,11 @@ main {
 }
 
 .admin-message {
-  margin: 0.75rem 1.25rem 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  margin: 0.85rem 1.35rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  line-height: 1.4;
   background: var(--color-success-bg);
   color: var(--color-success-text);
 }
@@ -2139,13 +2185,7 @@ main {
   color: var(--color-danger);
 }
 
-/* Guided tour — see tour.js. Not the centered-panel pattern the other
-   overlays here use: #tour-spotlight and #tour-tooltip are both
-   positioned in JS from the real target element's own
-   getBoundingClientRect() on every step, so only their look (not
-   their position) belongs in CSS. The overlay itself sits above the
-   2000-tier overlays since it can point at elements that live behind
-   them (in practice only one is ever open at a time). */
+/* Guided tour */
 #tour-overlay {
   position: fixed;
   inset: 0;
@@ -2158,7 +2198,7 @@ main {
 
 #tour-spotlight {
   position: fixed;
-  box-shadow: 0 0 0 9999px rgba(10, 12, 14, 0.62);
+  box-shadow: 0 0 0 9999px rgba(10, 14, 18, 0.62);
   pointer-events: none;
   transition: top 0.25s ease, left 0.25s ease, width 0.25s ease,
     height 0.25s ease, border-radius 0.25s ease;
@@ -2169,9 +2209,10 @@ main {
   max-width: 340px;
   background: var(--color-bg);
   color: var(--color-text);
-  border-radius: 14px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
-  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-modal);
+  padding: 1.05rem 1.15rem;
   box-sizing: border-box;
   transition: top 0.25s ease, left 0.25s ease;
 }
@@ -2201,21 +2242,22 @@ main {
 
 #tour-step-label {
   margin-left: auto;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
 }
 
 #tour-tooltip h3 {
   font-family: var(--font-serif);
-  margin: 0 0 0.25rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.98rem;
 }
 
 #tour-tooltip p {
   margin: 0;
-  font-size: 0.83rem;
-  line-height: 1.45;
+  font-size: 0.84rem;
+  line-height: 1.48;
   color: var(--color-text-muted);
 }
 
@@ -2223,7 +2265,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 0.9rem;
+  margin-top: 0.95rem;
 }
 
 .tour-spacer {
@@ -2234,6 +2276,7 @@ main {
   border: none;
   background: none;
   padding: 0.4rem 0.2rem;
+  font-family: inherit;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-faint);
@@ -2244,8 +2287,9 @@ main {
   border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
-  padding: 0.4rem 0.8rem;
+  padding: 0.42rem 0.85rem;
   border-radius: 8px;
+  font-family: inherit;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -2259,55 +2303,17 @@ main {
   border: none;
   background: var(--color-accent);
   color: #fff;
-  padding: 0.4rem 0.9rem;
+  padding: 0.42rem 0.95rem;
   border-radius: 8px;
+  font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
 }
 
-/* "About this atlas" stats dashboard — same overlay/panel/header
-   pattern as the account panel above. */
-
-#stats-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(15, 10, 25, 0.55);
-}
-
-#stats-overlay[hidden] {
-  display: none;
-}
-
-#stats-panel {
-  width: 100%;
-  max-width: 420px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-}
-
-#stats-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0.1rem 0.4rem;
-}
-
+/* Stats dashboard */
 #stats-loading {
-  margin: 1.25rem;
+  margin: 1.35rem;
   font-size: 0.9rem;
   color: var(--color-text-faint);
 }
@@ -2319,8 +2325,8 @@ main {
 #stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  padding: 1.1rem 1.25rem 0.5rem;
+  gap: 0.7rem;
+  padding: 1.15rem 1.35rem 0.5rem;
   overflow-y: auto;
 }
 
@@ -2331,24 +2337,28 @@ main {
 .stat-tile {
   display: flex;
   flex-direction: column;
-  padding: 0.75rem 0.85rem;
-  background: var(--color-bg-muted);
-  border-radius: 8px;
+  padding: 0.8rem 0.95rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
 }
 
 .stat-value {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   color: var(--color-accent);
 }
 
 .stat-label {
   font-size: 0.78rem;
-  color: var(--color-text-faint);
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 
 #stats-composition {
-  padding: 0.5rem 1.25rem 1.25rem;
+  padding: 0.5rem 1.35rem 1.2rem;
 }
 
 #stats-composition[hidden] {
@@ -2358,29 +2368,20 @@ main {
 #stats-composition-title {
   margin: 0.5rem 0 0.6rem;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--color-text);
 }
 
-/* Single stacked bar — part-to-whole across cities/POIs/events/posts.
-   2px gaps between segments (the CSS-viz "surface gap" spacer, done
-   with flex `gap` rather than manual margins) separate touching
-   segments instead of a border; segment widths use the raw counts as
-   flex-grow factors, so the ratio is always exact with no percentage
-   rounding to reconcile. Rounded outer ends come from clipping the
-   whole bar, not from rounding each segment. */
 #stats-composition-bar {
   display: flex;
   gap: 2px;
-  height: 20px;
-  border-radius: 4px;
+  height: 18px;
+  border-radius: 6px;
   overflow: hidden;
   background: var(--color-bg-muted);
 }
 
 .stats-composition-segment {
-  /* flex-grow is set inline per element (renderComposition() in
-     stats.js), to the segment's raw count — flex resolves the exact
-     ratio itself, no percentage math to round. */
   flex-shrink: 0;
   flex-basis: 0;
   min-width: 0;
@@ -2393,9 +2394,9 @@ main {
 #stats-composition-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 0.9rem;
+  gap: 0.45rem 0.95rem;
   list-style: none;
-  margin: 0.6rem 0 0;
+  margin: 0.65rem 0 0;
   padding: 0;
 }
 
@@ -2410,16 +2411,17 @@ main {
 .stats-legend-swatch {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
 .stats-legend-count {
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
 }
 
 #stats-categories {
-  padding: 0.5rem 1.25rem 1.25rem;
+  padding: 0.5rem 1.35rem 1.35rem;
   overflow-y: auto;
 }
 
@@ -2430,13 +2432,14 @@ main {
 #stats-categories-title {
   margin: 0.5rem 0 0.6rem;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--color-text);
 }
 
 #stats-categories-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -2444,9 +2447,9 @@ main {
 
 .stats-category-row {
   display: grid;
-  grid-template-columns: 110px 1fr 28px;
+  grid-template-columns: 115px 1fr 30px;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   font-size: 0.8rem;
 }
 
@@ -2459,8 +2462,8 @@ main {
 
 .stats-category-bar-wrap {
   height: 6px;
-  background: var(--color-border);
-  border-radius: 3px;
+  background: var(--color-bg-muted);
+  border-radius: 999px;
   overflow: hidden;
 }
 
@@ -2468,11 +2471,12 @@ main {
   display: block;
   height: 100%;
   background: var(--color-accent);
-  border-radius: 3px;
+  border-radius: 999px;
 }
 
 .stats-category-count {
   text-align: right;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
 }
 
@@ -2480,30 +2484,38 @@ main {
   display: none;
 }
 
-/* Admin panel tabs — same visual pattern as .account-tabs/.account-tab,
-   just without their side margins (the admin panel body already has
-   its own padding, so an extra 1.25rem here would double it up). */
+/* Admin panel segmented tabs */
 .admin-tabs {
   display: flex;
-  gap: 0.4rem;
-  margin: 0 0 1rem;
+  gap: 0.25rem;
+  margin: 0 0 1.1rem;
+  padding: 0.25rem;
+  background: var(--color-bg-muted);
+  border-radius: 10px;
 }
 
 .admin-tab {
   flex: 1;
-  padding: 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.45rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-text-faint);
-  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-tab:hover {
+  color: var(--color-text);
 }
 
 .admin-tab.active {
   color: var(--color-text);
-  background: var(--color-accent-soft);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-card);
 }
 
 .admin-view[hidden] {
@@ -2515,21 +2527,24 @@ main {
 }
 
 .admin-section h3 {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
+  font-family: var(--font-serif);
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
 }
 
-.admin-section label {
+.admin-section label,
+.admin-form > label {
   display: block;
   font-size: 0.8rem;
+  font-weight: 600;
   color: var(--color-text-muted);
-  margin-bottom: 0.3rem;
+  margin: 0.2rem 0 -0.2rem;
 }
 
 .admin-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .admin-form input,
@@ -2537,47 +2552,57 @@ main {
 #admin-regions-search,
 #admin-events-search {
   width: 100%;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.88rem;
   border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
+  border-radius: 9px;
   font-family: inherit;
-  background: var(--color-bg);
+  background: var(--color-bg-subtle);
   color: var(--color-text);
-  margin-top: 10px
+  margin-top: 2px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-/* "+ Add new place" / "+ Add new event" — sits below the search box,
-   opens the same shared #admin-edit-view "page" as an Edit click does
-   (see openAdminEditView() in admin.js). */
+.admin-form input:focus,
+.admin-form textarea:focus,
+#admin-regions-search:focus,
+#admin-events-search:focus {
+  background: var(--color-bg);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
 .admin-add-new-btn {
   display: block;
   width: 100%;
-  margin: 0.6rem 0;
-  padding: 0.45rem 0.6rem;
+  margin: 0.65rem 0;
+  padding: 0.52rem 0.75rem;
+  font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   color: #fff;
   background: var(--color-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-/* Bulk CSV import (admin.js buildImportForm). Status chips reuse the
-   tokens already checked for text contrast: accent-soft/text 13.4:1
-   light, 10:1 dark; danger on danger-bg 5.3:1; muted on muted 6.9:1 /
-   5.4:1. The status is also spelled out in words, never color alone. */
+.admin-add-new-btn:hover {
+  background: var(--color-accent-hover);
+}
+
 .admin-secondary-btn,
 .admin-add-new-btn.admin-secondary-btn {
-  padding: 0.4rem 0.9rem;
+  padding: 0.45rem 0.9rem;
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
   background: var(--color-bg-muted);
   border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
 }
 
@@ -2585,9 +2610,6 @@ main {
   margin-top: 0;
 }
 
-/* The shared ".admin-form-actions button[type=button]" rule turns every
-   plain button gray (it's meant for Cancel), so the import's main action
-   needs its own, same as the app's other primary buttons. */
 .admin-import .admin-form-actions button.admin-primary-btn {
   color: #fff;
   background: var(--color-accent);
@@ -2605,7 +2627,7 @@ main {
 .admin-import-help {
   margin: 0 0 0.7rem;
   font-size: 0.82rem;
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--color-text-muted);
 }
 
@@ -2665,7 +2687,7 @@ main {
   padding: 0;
   overflow-y: auto;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .admin-import-row {
@@ -2673,7 +2695,7 @@ main {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.2rem 0.6rem;
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.65rem;
   font-size: 0.82rem;
   border-top: 1px solid var(--color-border);
 }
@@ -2696,7 +2718,7 @@ main {
 }
 
 .admin-import-chip {
-  padding: 0.05rem 0.5rem;
+  padding: 0.08rem 0.5rem;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -2731,14 +2753,21 @@ main {
 .admin-form button,
 .admin-form-actions button {
   align-self: flex-start;
-  padding: 0.4rem 0.9rem;
+  padding: 0.48rem 0.95rem;
+  font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   color: #fff;
   background: var(--color-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.admin-form button:hover,
+.admin-form-actions button:hover {
+  background: var(--color-accent-hover);
 }
 
 .admin-form button:disabled {
@@ -2755,7 +2784,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: -0.15rem;
+  margin-top: -0.1rem;
 }
 
 .image-upload-field input[type="file"] {
@@ -2775,14 +2804,16 @@ main {
 }
 
 .admin-form-actions button[type="button"] {
-  background: var(--color-border);
+  background: var(--color-bg-muted);
   color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
 }
 
 .admin-region {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 0.75rem 0.9rem;
+  background: var(--color-bg-subtle);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
   margin-bottom: 0.75rem;
 }
 
@@ -2806,11 +2837,12 @@ main {
 }
 
 .admin-actions button {
-  padding: 0.25rem 0.6rem;
+  padding: 0.28rem 0.65rem;
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
   border: 1px solid var(--color-border-strong);
-  border-radius: 5px;
+  border-radius: 7px;
   background: var(--color-bg);
   color: var(--color-text);
   cursor: pointer;
@@ -2832,38 +2864,36 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   font-size: 0.85rem;
-  border-top: 1px solid var(--color-bg-muted);
+  border-top: 1px solid var(--color-border);
 }
 
 .admin-empty {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--color-text-faint);
   font-style: italic;
-  margin: 0.4rem 0;
+  margin: 0.45rem 0;
 }
 
-/* Edit "page": takes over #admin-view-data in place of the region/city
-   list (see openAdminEditView() in admin.js) rather than expanding the
-   list inline, so editing a region or place with a long list above it
-   doesn't require scrolling back up to find the form. */
 .admin-edit-back {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   margin: -0.2rem 0 0.9rem -0.3rem;
-  padding: 0.35rem 0.5rem;
+  padding: 0.35rem 0.55rem;
+  font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-accent);
   background: none;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
 }
 
 .admin-edit-back:hover {
-  text-decoration: underline;
+  background: var(--color-accent-soft);
 }
 
 .admin-add-city-form {
@@ -2872,27 +2902,13 @@ main {
   margin-top: 0.6rem;
 }
 
-/* Direct-child combinator (>), not a plain descendant selector: the
-   category picker's own <input> is also an `input` nested inside this
-   form, and a descendant selector here would win by specificity over
-   `.category-picker-input`'s own width:100%, shrinking it to the
-   browser's default ~20-character width regardless of its content —
-   very visible with long translated category names. */
 .admin-add-city-form > input,
 .admin-add-city-form > .category-picker {
-  /* A non-zero flex-basis (instead of the flex:1 shorthand's 0%) makes
-     the wrap algorithm account for each item's real size, so a row that
-     doesn't fit wraps onto a new line instead of silently overflowing
-     the panel — flex-basis:0 tricks flex-wrap into thinking everything
-     fits on one line, then min-width shoves it past the edge anyway. */
   flex: 1 1 140px;
   min-width: 90px;
   width: auto;
 }
 
-/* Description textareas hold paragraph-length text, so they get their
-   own full-width row instead of squeezing into the same 140px cells as
-   the short inputs above. */
 .admin-add-city-form > textarea {
   flex: 1 1 100%;
   min-width: 200px;
@@ -2900,8 +2916,9 @@ main {
 
 .admin-add-city-form .pick-on-map,
 .admin-edit-city-form .pick-on-map {
-  background: var(--color-border);
+  background: var(--color-bg-muted);
   color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
   white-space: nowrap;
 }
 
@@ -2909,19 +2926,12 @@ main {
   align-self: center;
 }
 
-/* The add form is a wrapping row (see above), where the button shares a
-   line with the lat/lng/category inputs. Those all carry the 10px
-   margin-top from .admin-form input, so centering the button within the
-   row left it 5px higher than they are, and shorter. Same offset plus
-   stretch instead lines up its top edge and height with them. */
 .admin-add-city-form .pick-on-map {
   align-self: stretch;
-  margin-top: 10px;
+  margin-top: 2px;
 }
 
-/* Category picker: a searchable combobox (plain <select> gets unwieldy
-   once there are 20+ categories). */
-
+/* Category picker combobox */
 .category-picker {
   position: relative;
 }
@@ -2936,13 +2946,13 @@ main {
   left: 0;
   right: 0;
   z-index: 1000;
-  max-height: 180px;
+  max-height: 190px;
   overflow-y: auto;
-  padding: 0.25rem;
+  padding: 0.3rem;
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  box-shadow: 0 6px 16px var(--shadow-color);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-floating);
 }
 
 .category-picker-menu[hidden] {
@@ -2961,13 +2971,13 @@ main {
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   font-size: 0.83rem;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--color-text);
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -2977,29 +2987,29 @@ main {
 }
 
 .category-picker-empty {
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   font-size: 0.8rem;
   color: var(--color-text-faint);
   font-style: italic;
 }
 
-/* Map coordinate picker */
-
+/* Map coordinate picker banner */
 #map-pick-banner {
   position: absolute;
-  top: 12px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1500;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.9rem;
+  gap: 0.65rem;
+  padding: 0.55rem 1rem;
   background: var(--color-accent);
   color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  border-radius: 999px;
+  box-shadow: var(--shadow-floating);
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 #map-pick-banner[hidden] {
@@ -3007,40 +3017,48 @@ main {
 }
 
 #map-pick-cancel {
-  padding: 0.2rem 0.6rem;
-  font-size: 0.8rem;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #fff;
-  background: transparent;
-  border: 1px solid #94a3b8;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
   cursor: pointer;
 }
 
 #map-pick-cancel:hover {
-  background: #374151;
+  background: rgba(255, 255, 255, 0.28);
 }
 
-/* Historical-imagery year timeline */
-
+/* Historical-imagery year timeline pill */
 #timeline {
   position: absolute;
-  bottom: 32px;
-  left: 50%;
+  bottom: 28px;
+  left: calc(50% + 180px);
   transform: translateX(-50%);
   z-index: 1200;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-bg);
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  font-size: 0.85rem;
+  gap: 0.75rem;
+  padding: 0.55rem 1.15rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-floating);
+  font-size: 0.84rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text);
+  transition: left 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#panel.collapsed ~ #map #timeline {
+  left: 50%;
 }
 
 #timeline[hidden] {
@@ -3056,47 +3074,40 @@ main {
   width: 220px;
 }
 
-/* The year-timeline range input — replaces the raw OS-default blue
-   thumb/track with the app's own accent color,
-   so they read as part of the design system instead of a stock browser
-   control dropped onto a themed pill. Thumb-only coloring (not a
-   filled-in track) since a cross-browser filled track needs a JS-driven
-   gradient in WebKit (no ::-moz-range-progress equivalent there) —
-   not worth the complexity for two sliders. */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--color-border);
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-border-strong);
   outline: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-accent);
   border: 2px solid var(--color-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
 input[type="range"]::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--color-border);
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-border-strong);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-accent);
   border: 2px solid var(--color-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
@@ -3110,9 +3121,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   outline-offset: 2px;
 }
 
-/* Before/after compare divider — dragged over .detail-hero.has-compare
-   in the detail view, clipping .compare-after to reveal .compare-before
-   underneath. */
+/* Before/after compare divider */
 .compare-divider {
   position: absolute;
   top: 0;
@@ -3135,8 +3144,8 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   bottom: 0;
   left: -1px;
   width: 2px;
-  background: var(--color-bg);
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
 }
 
 .compare-divider-handle {
@@ -3144,15 +3153,15 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--color-bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text);
+  color: #111827;
   font-size: 1rem;
 }
 
@@ -3170,32 +3179,9 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 }
 
 /* Responsive: narrow (phone/small tablet) viewports */
-
 @media (max-width: 700px) {
-  /* Mobile trades the desktop's push-aside sidebar for a bottom sheet
-     that overlays the map — closer to how native map apps (Apple/
-     Google Maps) handle a small screen: the map fills the whole
-     viewport, and browsing/details live in a sheet you drag or tap to
-     resize instead of a fixed-width drawer. Cities/Places/Forum move
-     from the icon rail into a segmented control inside the sheet
-     itself (#sheet-tabs below); the rail itself shrinks from a
-     full-height column into a small floating toolbar (still holding
-     admin/account/language/theme — the stuff that isn't about
-     browsing the map) instead of permanently eating 48px off the left
-     edge of an already-narrow screen. */
   :root {
-    /* A fixed px height, not vh like half/full below: what peek needs
-       to fit — the handle, the Cities/Places/Forum tabs, and the
-       search box — is fixed-height content that doesn't scale with
-       screen size, so a vh value was actually wrong here. It measured
-       out to ~98px on every phone width tested (the content itself is
-       the same regardless of viewport height); 120px leaves a little
-       breathing room without giving back the space this is meant to
-       save. The weather card and city list are one scroll or one drag
-       away instead of taking up peek space by default, the same call
-       Apple Maps itself makes (its own peek state shows search,
-       nothing else). */
-    --sheet-peek-h: 120px;
+    --sheet-peek-h: 124px;
     --sheet-half-h: 55vh;
     --sheet-full-h: 88vh;
   }
@@ -3203,9 +3189,8 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   #rail-cities,
   #rail-places,
   #rail-forum,
+  #rail-news,
   #panel-toggle,
-  /* Purely decorative (see its own comment in the CSS above) — worth
-     the space on a full-height desktop rail, not on a phone screen. */
   #brand-mark,
   .rail-spacer {
     display: none;
@@ -3214,55 +3199,30 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   #rail {
     position: fixed;
     top: 12px;
+    bottom: auto;
     left: 12px;
     flex-direction: row;
     width: auto;
     height: auto;
     padding: 0.3rem;
     gap: 0.3rem;
-    border-right: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    /* Above the map and the sheet, same reasoning as #panel below —
-       a floating toolbar that could get covered by its own map isn't
-       much of a toolbar. Leaflet's zoom/layers controls stay clear of
-       this regardless (both are pinned bottomright in app.js). */
+    border-radius: 14px;
     z-index: 1100;
   }
 
   #panel {
     position: fixed;
-    /* No rail column to clear anymore — it floats over the map
-       (see #rail above) instead of reserving a permanent 48px strip,
-       so the sheet runs the full width of the screen. The floating
-       toolbar sits well above the sheet's top edge even at "full"
-       height, so there's no overlap to avoid the way there was when
-       the rail ran the full height of the screen. */
+    top: auto;
     inset: auto 0 0 0;
-    /* The desktop rule above sets a fixed 320px width with no media
-       guard of its own — CSS cascades per property, not per rule, so
-       without this override that 320px would silently win here too
-       (same class of bug as .panel-detail-open's 380px below) and
-       leave a blank strip down the right edge instead of the sheet
-       actually running edge to edge like inset above asks for. */
     width: auto;
     display: flex;
     flex-direction: column;
-    /* Above Leaflet's own controls (.leaflet-top/.leaflet-bottom use
-       z-index: 1000), so the sheet always sits above the map. */
     z-index: 1050;
     padding: 0;
-    border-right: none;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.25);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     height: var(--sheet-peek-h);
-    /* Dragging the handle (see the pointerdown/pointermove/pointerup
-       handlers on #panel-handle in app.js) sets this height directly,
-       frame by frame, with this transition disabled for that duration
-       via the .sheet-dragging class below — it only animates a
-       *tap*-triggered change: a tab switch, opening a place, or the
-       handle's own click-to-toggle. */
     transition: height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
@@ -3270,16 +3230,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     transition: none;
   }
 
-  /* Belt-and-braces alongside the peek height itself: hides the
-     weather card, whichever tab's list (city list / category grid /
-     forum) is currently active, and the search results dropdown
-     outright while peeking, rather than relying purely on the sheet's
-     short height to clip them. Peek ends up as just the handle, tabs,
-     and search box, same as Apple Maps' own peek state; everything
-     else reappears the moment the sheet opens past peek — typing a
-     query does that itself (see the search input listener in app.js),
-     so this mainly guards the instant before that transition finishes
-     rather than something a visitor would normally sit in. */
   #panel[data-sheet-state="peek"] #weather-panel,
   #panel[data-sheet-state="peek"] .panel-view,
   #panel[data-sheet-state="peek"] #search-results {
@@ -3303,10 +3253,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     background: transparent;
     border: none;
     cursor: grab;
-    /* Stops the browser's own pull-to-refresh/scroll gestures from
-       fighting the drag handler while dragging this handle — the
-       scrollable content below (#panel-content) deliberately keeps
-       its default touch-action so it still scrolls normally. */
     touch-action: none;
   }
 
@@ -3321,60 +3267,53 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   #sheet-tabs {
     display: flex;
     flex-shrink: 0;
-    gap: 0.4rem;
-    padding: 0 0.9rem 0.6rem;
+    gap: 0.25rem;
+    margin: 0 0.9rem 0.6rem;
+    padding: 0.22rem;
+    background: var(--color-bg-muted);
+    border-radius: 10px;
   }
 
-  /* Same look as .account-tab (auth.js's sign-in/register tabs) —
-     reusing that pattern instead of inventing a second one. */
   .sheet-tab {
     flex: 1;
-    padding: 0.45rem;
-    font-size: 0.82rem;
+    padding: 0.42rem;
+    font-family: inherit;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--color-text-faint);
-    background: var(--color-bg-muted);
+    color: var(--color-text-muted);
+    background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 7px;
     cursor: pointer;
   }
 
   .sheet-tab.active {
-    color: #fff;
-    background: var(--color-accent);
+    color: var(--color-text);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-card);
   }
 
   #panel-content {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 0 0.9rem 0.9rem;
+    padding: 0 0.95rem 0.95rem;
   }
 
   #detail-view {
     --detail-bleed-top: 0px;
   }
 
-  /* Overrides the desktop-only #panel.panel-detail-open rule above (no
-     media guard there, width: 380px) — that selector's extra class
-     gives it higher specificity than this file's plain "#panel" rule,
-     so without this it would win here too and blow the sheet out to
-     380px wide, past the edge of most phone screens. The sheet's
-     own width already comes from #panel's inset (left/right), same as
-     every other sheet state — a selected place needs a taller sheet
-     (handled by setPanelCollapsed() in app.js), never a wider one. */
   #panel.panel-detail-open {
     width: auto;
   }
 
-  /* Leaflet's own zoom/layers controls default to the map's
-     bottom-right corner, which the sheet would otherwise sit on top
-     of even at its shortest (peek) height. */
   #map .leaflet-bottom.leaflet-right {
     bottom: calc(var(--sheet-peek-h) + 12px);
   }
 
   #timeline {
+    left: 50%;
     bottom: calc(var(--sheet-peek-h) + 16px);
     width: min(300px, 90vw);
   }
@@ -3383,35 +3322,21 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     width: 100%;
   }
 
-  #admin-overlay {
+  #admin-overlay,
+  #account-overlay,
+  #stats-overlay,
+  #report-overlay {
     padding: 0;
     align-items: flex-end;
   }
 
-  #admin-panel {
+  #admin-panel,
+  #account-panel,
+  #stats-panel,
+  #report-panel {
     max-width: 100%;
     max-height: 90vh;
-    border-radius: 12px 12px 0 0;
-  }
-
-  #account-overlay {
-    padding: 0;
-    align-items: flex-end;
-  }
-
-  #account-panel {
-    max-width: 100%;
-    border-radius: 12px 12px 0 0;
-  }
-
-  #stats-overlay {
-    padding: 0;
-    align-items: flex-end;
-  }
-
-  #stats-panel {
-    max-width: 100%;
-    border-radius: 12px 12px 0 0;
+    border-radius: 18px 18px 0 0;
   }
 
   #stats-grid {
@@ -3437,13 +3362,9 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   .admin-add-city-form > input,
   .admin-add-city-form > .category-picker {
     width: 100%;
-    /* The base rule's flex: 1 1 140px sizes the *width* in the desktop
-       row layout; in this column layout the same basis becomes each
-       field's height, turning every input into a 140px-tall box. */
     flex: none;
   }
 
-  /* Same column-layout reasoning for the textareas' flex: 1 1 100%. */
   .admin-add-city-form > textarea {
     flex: none;
   }
@@ -3460,10 +3381,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   }
 }
 
-/* Standalone legal pages (privacy.html / terms.html). They link this
-   same stylesheet for color tokens/fonts/dark-mode, but need normal
-   document flow to scroll — not the app shell's 100vh flex layout the
-   base body rule above is built for. */
+/* Standalone legal pages (privacy.html / terms.html) */
 body.legal-page-body {
   height: auto;
   min-height: 100vh;
@@ -3471,17 +3389,11 @@ body.legal-page-body {
 }
 
 .legal-page {
-  /* Overrides the app shell's "main { display: flex; ... }" rule above
-     — both this page and index.html link the same stylesheet, and a
-     bare-element selector like that one applies to any <main> on any
-     page that loads it, not just the app shell's. Without this, every
-     direct child here (h1, p, ul, ...) lays out as a flex row instead
-     of stacking normally. */
   display: block;
   max-width: 700px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .legal-back-link {
@@ -3500,13 +3412,14 @@ body.legal-page-body {
 .legal-page h1 {
   font-family: var(--font-serif);
   margin: 0 0 0.3rem;
-  font-size: 1.8rem;
+  font-size: 1.85rem;
+  letter-spacing: -0.015em;
 }
 
 .legal-page h2 {
   font-family: var(--font-serif);
   margin: 2rem 0 0.6rem;
-  font-size: 1.15rem;
+  font-size: 1.18rem;
 }
 
 .legal-updated {
