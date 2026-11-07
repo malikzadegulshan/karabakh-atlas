@@ -290,14 +290,14 @@ const POI_TONES = {
 // 0.06, light end clears 2:1 contrast) via the dataviz skill's
 // validate_palette.js.
 const POI_TONE_RAMP = {
-  light: ["#162724", "#25413c", "#345b54", "#43756c"],
-  dark: ["#dbebe8", "#b1d2cc", "#87bab1", "#5da295"],
+  light: ["#1F4039", "#2B564E", "#376E63", "#438B7D"],
+  dark: ["#9AEFE0", "#82DFCE", "#65ABA0", "#438B7D"],
 };
 
 // Glyph drawn inside the circle, and the ring separating it from the
-// map underneath — both are the ramp's opposite end.
-const POI_GLYPH = { light: "#ffffff", dark: "#18181b" };
-const POI_RING = { light: "#ffffff", dark: "#2c2c2e" };
+// map underneath — Paper (#F6F2EA) per Design Language v1.0.
+const POI_GLYPH = { light: "#F6F2EA", dark: "#F6F2EA" };
+const POI_RING = { light: "#F6F2EA", dark: "#F6F2EA" };
 
 function poiTier(category) {
   return POI_TONES[category] !== undefined ? POI_TONES[category] : POI_TONES.other;
@@ -585,6 +585,7 @@ const searchResultsEl = document.getElementById("search-results");
 const weatherPanelEl = document.getElementById("weather-panel");
 const panelEl = document.getElementById("panel");
 const panelToggleEl = document.getElementById("panel-toggle");
+const brandMarkEl = document.getElementById("brand-mark");
 const railCitiesEl = document.getElementById("rail-cities");
 const railPlacesEl = document.getElementById("rail-places");
 const railForumEl = document.getElementById("rail-forum");
@@ -654,6 +655,11 @@ function applyStaticTranslations() {
   document.documentElement.lang = currentLang;
   titleEl.textContent = t("title");
   skipLinkEl.textContent = t("skipToMap");
+  if (brandMarkEl) {
+    const brandLabel = t("title") ? `Dirçəliş — ${t("title")}` : "Dirçəliş — Karabakh Atlas";
+    brandMarkEl.setAttribute("aria-label", brandLabel);
+    brandMarkEl.title = brandLabel;
+  }
   setPlaceholderLabel(searchInputEl, t("searchPlaceholder"));
   railCitiesEl.setAttribute("aria-label", t("citiesToggle"));
   railCitiesEl.title = t("citiesToggle");
@@ -1047,9 +1053,16 @@ function closeDetailView() {
   updateSearchResultsVisibility();
   clearUrlPlace();
   clearDistanceLine();
+  setSelectedPin(null);
 }
 
 detailBackEl.addEventListener("click", closeDetailView);
+
+if (brandMarkEl) {
+  brandMarkEl.addEventListener("click", () => {
+    map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  });
+}
 
 railCitiesEl.addEventListener("click", () => selectPanelTab("cities"));
 railPlacesEl.addEventListener("click", () => selectPanelTab("places"));
@@ -1542,6 +1555,7 @@ async function loadWeatherFor(city) {
 
 function showCityDetail(city) {
   openDetailView();
+  setSelectedPin(city.id);
   clearDistanceLine();
   detailEl.innerHTML = buildDetailCardHtml(city);
   // A city's photo is served through the resize/compress proxy (see
@@ -1619,7 +1633,7 @@ function showCityDetail(city) {
           [city.latitude, city.longitude],
           [entry.city.latitude, entry.city.longitude],
         ],
-        { color: "#43756c", weight: 3, dashArray: "6 6" }
+        { color: "#438B7D", weight: 3, dashArray: "6 6" }
       ).addTo(map);
       map.fitBounds(distanceLine.getBounds(), {
         padding: [60, 60], animate: false,
@@ -1792,15 +1806,17 @@ function buildMarker(city) {
     // already only render once zoomed in (or a category filter is
     // active; see updatePoiVisibility), the same point most other map
     // apps start showing place names.
+    const isSelected = selectedPlaceId !== null && city.id === selectedPlaceId;
+    const selectedClass = isSelected ? " is-selected" : "";
     const badgeIcon = L.divIcon({
-      className: "poi-marker-wrapper",
+      className: `poi-marker-wrapper${selectedClass}`,
       html:
-        `<div class="poi-marker" style="background:${poiToneColor(city.category)};` +
+        `<div class="poi-marker${selectedClass}" style="background:${isSelected ? "var(--ember)" : poiToneColor(city.category)};` +
         `border-color:${POI_RING[scheme()]}">` +
-        `${KBA_ICON_SVG(city.category, 15, POI_GLYPH[scheme()])}</div>` +
+        `${KBA_ICON_SVG(city.category, 16, POI_GLYPH[scheme()])}</div>` +
         `<span class="${labelClass}" title="${escapeAttr(fullName)}">${escapeHtml(name)}</span>`,
       iconSize: null,
-      iconAnchor: [13, 13],
+      iconAnchor: [15, 15],
     });
     return L.marker([city.latitude, city.longitude], { icon: badgeIcon })
       .addTo(poiMarkersLayers[poiTier(city.category)]);
@@ -1814,6 +1830,31 @@ function buildMarker(city) {
   });
   return L.marker([city.latitude, city.longitude], { icon: labelIcon })
     .addTo(markersLayer);
+}
+
+// Exactly one place pin can be selected at a time (turning Ember #E8743B
+// and growing to 34px).
+let selectedPlaceId = null;
+
+function setSelectedPin(cityId) {
+  selectedPlaceId = cityId;
+  cityMarkers.forEach(({ city, marker }) => {
+    const el = marker && marker.getElement && marker.getElement();
+    if (!el) {
+      return;
+    }
+    const isSel = selectedPlaceId !== null && city.id === selectedPlaceId;
+    el.classList.toggle("is-selected", isSel);
+    const poi = el.querySelector(".poi-marker");
+    if (poi) {
+      poi.classList.toggle("is-selected", isSel);
+      if (isSel) {
+        poi.style.background = "var(--ember)";
+      } else {
+        poi.style.background = poiToneColor(city.category);
+      }
+    }
+  });
 }
 
 // city.id -> { city, marker }, rebuilt on every render — lets search
