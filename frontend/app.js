@@ -291,7 +291,7 @@ const POI_TONES = {
 // validate_palette.js.
 const POI_TONE_RAMP = {
   light: ["#1F4039", "#2B564E", "#376E63", "#438B7D"],
-  dark: ["#9AEFE0", "#82DFCE", "#65ABA0", "#438B7D"],
+  dark: ["#1F4039", "#2B564E", "#376E63", "#438B7D"],
 };
 
 // Glyph drawn inside the circle, and the ring separating it from the
@@ -591,6 +591,7 @@ const railPlacesEl = document.getElementById("rail-places");
 const railForumEl = document.getElementById("rail-forum");
 const railNewsEl = document.getElementById("rail-news");
 const panelHandleEl = document.getElementById("panel-handle");
+const sheetTabsEl = document.getElementById("sheet-tabs");
 const sheetTabCitiesEl = document.getElementById("sheet-tab-cities");
 const sheetTabPlacesEl = document.getElementById("sheet-tab-places");
 const sheetTabForumEl = document.getElementById("sheet-tab-forum");
@@ -907,7 +908,7 @@ renderCategoryGrid();
 let activePanelTab = "cities";
 
 function isMobileLayout() {
-  return window.matchMedia("(max-width: 700px)").matches;
+  return window.matchMedia("(max-width: 719.98px)").matches;
 }
 
 // Below 700px, #panel stops being a desktop drawer and becomes a
@@ -1081,11 +1082,19 @@ const SHEET_STATES = ["peek", "half", "full"];
 
 function sheetHeightPx(state) {
   // --sheet-peek-h is a fixed px value (fixed-height content shouldn't
-  // scale with viewport height); half/full are vh. Handle both rather
-  // than assuming vh like this used to — that bug made peek silently
-  // read as ~120vh instead of 120px, which broke the drag clamp.
+  // scale with viewport height); half/full are vh (or calc(Xvh - Ypx)).
+  // Handle all formats rather than assuming vh like this used to — that
+  // bug made peek silently read as ~120vh instead of 120px, which broke
+  // the drag clamp.
   const raw = getComputedStyle(document.documentElement)
     .getPropertyValue(`--sheet-${state}-h`).trim();
+  const calcMatch = raw.match(
+    /^calc\(\s*([\d.]+)vh\s*-\s*([\d.]+)px\s*\)$/i
+  );
+  if (calcMatch) {
+    return (parseFloat(calcMatch[1]) / 100) * window.innerHeight -
+      parseFloat(calcMatch[2]);
+  }
   if (raw.endsWith("vh")) {
     return (parseFloat(raw) / 100) * window.innerHeight;
   }
@@ -1102,6 +1111,7 @@ function nearestSheetState(heightPx) {
 }
 
 let sheetDrag = null;
+let suppressNextHandleClick = false;
 
 function onSheetPointerMove(event) {
   if (!sheetDrag) {
@@ -1131,30 +1141,65 @@ function onSheetPointerUp() {
   }
   document.removeEventListener("pointermove", onSheetPointerMove);
   document.removeEventListener("pointerup", onSheetPointerUp);
+  document.removeEventListener("pointercancel", onSheetPointerUp);
   panelEl.classList.remove("sheet-dragging");
   if (sheetDrag.moved) {
+    suppressNextHandleClick = true;
     setSheetState(nearestSheetState(panelEl.getBoundingClientRect().height));
   }
   sheetDrag = null;
 }
 
-panelHandleEl.addEventListener("pointerdown", (event) => {
+function startSheetDrag(event, captureEl) {
   sheetDrag = {
     startY: event.clientY,
     startHeight: panelEl.getBoundingClientRect().height,
     moved: false,
   };
+  if (captureEl && typeof captureEl.setPointerCapture === "function") {
+    try {
+      captureEl.setPointerCapture(event.pointerId);
+    } catch (err) {
+      /* ignore if synthetic event lacks active pointerId */
+    }
+  }
   panelEl.classList.add("sheet-dragging");
   document.addEventListener("pointermove", onSheetPointerMove);
   document.addEventListener("pointerup", onSheetPointerUp);
+  document.addEventListener("pointercancel", onSheetPointerUp);
+}
+
+panelHandleEl.addEventListener("pointerdown", (event) => {
+  startSheetDrag(event, panelHandleEl);
 });
+
+if (sheetTabsEl) {
+  sheetTabsEl.addEventListener("pointerdown", (event) => {
+    startSheetDrag(event, null);
+  });
+  sheetTabsEl.addEventListener(
+    "click",
+    (event) => {
+      if (suppressNextHandleClick) {
+        suppressNextHandleClick = false;
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    },
+    true
+  );
+}
 
 // A genuine tap (not a drag) toggles between peek and half. This is a
 // plain "click" listener, not part of the pointer handlers above, so
 // it also covers keyboard activation (Enter/Space on this <button>)
-// for free — the drag handlers intentionally do nothing when no real
-// movement happened, so this is the only place a tap changes anything.
+// for free — suppressNextHandleClick prevents the browser's synthetic
+// post-drag click from immediately collapsing a sheet just dragged to "full".
 panelHandleEl.addEventListener("click", () => {
+  if (suppressNextHandleClick) {
+    suppressNextHandleClick = false;
+    return;
+  }
   setSheetState(isPanelCollapsed() ? "half" : "peek");
 });
 

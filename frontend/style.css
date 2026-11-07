@@ -2146,9 +2146,6 @@ main {
   align-items: center;
   justify-content: center;
 }
-     1px  1px 0 rgba(255, 255, 255, 0.92),
-     0    0    3px rgba(255, 255, 255, 0.92);
-}
 
 .poi-marker-label--collision-hidden {
   display: none;
@@ -3487,9 +3484,9 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 /* Responsive: narrow (phone/small tablet) viewports (< 720px) */
 @media (max-width: 719.98px) {
   :root {
-    --sheet-peek-h: 80px;
-    --sheet-half-h: 45vh;
-    --sheet-full-h: calc(100vh - 56px);
+    --sheet-peek-h: 124px;
+    --sheet-half-h: 55vh;
+    --sheet-full-h: 88vh;
   }
 
   #rail-cities,
@@ -3580,7 +3577,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    height: 22px;
+    height: 28px;
     background: transparent;
     border: none;
     cursor: grab;
@@ -3601,6 +3598,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     gap: 0.25rem;
     margin: 0 0.9rem 0.6rem;
     padding: 0.22rem;
+    touch-action: none;
     background: var(--color-bg-muted);
     border-radius: 10px;
   }
